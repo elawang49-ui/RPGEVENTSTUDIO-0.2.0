@@ -1,3 +1,4 @@
+@tool
 class_name DialoguePresenter
 extends CanvasLayer
 ## 运行期对话界面：底部对话框 + 选项列表。
@@ -5,8 +6,17 @@ extends CanvasLayer
 
 var input: InputService
 var blocked: bool = false
+## 主题页在编辑器里实例化预览时置 true；正常运行时保持 false。
+var editor_preview := false
+
+## 当前主题；默认值在 RpgEventStudioTheme 里，未配置主题时与旧外观一致。
+var style: RpgEventStudioTheme
 
 var _root: Control
+var _theme_root: Theme
+var _margin: MarginContainer
+var _column: VBoxContainer
+var _choice_margin: MarginContainer
 var _fade_rect: ColorRect
 var _fade_tween: Tween
 var _panel: PanelContainer
@@ -28,6 +38,8 @@ var _mouse_click := false
 var _choice_result := -1
 var _choice_index := -1
 var _choice_buttons: Array[Button] = []
+var _panel_tween: Tween
+var _choices_tween: Tween
 
 ## 调试用：最近显示过的文字与解析结果（集成测试与问题排查会读它）
 var last_text := ""
@@ -36,26 +48,23 @@ var last_bbcode_issues: Dictionary = {}
 var shown_texts: PackedStringArray = []
 
 func _ready() -> void:
+	if Engine.is_editor_hint() and not editor_preview:
+		return
 	layer = 20
+	if style == null:
+		style = RpgEventStudioTheme.new()
 	_build_ui()
+	_apply_style()
 	_panel.hide()
 	_choices_panel.hide()
 
 func _build_ui() -> void:
-	var theme := Theme.new()
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray([
-		"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
-		"Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "sans-serif",
-	])
-	theme.default_font = font
-	theme.default_font_size = 18
-
+	_theme_root = Theme.new()
 	_root = Control.new()
 	_root.name = "RPGEventStudioUI"
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.theme = theme
+	_root.theme = _theme_root
 	add_child(_root)
 
 	_fade_rect = ColorRect.new()
@@ -75,38 +84,26 @@ func _build_ui() -> void:
 	_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	_root.add_child(_panel)
 
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 22)
-	margin.add_theme_constant_override("margin_right", 22)
-	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_bottom", 12)
-	_panel.add_child(margin)
+	_margin = MarginContainer.new()
+	_panel.add_child(_margin)
 
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	margin.add_child(column)
+	_column = VBoxContainer.new()
+	_margin.add_child(_column)
 
 	_name_label = Label.new()
-	_name_label.add_theme_font_size_override("font_size", 21)
-	_name_label.add_theme_color_override("font_color", Color(0.96, 0.85, 0.55))
-	column.add_child(_name_label)
+	_column.add_child(_name_label)
 
 	_text_label = RichTextLabel.new()
 	_text_label.bbcode_enabled = true
 	_text_label.fit_content = false
 	_text_label.scroll_active = false
-	_text_label.custom_minimum_size = Vector2(0, 96)
 	_text_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_text_label.add_theme_font_size_override("normal_font_size", 20)
-	_text_label.add_theme_color_override("default_color", Color(0.94, 0.94, 0.96))
-	column.add_child(_text_label)
+	_column.add_child(_text_label)
 
 	_hint_label = Label.new()
 	_hint_label.text = ""
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_hint_label.add_theme_font_size_override("font_size", 12)
-	_hint_label.add_theme_color_override("font_color", Color(0.72, 0.72, 0.78))
-	column.add_child(_hint_label)
+	_column.add_child(_hint_label)
 
 	_choices_panel = PanelContainer.new()
 	_choices_panel.name = "ChoicePanel"
@@ -117,26 +114,70 @@ func _build_ui() -> void:
 	_choices_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	_root.add_child(_choices_panel)
 
-	var choice_margin := MarginContainer.new()
-	choice_margin.add_theme_constant_override("margin_left", 14)
-	choice_margin.add_theme_constant_override("margin_right", 14)
-	choice_margin.add_theme_constant_override("margin_top", 14)
-	choice_margin.add_theme_constant_override("margin_bottom", 14)
-	_choices_panel.add_child(choice_margin)
+	_choice_margin = MarginContainer.new()
+	_choices_panel.add_child(_choice_margin)
 
 	_choices_box = VBoxContainer.new()
-	_choices_box.add_theme_constant_override("separation", 8)
-	choice_margin.add_child(_choices_box)
+	_choice_margin.add_child(_choices_box)
 
 func _make_panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.07, 0.10, 0.93)
-	style.border_color = Color(0.80, 0.70, 0.42, 0.85)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(10)
-	style.shadow_color = Color(0, 0, 0, 0.45)
-	style.shadow_size = 8
-	return style
+	if style == null:
+		style = RpgEventStudioTheme.new()
+	return style.make_panel_style()
+
+## 注入/刷新主题。主题页与运行时共用同一个入口。
+func set_dialogue_theme(theme: RpgEventStudioTheme) -> void:
+	style = theme if theme != null else RpgEventStudioTheme.new()
+	if _root != null:
+		_apply_style()
+		if _choices_panel.visible:
+			_update_choice_highlight()
+
+func _apply_style() -> void:
+	if _root == null or style == null:
+		return
+	_theme_root = Theme.new()
+	_theme_root.default_font = style.resolve_font()
+	_theme_root.default_font_size = style.font_size
+	_root.theme = _theme_root
+
+	_panel.anchor_left = style.panel_left
+	_panel.anchor_right = style.panel_right
+	_panel.anchor_top = style.panel_top
+	_panel.anchor_bottom = style.panel_bottom
+	_panel.add_theme_stylebox_override("panel", style.make_panel_style())
+	_margin.add_theme_constant_override("margin_left", style.content_margin_left)
+	_margin.add_theme_constant_override("margin_right", style.content_margin_right)
+	_margin.add_theme_constant_override("margin_top", style.content_margin_top)
+	_margin.add_theme_constant_override("margin_bottom", style.content_margin_bottom)
+	_column.add_theme_constant_override("separation", style.line_separation)
+
+	_name_label.add_theme_font_size_override("font_size", style.speaker_font_size)
+	_name_label.add_theme_color_override("font_color", style.speaker_color)
+	_text_label.custom_minimum_size = Vector2(0, style.text_min_height)
+	_text_label.add_theme_font_size_override("normal_font_size", style.text_font_size)
+	_text_label.add_theme_color_override("default_color", style.text_color)
+	_text_label.add_theme_constant_override("line_separation", style.line_separation)
+	_hint_label.add_theme_font_size_override("font_size", style.hint_font_size)
+	_hint_label.add_theme_color_override("font_color", style.hint_color)
+
+	_choices_panel.anchor_left = style.choice_left
+	_choices_panel.anchor_right = style.choice_right
+	_choices_panel.anchor_top = style.choice_top
+	_choices_panel.anchor_bottom = style.choice_bottom
+	_choices_panel.add_theme_stylebox_override("panel", style.make_panel_style())
+	_choice_margin.add_theme_constant_override("margin_left", style.choice_margin)
+	_choice_margin.add_theme_constant_override("margin_right", style.choice_margin)
+	_choice_margin.add_theme_constant_override("margin_top", style.choice_margin)
+	_choice_margin.add_theme_constant_override("margin_bottom", style.choice_margin)
+	_choices_box.add_theme_constant_override("separation", style.choice_separation)
+
+	_speed = style.text_speed
+	_fade_rect.color = style.fade_color
+	for button in _choice_buttons:
+		if is_instance_valid(button):
+			button.custom_minimum_size = Vector2(0, style.choice_min_height)
+			button.add_theme_font_size_override("font_size", style.choice_font_size)
 
 # ── 显示文字 ─────────────────────────────────────────────
 
@@ -163,7 +204,7 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	_input_cooldown = Time.get_ticks_msec() + 160
 	_clear_choices()
 
-	_panel.show()
+	_show_panel_with_animation()
 	if not _typing:
 		_finish_typing()
 	elif auto_advance > 0.0:
@@ -192,7 +233,7 @@ func clear_fade() -> void:
 		_fade_rect.modulate.a = 0.0
 
 func hide_text() -> void:
-	_panel.hide()
+	_hide_panel_with_animation()
 	_text_done = true
 	_waiting_confirm = false
 	_typing = false
@@ -220,7 +261,7 @@ func show_choices(prompt: String, options: Array) -> void:
 		_choices_box.add_child(button)
 		_choice_buttons.append(button)
 
-	_choices_panel.show()
+	_show_choices_panel_with_animation()
 	_hint_label.visible = true
 	_hint_label.text = L10n.game("game.choice_hint")
 	_choice_index = 0
@@ -231,8 +272,7 @@ func get_choice() -> int:
 
 func _on_choice_pressed(index: int) -> void:
 	_choice_result = index
-	_choices_panel.hide()
-	_clear_choice_buttons()
+	_hide_choices_panel_with_animation()
 	_text_done = true
 
 func _move_choice(delta: int) -> void:
@@ -243,14 +283,33 @@ func _move_choice(delta: int) -> void:
 
 func _update_choice_highlight() -> void:
 	for index in _choice_buttons.size():
-		_choice_buttons[index].button_pressed = index == _choice_index
+		var button := _choice_buttons[index]
+		button.button_pressed = index == _choice_index
+		_apply_choice_button_style(button, index == _choice_index)
+
+func _apply_choice_button_style(button: Button, selected: bool) -> void:
+	if style == null:
+		return
+	var box := style.make_choice_style(selected)
+	button.add_theme_stylebox_override("normal", box)
+	button.add_theme_stylebox_override("hover", box)
+	button.add_theme_stylebox_override("pressed", box)
+	button.add_theme_stylebox_override("focus", box)
+	button.add_theme_color_override("font_color", style.choice_selected_color if selected else style.choice_text_color)
+	button.add_theme_color_override("font_hover_color", style.choice_selected_color)
+	button.add_theme_color_override("font_pressed_color", style.choice_selected_color)
+	button.add_theme_color_override("font_focus_color", style.choice_selected_color)
 
 # ── 关闭 ─────────────────────────────────────────────────
 
 func close_all() -> void:
+	_kill_panel_tween()
+	_kill_choices_tween()
 	if _panel != null:
+		_panel.modulate.a = 1.0
 		_panel.hide()
 	if _choices_panel != null:
+		_choices_panel.modulate.a = 1.0
 		_choices_panel.hide()
 	_clear_choice_buttons()
 	_typing = false
@@ -306,7 +365,7 @@ func _finish_typing() -> void:
 func _dismiss_text() -> void:
 	_waiting_confirm = false
 	_text_done = true
-	_panel.hide()
+	_hide_panel_with_animation()
 
 func _pressed(action: StringName) -> bool:
 	if input == null:
@@ -314,6 +373,8 @@ func _pressed(action: StringName) -> bool:
 	return input.is_action_just_pressed(action)
 
 func _input(event: InputEvent) -> void:
+	if editor_preview:
+		return
 	# 记录鼠标左键按下沿（即使点在 UI 上也算），供对话推进判断
 	if event is InputEventMouseButton:
 		var mouse := event as InputEventMouseButton
@@ -322,7 +383,69 @@ func _input(event: InputEvent) -> void:
 
 # ── 内部 ─────────────────────────────────────────────────
 
+func _show_panel_with_animation() -> void:
+	_kill_panel_tween()
+	_panel.show()
+	if style != null and style.appear_duration > 0.0:
+		_panel.modulate.a = 0.0
+		_panel_tween = create_tween()
+		_panel_tween.tween_property(_panel, "modulate:a", 1.0, style.appear_duration)
+	else:
+		_panel.modulate.a = 1.0
+
+func _hide_panel_with_animation() -> void:
+	_kill_panel_tween()
+	if style != null and style.disappear_duration > 0.0 and _panel.visible:
+		_panel_tween = create_tween()
+		_panel_tween.tween_property(_panel, "modulate:a", 0.0, style.disappear_duration)
+		_panel_tween.finished.connect(func() -> void:
+			if _panel != null:
+				_panel.hide()
+				_panel.modulate.a = 1.0
+		)
+	else:
+		_panel.hide()
+		_panel.modulate.a = 1.0
+
+func _show_choices_panel_with_animation() -> void:
+	_kill_choices_tween()
+	_choices_panel.show()
+	if style != null and style.appear_duration > 0.0:
+		_choices_panel.modulate.a = 0.0
+		_choices_tween = create_tween()
+		_choices_tween.tween_property(_choices_panel, "modulate:a", 1.0, style.appear_duration)
+	else:
+		_choices_panel.modulate.a = 1.0
+
+func _hide_choices_panel_with_animation() -> void:
+	_kill_choices_tween()
+	if style != null and style.disappear_duration > 0.0 and _choices_panel.visible:
+		_choices_tween = create_tween()
+		_choices_tween.tween_property(_choices_panel, "modulate:a", 0.0, style.disappear_duration)
+		_choices_tween.finished.connect(func() -> void:
+			if _choices_panel != null:
+				_choices_panel.hide()
+				_choices_panel.modulate.a = 1.0
+				_clear_choice_buttons()
+		)
+	else:
+		_choices_panel.hide()
+		_choices_panel.modulate.a = 1.0
+		_clear_choice_buttons()
+
+func _kill_panel_tween() -> void:
+	if _panel_tween != null and _panel_tween.is_valid():
+		_panel_tween.kill()
+	_panel_tween = null
+
+func _kill_choices_tween() -> void:
+	if _choices_tween != null and _choices_tween.is_valid():
+		_choices_tween.kill()
+	_choices_tween = null
+
 func _clear_choices() -> void:
+	_kill_choices_tween()
+	_choices_panel.modulate.a = 1.0
 	_choices_panel.hide()
 	_clear_choice_buttons()
 	_choice_result = -1

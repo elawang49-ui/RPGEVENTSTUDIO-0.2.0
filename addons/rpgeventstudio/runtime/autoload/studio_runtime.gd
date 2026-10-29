@@ -4,8 +4,10 @@ class_name StudioRuntime
 ## 组装状态服务、事件运行时、对话界面、按键设置面板，并处理游戏语言。
 
 signal language_changed(locale: String)
+signal dialogue_theme_changed(theme: RpgEventStudioTheme)
 
 const AUTOLOAD_NAME := "RPGEventStudio"
+const DIALOGUE_THEME_PATH := "res://ui/rpgeventstudio_theme.tres"
 const INTERACT_ACTION := &"interact"
 
 var state: StateStore
@@ -15,6 +17,7 @@ var runner: EventRunner
 ## 当前展示层。默认是插件的 DialoguePresenter，游戏可通过 set_presenter() 换成自己的实现。
 var presenter
 var default_presenter: DialoguePresenter
+var dialogue_theme: RpgEventStudioTheme
 var input: InputService
 var interaction: InteractionManager
 var settings_panel: InputSettingsPanel
@@ -56,6 +59,9 @@ func _ready() -> void:
 	default_presenter.input = input
 	add_child(default_presenter)
 	presenter = default_presenter
+
+	dialogue_theme = _load_dialogue_theme()
+	default_presenter.set_dialogue_theme(dialogue_theme)
 
 	settings_panel = InputSettingsPanel.new()
 	settings_panel.name = "InputSettings"
@@ -146,6 +152,29 @@ func restore_default_presenter() -> bool:
 
 func is_using_default_presenter() -> bool:
 	return presenter == default_presenter
+
+# ── 主题 ─────────────────────────────────────────────────
+
+func reload_dialogue_theme() -> RpgEventStudioTheme:
+	dialogue_theme = _load_dialogue_theme()
+	if default_presenter != null:
+		default_presenter.set_dialogue_theme(dialogue_theme)
+	dialogue_theme_changed.emit(dialogue_theme)
+	return dialogue_theme
+
+func apply_dialogue_theme(theme: RpgEventStudioTheme) -> void:
+	dialogue_theme = theme if theme != null else RpgEventStudioTheme.new()
+	if default_presenter != null:
+		default_presenter.set_dialogue_theme(dialogue_theme)
+	dialogue_theme_changed.emit(dialogue_theme)
+
+func _load_dialogue_theme() -> RpgEventStudioTheme:
+	if ResourceLoader.exists(DIALOGUE_THEME_PATH):
+		var loaded := load(DIALOGUE_THEME_PATH)
+		if loaded is RpgEventStudioTheme:
+			return loaded
+		push_warning("[RPGEventStudio] 主题文件不是 RpgEventStudioTheme：%s" % DIALOGUE_THEME_PATH)
+	return RpgEventStudioTheme.new()
 
 func _is_valid_presenter(candidate) -> bool:
 	if candidate == null or not (candidate is Object):

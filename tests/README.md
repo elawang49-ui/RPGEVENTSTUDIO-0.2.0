@@ -34,3 +34,15 @@ RPGEVENTSTUDIO_MAP_SELFTEST=1 godot --headless --editor --path . --quit-after 30
 
 真实打开 `samples/scenes/map_events_demo.tscn`，验证地图事件总览、选中同步、双击打开事件、
 放置与 Undo/Redo、失效引用、定位按钮。
+
+## UI 主题（编辑器内自测 + 跨进程）
+
+```bash
+# 主题页、预览、保存/重载/恢复默认、自定义 UI 只读模式
+RPGEVENTSTUDIO_MAP_SELFTEST=1 godot --headless --editor --path . --quit-after 3000
+
+# 主题资源跨进程加载
+THEME_PERSIST_MODE=create godot --headless --path . --script res://tools/check_theme_persist.gd
+THEME_PERSIST_MODE=verify godot --headless --path . --script res://tools/check_theme_persist.gd
+THEME_PERSIST_MODE=cleanup godot --headless --path . --script res://tools/check_theme_persist.gd
+```

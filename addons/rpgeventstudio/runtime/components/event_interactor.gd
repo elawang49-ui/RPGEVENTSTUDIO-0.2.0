@@ -24,6 +24,8 @@ func _ready() -> void:
 	_build_prompt()
 	if _runtime != null and _runtime.has_signal("language_changed"):
 		_runtime.connect("language_changed", _on_language_changed)
+	if _runtime != null and _runtime.has_signal("dialogue_theme_changed"):
+		_runtime.connect("dialogue_theme_changed", _on_dialogue_theme_changed)
 
 func _build_prompt() -> void:
 	_prompt = Label.new()
@@ -32,16 +34,43 @@ func _build_prompt() -> void:
 	_prompt.position = Vector2(-100, -interaction_radius - 52.0)
 	_prompt.size = Vector2(200, 44)
 	_prompt.visible = false
-	_prompt.add_theme_font_size_override("font_size", 13)
-	_prompt.add_theme_color_override("font_color", Color(1.0, 0.95, 0.72))
-	_prompt.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	_prompt.add_theme_constant_override("outline_size", 4)
+	_apply_prompt_style()
 	_prompt.text = _prompt_text()
 	add_child(_prompt)
 
 func _on_language_changed(_locale: String) -> void:
 	if _prompt != null:
 		_prompt.text = _prompt_text()
+
+func _on_dialogue_theme_changed(_theme: RpgEventStudioTheme) -> void:
+	_apply_prompt_style()
+	if _prompt != null:
+		_prompt.text = _prompt_text()
+
+func _apply_prompt_style() -> void:
+	if _prompt == null:
+		return
+	var theme: RpgEventStudioTheme = null
+	if _runtime != null:
+		var value = _runtime.get("dialogue_theme")
+		if value is RpgEventStudioTheme:
+			theme = value
+	var font_size := 13
+	var color := Color(1.0, 0.95, 0.72)
+	var outline_color := Color(0, 0, 0, 0.9)
+	var outline_size := 4
+	var offset_y := -52.0
+	if theme != null:
+		font_size = theme.prompt_font_size
+		color = theme.prompt_color
+		outline_color = theme.prompt_outline_color
+		outline_size = theme.prompt_outline_size
+		offset_y = theme.prompt_offset_y
+	_prompt.position = Vector2(-100, -interaction_radius + offset_y)
+	_prompt.add_theme_font_size_override("font_size", font_size)
+	_prompt.add_theme_color_override("font_color", color)
+	_prompt.add_theme_color_override("font_outline_color", outline_color)
+	_prompt.add_theme_constant_override("outline_size", outline_size)
 
 func _prompt_text() -> String:
 	if prompt_text.strip_edges() != "":

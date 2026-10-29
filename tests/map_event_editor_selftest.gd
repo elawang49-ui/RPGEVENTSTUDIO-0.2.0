@@ -113,6 +113,15 @@ func start(plugin: EditorPlugin) -> void:
 			_check(placed != null and placed.get_parent() == _root, "重做放置后对象回到场景")
 			_check(placed.owner == _root, "重做后 owner 仍正确")
 
+	# 其余常见类型都能从地编入口创建，并带默认触发方式
+	for kind in [MapEvent2D.Kind.NPC, MapEvent2D.Kind.INSPECT, MapEvent2D.Kind.DOOR, MapEvent2D.Kind.TRIGGER]:
+		var created: MapEvent2D = _plugin.call("place_map_event", kind)
+		_check(created != null and created.kind == kind, "可从地编入口创建类型 %d" % kind)
+		if created != null:
+			var want_trigger := MapEvent2D.TriggerMode.REGION_ENTER if kind == MapEvent2D.Kind.TRIGGER else MapEvent2D.TriggerMode.INTERACT
+			_check(created.trigger_mode == want_trigger, "类型 %d 使用正确默认触发" % kind)
+			_check(created.owner == _root, "类型 %d 的 owner 正确" % kind)
+
 	# 失效引用
 	var invalid := MapEvent2D.new()
 	invalid.name = "InvalidRefProbe"
@@ -134,6 +143,66 @@ func start(plugin: EditorPlugin) -> void:
 	_panel.call("_on_focus")
 	await get_tree().process_frame
 	_check(selection.get_selected_nodes().has(trigger), "定位按钮重新选中场景对象")
+
+	# UI 主题页（主屏标签）
+	_plugin.call("open_theme_page")
+	await get_tree().process_frame
+	var main_tabs: TabContainer = _plugin.get("_main_tabs")
+	var theme_view: Control = _plugin.get("_theme_view")
+	_check(main_tabs != null and main_tabs.current_tab == 1, "能切换到 UI 主题页")
+	_check(theme_view != null, "UI 主题页已创建")
+	if theme_view != null:
+		var preview: Node = theme_view.get("_preview")
+		var sample: OptionButton = theme_view.get("_sample")
+		var controls: VBoxContainer = theme_view.get("_controls_box")
+		_check(preview != null and preview is DialoguePresenter, "主题页有真实 DialoguePresenter 预览")
+		_check(sample != null and sample.item_count == 4, "主题预览支持普通/BBCode/多行/选项")
+		_check(controls != null and controls.get_child_count() > 20, "主题页控件完整")
+
+		var temp_path := "res://.godot/test_theme_editor.tres"
+		theme_view.set("theme_path", temp_path)
+		var theme: RpgEventStudioTheme = theme_view.get("_theme")
+		theme.text_speed = 77.0
+		theme.panel_bg_color = Color(0.2, 0.05, 0.05, 0.95)
+		theme_view.call("_save_theme")
+		_check(FileAccess.file_exists(temp_path), "主题页能保存项目主题资源")
+		theme.text_speed = 1.0
+		theme_view.call("_reload_theme")
+		var reloaded: RpgEventStudioTheme = theme_view.get("_theme")
+		_check(reloaded != null and is_equal_approx(reloaded.text_speed, 77.0), "重新加载主题后设置仍在")
+
+		# 重新创建一个主题页实例，模拟关闭/重新打开编辑器后从磁盘读取
+		var reopened := DialogueThemeView.new()
+		reopened.set("theme_path", temp_path)
+		EditorInterface.get_base_control().add_child(reopened)
+		await get_tree().process_frame
+		var reopened_theme: RpgEventStudioTheme = reopened.get("_theme")
+		_check(reopened_theme != null and is_equal_approx(reopened_theme.text_speed, 77.0), "重新打开主题页仍读取已保存设置")
+		reopened.queue_free()
+		theme_view.call("_restore_defaults")
+		var restored: RpgEventStudioTheme = theme_view.get("_theme")
+		_check(restored != null and is_equal_approx(restored.text_speed, 42.0), "恢复默认主题生效")
+		DirAccess.remove_absolute(temp_path)
+
+	# 自定义 UI 项目声明：只显示能力，不显示插件主题的假配置
+	var old_mode = ProjectSettings.get_setting("rpg_event_studio/ui_mode", null)
+	var old_caps = ProjectSettings.get_setting("rpg_event_studio/custom_ui_capabilities", null)
+	ProjectSettings.set_setting("rpg_event_studio/ui_mode", "custom")
+	ProjectSettings.set_setting("rpg_event_studio/custom_ui_capabilities", PackedStringArray(["text", "choices", "bbcode"]))
+	var custom_view := DialogueThemeView.new()
+	EditorInterface.get_base_control().add_child(custom_view)
+	await get_tree().process_frame
+	_check(bool(custom_view.get("_custom_mode")), "自定义 UI 项目进入只读能力模式")
+	_check(custom_view.get("_preview") == null and custom_view.get("_controls_box") == null, "自定义 UI 项目不显示插件主题配置")
+	custom_view.queue_free()
+	if old_mode == null:
+		ProjectSettings.clear("rpg_event_studio/ui_mode")
+	else:
+		ProjectSettings.set_setting("rpg_event_studio/ui_mode", old_mode)
+	if old_caps == null:
+		ProjectSettings.clear("rpg_event_studio/custom_ui_capabilities")
+	else:
+		ProjectSettings.set_setting("rpg_event_studio/custom_ui_capabilities", old_caps)
 
 	_finish()
 

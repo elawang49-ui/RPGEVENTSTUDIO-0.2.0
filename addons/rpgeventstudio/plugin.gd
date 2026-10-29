@@ -11,13 +11,16 @@ extends EditorPlugin
 const PANEL_SCRIPT := "res://addons/rpgeventstudio/editor/event_editor/event_editor_panel.gd"
 const GRAPH_SCRIPT := "res://addons/rpgeventstudio/editor/level_graph/level_graph_view.gd"
 const LIST_SCRIPT := "res://addons/rpgeventstudio/editor/event_list/event_list_panel.gd"
+const THEME_SCRIPT := "res://addons/rpgeventstudio/editor/theme/dialogue_theme_view.gd"
 const MAP_SCRIPT := "res://addons/rpgeventstudio/editor/map_events/map_event_panel.gd"
 const RUNTIME_SCRIPT := "res://addons/rpgeventstudio/runtime/autoload/studio_runtime.gd"
 const AUTOLOAD_NAME := "RPGEventStudio"
 const EDITOR_LANGUAGE_SETTING := "rpg_event_studio/editor_language"
 
 var _panel: Control
+var _main_tabs: TabContainer
 var _main_screen: Control
+var _theme_view: Control
 var _list_panel: Control
 var _map_panel: Control
 var _debugger_plugin: StudioDebuggerPlugin
@@ -43,6 +46,8 @@ func _enter_tree() -> void:
 		_start_map_selftest.call_deferred()
 	if OS.get_environment("RPGEVENTSTUDIO_MAP_SHOT") == "1":
 		_capture_map_screen.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_THEME_SHOT") == "1":
+		_capture_theme_screen.call_deferred()
 
 func _exit_tree() -> void:
 	if _selection != null and _selection.selection_changed.is_connected(_on_selection_changed):
@@ -54,9 +59,11 @@ func _exit_tree() -> void:
 		_panel.queue_free()
 		_panel = null
 
-	if _main_screen != null:
-		_main_screen.queue_free()
-		_main_screen = null
+	if _main_tabs != null:
+		_main_tabs.queue_free()
+		_main_tabs = null
+	_main_screen = null
+	_theme_view = null
 
 	if _filesystem != null and _filesystem.filesystem_changed.is_connected(_on_filesystem_changed):
 		_filesystem.filesystem_changed.disconnect(_on_filesystem_changed)
@@ -224,8 +231,16 @@ func _open_graph(graph: LevelGraph) -> void:
 	if graph == null:
 		return
 	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	if _main_tabs != null:
+		_main_tabs.current_tab = 0
 	if _main_screen != null:
 		_main_screen.call("open_graph", graph)
+
+## 打开「UI 主题」页（主屏内标签）。
+func open_theme_page() -> void:
+	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	if _main_tabs != null:
+		_main_tabs.current_tab = 1
 
 # ── 运行高亮（调试器通道） ───────────────────────────────
 
@@ -250,13 +265,27 @@ func _create_main_screen() -> void:
 	if script == null:
 		push_error("[RPGEventStudio] 找不到关卡图编辑器脚本")
 		return
+	_main_tabs = TabContainer.new()
+	_main_tabs.name = "EventStudioMainTabs"
+	_main_tabs.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_main_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_main_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	EditorInterface.get_editor_main_screen().add_child(_main_tabs)
+
 	_main_screen = script.new()
 	_main_screen.name = "LevelGraph"
 	_main_screen.call("bind_plugin", self)
-	EditorInterface.get_editor_main_screen().add_child(_main_screen)
-	_main_screen.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_main_screen.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_main_screen.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_main_tabs.add_child(_main_screen)
+	_main_tabs.set_tab_title(0, L10n.ui("graph.title"))
+
+	var theme_script := load(THEME_SCRIPT)
+	if theme_script != null:
+		_theme_view = theme_script.new()
+		_theme_view.name = "ThemeView"
+		_main_tabs.add_child(_theme_view)
+		_main_tabs.set_tab_title(1, L10n.ui("theme.title"))
+	else:
+		push_error("[RPGEventStudio] 找不到 UI 主题页脚本")
 	_make_visible(false)
 
 func _has_main_screen() -> bool:
@@ -274,8 +303,8 @@ func _get_plugin_icon() -> Texture2D:
 	return null
 
 func _make_visible(visible: bool) -> void:
-	if _main_screen != null:
-		_main_screen.visible = visible
+	if _main_tabs != null:
+		_main_tabs.visible = visible
 
 func _connect_selection() -> void:
 	_selection = get_editor_interface().get_selection()
@@ -351,6 +380,8 @@ func _capture_viewport(path: String) -> void:
 func _capture_graph_screen() -> void:
 	await get_tree().create_timer(3.0).timeout
 	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	if _main_tabs != null:
+		_main_tabs.current_tab = 0
 	await get_tree().create_timer(0.5).timeout
 	if _main_screen != null and _main_screen.has_method("open_graph"):
 		var graph := load("res://addons/rpgeventstudio/samples/graphs/school_graph.tres")
@@ -391,6 +422,32 @@ func _start_map_selftest() -> void:
 	runner.name = "MapEventSelfTest"
 	add_child(runner)
 	runner.call_deferred("start", self)
+
+func _capture_theme_screen() -> void:
+	await get_tree().create_timer(4.0).timeout
+	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	await get_tree().create_timer(0.8).timeout
+	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	if _main_tabs != null:
+		_main_tabs.current_tab = 1
+		print("[SHOT] theme tab=", _main_tabs.current_tab, " visible=", _main_tabs.visible)
+	if _theme_view != null:
+		var sample = _theme_view.get("_sample")
+		if sample is OptionButton:
+			(sample as OptionButton).selected = 1
+			(sample as OptionButton).item_selected.emit(1)
+		_theme_view.call("_play_preview")
+	await get_tree().create_timer(1.5).timeout
+	var base := EditorInterface.get_base_control()
+	if base != null:
+		var image := base.get_viewport().get_texture().get_image()
+		if image != null:
+			var path := OS.get_environment("THEME_SHOT_PATH")
+			if path.strip_edges() == "":
+				path = "user://theme_editor.png"
+			image.save_png(path)
+			print("[SHOT] 已保存 ", path)
+	get_tree().quit()
 
 func _capture_map_screen() -> void:
 	await get_tree().create_timer(2.0).timeout

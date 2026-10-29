@@ -350,3 +350,84 @@ map.warning.no_event,未关联事件资源（在 Inspector 里拖入 .tres，或
 map.warning.invalid_path,事件资源路径失效：{path},Event resource path is broken: {path}
 map.warning.not_event,关联的资源不是事件资源：{path},Linked resource is not an event: {path}
 map.warning.trigger_mismatch,事件没有匹配「{trigger}」的页；运行时不会触发。,The event has no page matching "{trigger}"; it will not run.
+theme.title,UI 主题,UI Theme
+theme.path,资源：{path},Resource: {path}
+theme.section.panel,对话框,Dialog
+theme.section.text,文字,Text
+theme.section.choices,选项,Choices
+theme.section.effects,动画与转场,Effects & Transition
+theme.section.prompt,交互提示,Interaction Prompt
+theme.panel.bg,背景色,Background
+theme.panel.border,边框色,Border Color
+theme.panel.border_width,边框宽度,Border Width
+theme.panel.corner,圆角,Corner Radius
+theme.panel.shadow,阴影色,Shadow Color
+theme.panel.shadow_size,阴影大小,Shadow Size
+theme.panel.left,左锚点,Left Anchor
+theme.panel.right,右锚点,Right Anchor
+theme.panel.top,上锚点,Top Anchor
+theme.panel.bottom,下锚点,Bottom Anchor
+theme.panel.margin_left,内容左内边距,Content Left
+theme.panel.margin_right,内容右内边距,Content Right
+theme.panel.margin_top,内容上内边距,Content Top
+theme.panel.margin_bottom,内容下内边距,Content Bottom
+theme.text.min_height,文本最小高度,Text Min Height
+theme.font,字体文件,Font File
+theme.font_size,基础字号,Base Font Size
+theme.text.color,正文颜色,Text Color
+theme.text.size,正文字号,Text Size
+theme.text.line,行距,Line Spacing
+theme.text.speed,打字速度（字/秒）,Typewriter Speed (cps)
+theme.speaker.color,说话人颜色,Speaker Color
+theme.speaker.size,说话人字号,Speaker Size
+theme.hint.color,提示颜色,Hint Color
+theme.hint.size,提示字号,Hint Size
+theme.choice.left,左锚点,Left Anchor
+theme.choice.right,右锚点,Right Anchor
+theme.choice.top,上锚点,Top Anchor
+theme.choice.bottom,下锚点,Bottom Anchor
+theme.choice.margin,选项内边距,Choice Padding
+theme.choice.separation,选项间距,Choice Spacing
+theme.choice.height,选项高度,Choice Height
+theme.choice.font_size,选项字号,Choice Font Size
+theme.choice.text,选项文字,Choice Text
+theme.choice.selected_text,选中文字,Selected Text
+theme.choice.bg,选项背景,Choice Background
+theme.choice.selected_bg,选中背景,Selected Background
+theme.choice.border,选项边框,Choice Border
+theme.choice.border_width,选项边框宽度,Choice Border Width
+theme.choice.corner,选项圆角,Choice Corner Radius
+theme.effects.appear,出现时长（秒）,Appear (s)
+theme.effects.disappear,消失时长（秒）,Disappear (s)
+theme.effects.fade_color,转场颜色,Transition Color
+theme.prompt.size,提示字号,Prompt Size
+theme.prompt.color,提示颜色,Prompt Color
+theme.prompt.outline,描边颜色,Outline Color
+theme.prompt.outline_size,描边宽度,Outline Size
+theme.prompt.offset,相对交互半径的偏移,Offset from Radius
+theme.preview,实时预览,Live Preview
+theme.preview.replay,重播,Replay
+theme.preview.text,普通文本,Plain Text
+theme.preview.bbcode,BBCode,BBCode
+theme.preview.multiline,多行,Multiline
+theme.preview.choices,选项,Choices
+theme.save,保存主题,Save Theme
+theme.reload,重新加载,Reload
+theme.restore,恢复默认,Restore Defaults
+theme.status.unsaved,未保存（点击「保存主题」写入项目）,Unsaved (click Save Theme)
+theme.status.saved,主题已保存,Theme saved
+theme.status.reloaded,已重新加载,Reloaded
+theme.status.restored,已恢复默认,Defaults restored
+theme.status.save_failed,保存失败（错误码 {code}）,Save failed (error {code})
+theme.font.default,留空使用系统字体,Empty = system font
+theme.font.pick,选择…,Pick…
+theme.custom.title,当前项目使用游戏原生 UI,This project uses a custom game UI
+theme.custom.hint,插件主题只作用于插件默认 UI；这里不会叠加到游戏原生叙事框。请在游戏侧复用其主题。,Plugin themes only apply to the plugin default UI. They are not overlaid on the game's native narrative UI. Customize that UI in the game project.
+theme.custom.caps,适配器声明支持：{caps},Adapter capabilities: {caps}
+theme.custom.plugin_only,插件主题中的对话框外观、动画和交互提示不应用。,Plugin dialog appearance / animation / interaction prompts are not applied.
+theme.custom.no_caps,未声明,not declared
+theme.cap.text,文字,Text
+theme.cap.choices,选项,Choices
+theme.cap.bbcode,BBCode,BBCode
+theme.cap.fade,淡入淡出,Fade
+theme.cap.auto_advance,自动推进,Auto Advance

@@ -29,6 +29,7 @@ func _run() -> void:
 	await _test_presenter_injection()
 	await _test_bbcode_presenter()
 	await _test_map_event()
+	await _test_dialogue_theme()
 	_report()
 	quit(0 if _failures.is_empty() else 1)
 
@@ -684,7 +685,80 @@ func _test_cancel() -> void:
 	_check(result["received"], "取消后应收到事件结束通知")
 	_check(int(result["result"]) == EventRunner.Result.CANCELLED, "结果应为 CANCELLED（实际 %d）" % int(result["result"]))
 
-# ── 地图事件对象 ────────────────────────────────────────
+# ── UI 主题 ──────────────────────────────────────────────
+
+func _test_dialogue_theme() -> void:
+	var theme := RpgEventStudioTheme.new()
+	theme.panel_bg_color = Color(0.12, 0.02, 0.02, 0.9)
+	theme.panel_left = 0.1
+	theme.panel_right = 0.9
+	theme.panel_top = 0.5
+	theme.panel_bottom = 0.88
+	theme.text_color = Color(1.0, 0.8, 0.2)
+	theme.text_font_size = 31
+	theme.speaker_color = Color(0.2, 1.0, 0.4)
+	theme.speaker_font_size = 27
+	theme.text_speed = 88.0
+	theme.fade_color = Color(0.1, 0.2, 0.4, 1)
+	theme.appear_duration = 0.25
+	theme.choice_selected_bg = Color(0.3, 0.1, 0.1, 1)
+	theme.choice_normal_bg = Color(0.1, 0.1, 0.3, 1)
+
+	var presenter := DialoguePresenter.new()
+	root.add_child(presenter)
+	await process_frame
+	presenter.set_dialogue_theme(theme)
+	await process_frame
+
+	var panel: PanelContainer = presenter.get("_panel")
+	var panel_style := panel.get_theme_stylebox("panel") as StyleBoxFlat
+	_check(panel_style != null and panel_style.bg_color == theme.panel_bg_color, "主题背景色应用")
+	_check(is_equal_approx(panel.anchor_left, 0.1) and is_equal_approx(panel.anchor_bottom, 0.88), "主题位置锚点应用")
+	_check(is_equal_approx(float(presenter.get("_speed")), 88.0), "主题打字速度应用")
+	_check((presenter.get("_text_label") as RichTextLabel).get_theme_font_size("normal_font_size") == 31, "主题正文字号应用")
+	_check((presenter.get("_name_label") as Label).get_theme_color("font_color") == theme.speaker_color, "主题说话人颜色应用")
+	_check((presenter.get("_fade_rect") as ColorRect).color == theme.fade_color, "主题转场颜色应用")
+
+	presenter.show_text("旁白", "[b]主题[/b]")
+	_check(str(presenter.get("last_parsed_text")) == "主题", "主题预览/运行时仍解析 BBCode")
+	_check(presenter.get("_panel_tween") != null, "出现动画创建 tween")
+
+	presenter.show_choices("请选择", ["甲", "乙"])
+	var buttons: Array = presenter.get("_choice_buttons")
+	_check(buttons.size() == 2, "主题选项按钮创建")
+	if buttons.size() == 2:
+		var first_style := (buttons[0] as Button).get_theme_stylebox("normal") as StyleBoxFlat
+		var second_style := (buttons[1] as Button).get_theme_stylebox("normal") as StyleBoxFlat
+		_check(first_style != null and first_style.bg_color == theme.choice_selected_bg, "选中项使用选中背景")
+		_check(second_style != null and second_style.bg_color == theme.choice_normal_bg, "未选中项使用普通背景")
+	presenter.close_all()
+	presenter.queue_free()
+	await process_frame
+
+	# 主题资源保存 / 读取
+	var path := "res://.godot/test_dialogue_theme.tres"
+	_check(ResourceSaver.save(theme, path) == OK, "主题资源可以保存")
+	var loaded := load(path) as RpgEventStudioTheme
+	_check(loaded != null and is_equal_approx(loaded.text_speed, 88.0), "主题资源可以重新读取")
+	DirAccess.remove_absolute(path)
+
+	# 交互提示也使用同一主题
+	var runtime: Node = root.get_node_or_null("RPGEventStudio")
+	if runtime != null:
+		runtime.call("apply_dialogue_theme", theme)
+		var interactor := EventInteractor2D.new()
+		interactor.event = load("res://addons/rpgeventstudio/samples/events/librarian.tres")
+		interactor.interaction_radius = 70.0
+		root.add_child(interactor)
+		await process_frame
+		var prompt: Label = interactor.get("_prompt")
+		_check(prompt != null and prompt.get_theme_font_size("font_size") == theme.prompt_font_size, "交互提示字号应用主题")
+		_check(prompt != null and is_equal_approx(prompt.position.y, -70.0 + theme.prompt_offset_y), "交互提示偏移应用主题")
+		interactor.queue_free()
+		runtime.call("apply_dialogue_theme", RpgEventStudioTheme.new())
+	await process_frame
+
+# ── 地图事件对象 ────────────────────────────────────────# ── 地图事件对象 ────────────────────────────────────────
 
 func _test_map_event() -> void:
 	var librarian: EventDefinition = load("res://addons/rpgeventstudio/samples/events/librarian.tres")
