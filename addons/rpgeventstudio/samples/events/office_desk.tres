@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_car86"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_n48kb"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_condition.gd" id="3_n7fff"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="4_bo5oi"]
+
+[sub_resource type="Resource" id="Resource_gbuxm"]
+script = ExtResource("2_n48kb")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "桌上摊着一本教师日志，最后一页写着：地下室的门需要两把钥匙。"
+}
+
+[sub_resource type="Resource" id="Resource_4ah5v"]
+script = ExtResource("2_n48kb")
+type = &"set_switch"
+params = {
+"key": "School.Office.DiaryFound",
+"value": true
+}
+
+[sub_resource type="Resource" id="Resource_imk0p"]
+script = ExtResource("2_n48kb")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "获得线索：教师日志"
+}
+
+[sub_resource type="Resource" id="Resource_u6o4v"]
+script = ExtResource("2_n48kb")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_feckr"]
+script = ExtResource("3_n7fff")
+key = "School.Office.DiaryFound"
+value = false
+
+[sub_resource type="Resource" id="Resource_v3g0i"]
+script = ExtResource("1_car86")
+conditions = Array[ExtResource("3_n7fff")]([SubResource("Resource_feckr")])
+commands = Array[ExtResource("2_n48kb")]([SubResource("Resource_gbuxm"), SubResource("Resource_4ah5v"), SubResource("Resource_imk0p"), SubResource("Resource_u6o4v")])
+
+[sub_resource type="Resource" id="Resource_wu3qj"]
+script = ExtResource("2_n48kb")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "日志已经翻完了。"
+}
+
+[sub_resource type="Resource" id="Resource_md25k"]
+script = ExtResource("2_n48kb")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_x4qoj"]
+script = ExtResource("3_n7fff")
+key = "School.Office.DiaryFound"
+
+[sub_resource type="Resource" id="Resource_ngwvb"]
+script = ExtResource("1_car86")
+conditions = Array[ExtResource("3_n7fff")]([SubResource("Resource_x4qoj")])
+commands = Array[ExtResource("2_n48kb")]([SubResource("Resource_wu3qj"), SubResource("Resource_md25k")])
+
+[resource]
+script = ExtResource("4_bo5oi")
+event_id = &"office_desk"
+display_name = "办公室桌子"
+pages = Array[ExtResource("1_car86")]([SubResource("Resource_v3g0i"), SubResource("Resource_ngwvb")])

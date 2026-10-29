@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="StateCatalog" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/state/state_definition.gd" id="1_gcsbo"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/state/state_catalog.gd" id="2_mxvgn"]
+
+[sub_resource type="Resource" id="Resource_aplxq"]
+script = ExtResource("1_gcsbo")
+key = "Global.Player.HasKey"
+display_name = "教室钥匙"
+category = "玩家"
+description = "从图书管理员或抽屉处拿到钥匙后为真"
+
+[sub_resource type="Resource" id="Resource_cf4ar"]
+script = ExtResource("1_gcsbo")
+key = "School.ClassroomUnlocked"
+display_name = "教室门已打开"
+category = "学校"
+description = "用钥匙打开教室门后为真"
+
+[sub_resource type="Resource" id="Resource_r7g0s"]
+script = ExtResource("1_gcsbo")
+key = "School.Office.DiaryFound"
+display_name = "办公室日记已调查"
+category = "调查"
+description = "调查办公室桌子后为真"
+
+[sub_resource type="Resource" id="Resource_8vfk5"]
+script = ExtResource("1_gcsbo")
+key = "School.Classroom.ClueFound"
+display_name = "教室线索已找到"
+category = "调查"
+description = "调查教室黑板后为真"
+
+[sub_resource type="Resource" id="Resource_5bmc8"]
+script = ExtResource("1_gcsbo")
+key = "School.BasementUnlocked"
+display_name = "地下室已解锁"
+category = "调查"
+description = "两条调查线索都齐了由关卡图置为真"
+
+[sub_resource type="Resource" id="Resource_oldaf"]
+script = ExtResource("1_gcsbo")
+key = "School.Stage"
+display_name = "关卡阶段"
+type = "string"
+default_value = "exploration"
+category = "学校"
+description = "当前关卡阶段：exploration / basement"
+
+[resource]
+script = ExtResource("2_mxvgn")
+definitions = Array[ExtResource("1_gcsbo")]([SubResource("Resource_aplxq"), SubResource("Resource_cf4ar"), SubResource("Resource_r7g0s"), SubResource("Resource_8vfk5"), SubResource("Resource_5bmc8"), SubResource("Resource_oldaf")])

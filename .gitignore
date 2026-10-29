@@ -1,0 +1,15 @@
+# Godot 4
+.godot/
+/android/
+*.translation
+
+# macOS
+.DS_Store
+
+# 编辑器/导出产物
+export/
+build/
+*.tmp
+
+# 安全写入产生的一代备份
+*.bak

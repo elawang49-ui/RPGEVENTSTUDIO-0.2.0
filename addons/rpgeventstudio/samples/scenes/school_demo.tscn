@@ -1,0 +1,252 @@
+[gd_scene format=3]
+
+[ext_resource type="Theme" path="res://addons/rpgeventstudio/samples/demo_theme.tres" id="1_n31h1"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/samples/demo_hint.gd" id="2_wvncx"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/samples/demo_hud.gd" id="3_8ipu0"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/samples/player.gd" id="4_ysy30"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/samples/demo_camera.gd" id="5_d3lts"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/runtime/components/event_interactor.gd" id="6_eqeth"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/librarian.tres" id="7_vn58t"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/key_pickup.tres" id="8_8i7cv"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/locked_door.tres" id="9_ifsoj"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/office_desk.tres" id="10_to3i3"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/classroom_board.tres" id="11_nlyg7"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/runtime/components/level_graph_runner.gd" id="12_vt6nb"]
+
+[node name="SchoolDemo" type="Node2D" unique_id=2040719831]
+
+[node name="Background" type="ColorRect" parent="." unique_id=1013061646]
+offset_right = 1152.0
+offset_bottom = 648.0
+mouse_filter = 2
+color = Color(0.09, 0.1, 0.13, 1)
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=106874714]
+
+[node name="Hint" type="Label" parent="UI" unique_id=2083529032]
+offset_left = 32.0
+offset_top = 20.0
+offset_right = 1082.0
+offset_bottom = 48.0
+theme = ExtResource("1_n31h1")
+theme_override_colors/font_color = Color(0.75, 0.78, 0.85, 1)
+theme_override_font_sizes/font_size = 16
+script = ExtResource("2_wvncx")
+
+[node name="HUD" type="Label" parent="UI" unique_id=496844442]
+offset_left = 32.0
+offset_top = 52.0
+offset_right = 792.0
+offset_bottom = 104.0
+theme = ExtResource("1_n31h1")
+theme_override_colors/font_color = Color(0.95, 0.87, 0.6, 1)
+theme_override_font_sizes/font_size = 16
+text = "钥匙：无　　教室门：锁着
+阶段：—　　地下室：未解锁"
+script = ExtResource("3_8ipu0")
+
+[node name="Player" type="CharacterBody2D" parent="." unique_id=1522502960 groups=["player"]]
+position = Vector2(320, 430)
+script = ExtResource("4_ysy30")
+
+[node name="Body" type="Polygon2D" parent="Player" unique_id=1252455398]
+color = Color(0.42, 0.68, 0.95, 1)
+polygon = PackedVector2Array(-13, -13, 13, -13, 13, 13, -13, 13)
+
+[node name="Camera" type="Camera2D" parent="." unique_id=439106803]
+position = Vector2(320, 430)
+script = ExtResource("5_d3lts")
+
+[node name="Librarian" type="Node2D" parent="." unique_id=2087016235]
+position = Vector2(640, 330)
+
+[node name="Body" type="Polygon2D" parent="Librarian" unique_id=771108077]
+color = Color(0.93, 0.62, 0.35, 1)
+polygon = PackedVector2Array(-17, -23, 17, -23, 17, 23, -17, 23)
+
+[node name="@Label@56" type="Label" parent="Librarian" unique_id=529938503]
+offset_left = -60.0
+offset_top = 29.0
+offset_right = 60.0
+offset_bottom = 53.0
+theme = ExtResource("1_n31h1")
+theme_override_colors/font_color = Color(0.85, 0.87, 0.92, 1)
+theme_override_font_sizes/font_size = 14
+text = "图书管理员"
+horizontal_alignment = 1
+
+[node name="EventInteractor" type="Node2D" parent="Librarian" unique_id=1649870034]
+script = ExtResource("6_eqeth")
+event = ExtResource("7_vn58t")
+event_path = "res://addons/rpgeventstudio/samples/events/librarian.tres"
+interaction_radius = 78.0
+
+[node name="Prompt" type="Label" parent="Librarian/EventInteractor" unique_id=280372901]
+visible = false
+offset_left = -100.0
+offset_top = -130.0
+offset_right = 100.0
+offset_bottom = -86.0
+theme_override_colors/font_color = Color(1, 0.95, 0.72, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 13
+text = "图书管理员
+空格 / 鼠标左键 / 手柄 A"
+horizontal_alignment = 1
+
+[node name="Drawer" type="Node2D" parent="." unique_id=1542857498]
+position = Vector2(260, 250)
+
+[node name="Body" type="Polygon2D" parent="Drawer" unique_id=1908074883]
+color = Color(0.66, 0.48, 0.3, 1)
+polygon = PackedVector2Array(-24, -15, 24, -15, 24, 15, -24, 15)
+
+[node name="@Label@57" type="Label" parent="Drawer" unique_id=1037439624]
+offset_left = -60.0
+offset_top = 21.0
+offset_right = 60.0
+offset_bottom = 45.0
+theme = ExtResource("1_n31h1")
+theme_override_colors/font_color = Color(0.85, 0.87, 0.92, 1)
+theme_override_font_sizes/font_size = 14
+text = "抽屉"
+horizontal_alignment = 1
+
+[node name="EventInteractor" type="Node2D" parent="Drawer" unique_id=732199635]
+script = ExtResource("6_eqeth")
+event = ExtResource("8_8i7cv")
+event_path = "res://addons/rpgeventstudio/samples/events/key_pickup.tres"
+interaction_radius = 70.0
+
+[node name="Prompt" type="Label" parent="Drawer/EventInteractor" unique_id=1358331581]
+visible = false
+offset_left = -100.0
+offset_top = -122.0
+offset_right = 100.0
+offset_bottom = -78.0
+theme_override_colors/font_color = Color(1, 0.95, 0.72, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 13
+text = "抽屉
+空格 / 鼠标左键 / 手柄 A"
+horizontal_alignment = 1
+
+[node name="ClassroomDoor" type="Node2D" parent="." unique_id=1189392927]
+position = Vector2(900, 300)
+
+[node name="Body" type="Polygon2D" parent="ClassroomDoor" unique_id=975801367]
+color = Color(0.45, 0.8, 0.55, 1)
+polygon = PackedVector2Array(-20, -38, 20, -38, 20, 38, -20, 38)
+
+[node name="@Label@58" type="Label" parent="ClassroomDoor" unique_id=1728108544]
+offset_left = -60.0
+offset_top = 44.0
+offset_right = 60.0
+offset_bottom = 68.0
+theme = ExtResource("1_n31h1")
+theme_override_colors/font_color = Color(0.85, 0.87, 0.92, 1)
+theme_override_font_sizes/font_size = 14
+text = "教室门"
+horizontal_alignment = 1
+
+[node name="EventInteractor" type="Node2D" parent="ClassroomDoor" unique_id=1952429301]
+script = ExtResource("6_eqeth")
+event = ExtResource("9_ifsoj")
+event_path = "res://addons/rpgeventstudio/samples/events/locked_door.tres"
+interaction_radius = 78.0
+
+[node name="Prompt" type="Label" parent="ClassroomDoor/EventInteractor" unique_id=475586290]
+visible = false
+offset_left = -100.0
+offset_top = -130.0
+offset_right = 100.0
+offset_bottom = -86.0
+theme_override_colors/font_color = Color(1, 0.95, 0.72, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 13
+text = "教室门
+空格 / 鼠标左键 / 手柄 A"
+horizontal_alignment = 1
+
+[node name="OfficeDesk" type="Node2D" parent="." unique_id=1597324813]
+position = Vector2(430, 170)
+
+[node name="Body" type="Polygon2D" parent="OfficeDesk" unique_id=1864978396]
+color = Color(0.74, 0.56, 0.34, 1)
+polygon = PackedVector2Array(-28, -17, 28, -17, 28, 17, -28, 17)
+
+[node name="@Label@59" type="Label" parent="OfficeDesk" unique_id=1698948571]
+offset_left = -60.0
+offset_top = 23.0
+offset_right = 60.0
+offset_bottom = 47.0
+theme = ExtResource("1_n31h1")
+theme_override_colors/font_color = Color(0.85, 0.87, 0.92, 1)
+theme_override_font_sizes/font_size = 14
+text = "办公室桌子"
+horizontal_alignment = 1
+
+[node name="EventInteractor" type="Node2D" parent="OfficeDesk" unique_id=1018815413]
+script = ExtResource("6_eqeth")
+event = ExtResource("10_to3i3")
+event_path = "res://addons/rpgeventstudio/samples/events/office_desk.tres"
+interaction_radius = 78.0
+
+[node name="Prompt" type="Label" parent="OfficeDesk/EventInteractor" unique_id=570185403]
+visible = false
+offset_left = -100.0
+offset_top = -130.0
+offset_right = 100.0
+offset_bottom = -86.0
+theme_override_colors/font_color = Color(1, 0.95, 0.72, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 13
+text = "办公室桌子
+空格 / 鼠标左键 / 手柄 A"
+horizontal_alignment = 1
+
+[node name="ClassroomBoard" type="Node2D" parent="." unique_id=1716124993]
+position = Vector2(120, 300)
+
+[node name="Body" type="Polygon2D" parent="ClassroomBoard" unique_id=1915692220]
+color = Color(0.36, 0.56, 0.62, 1)
+polygon = PackedVector2Array(-42, -20, 42, -20, 42, 20, -42, 20)
+
+[node name="@Label@60" type="Label" parent="ClassroomBoard" unique_id=868339641]
+offset_left = -60.0
+offset_top = 26.0
+offset_right = 60.0
+offset_bottom = 50.0
+theme = ExtResource("1_n31h1")
+theme_override_colors/font_color = Color(0.85, 0.87, 0.92, 1)
+theme_override_font_sizes/font_size = 14
+text = "教室黑板"
+horizontal_alignment = 1
+
+[node name="EventInteractor" type="Node2D" parent="ClassroomBoard" unique_id=393216190]
+script = ExtResource("6_eqeth")
+event = ExtResource("11_nlyg7")
+event_path = "res://addons/rpgeventstudio/samples/events/classroom_board.tres"
+interaction_radius = 78.0
+
+[node name="Prompt" type="Label" parent="ClassroomBoard/EventInteractor" unique_id=12116340]
+visible = false
+offset_left = -100.0
+offset_top = -130.0
+offset_right = 100.0
+offset_bottom = -86.0
+theme_override_colors/font_color = Color(1, 0.95, 0.72, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 13
+text = "教室黑板
+空格 / 鼠标左键 / 手柄 A"
+horizontal_alignment = 1
+
+[node name="GraphRunner" type="Node" parent="." unique_id=321966248]
+script = ExtResource("12_vt6nb")
+graph_path = "res://addons/rpgeventstudio/samples/graphs/school_graph.tres"

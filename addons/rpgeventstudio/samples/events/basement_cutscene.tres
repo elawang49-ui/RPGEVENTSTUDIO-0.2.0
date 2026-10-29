@@ -1,0 +1,97 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_csur5"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_ne71g"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_condition.gd" id="3_5cvxv"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="4_fmsuw"]
+
+[sub_resource type="Resource" id="Resource_ni14x"]
+script = ExtResource("2_ne71g")
+type = &"fade"
+params = {
+"duration": 0.4,
+"mode": "out",
+"wait": true
+}
+
+[sub_resource type="Resource" id="Resource_mmdel"]
+script = ExtResource("2_ne71g")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "地下室的门缓缓打开……"
+}
+
+[sub_resource type="Resource" id="Resource_occyc"]
+script = ExtResource("2_ne71g")
+type = &"fade"
+params = {
+"duration": 0.5,
+"mode": "in",
+"wait": true
+}
+
+[sub_resource type="Resource" id="Resource_826o7"]
+script = ExtResource("2_ne71g")
+type = &"camera_focus"
+params = {
+"duration": 0.8,
+"offset_x": 0.0,
+"offset_y": -40.0,
+"target": "Librarian",
+"target_scene": "res://addons/rpgeventstudio/samples/scenes/school_demo.tscn",
+"wait": true
+}
+
+[sub_resource type="Resource" id="Resource_qcije"]
+script = ExtResource("2_ne71g")
+type = &"move_actor"
+params = {
+"actor": "Librarian",
+"actor_scene": "res://addons/rpgeventstudio/samples/scenes/school_demo.tscn",
+"duration": 0.8,
+"offset_x": 0.0,
+"offset_y": -70.0,
+"wait": true
+}
+
+[sub_resource type="Resource" id="Resource_lx1o4"]
+script = ExtResource("2_ne71g")
+type = &"play_sfx"
+params = {
+"sound_path": "res://addons/rpgeventstudio/samples/audio/beep.tres",
+"volume_db": -6.0,
+"wait": false
+}
+
+[sub_resource type="Resource" id="Resource_436to"]
+script = ExtResource("2_ne71g")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "图书管理员",
+"text": "你终于来了。"
+}
+
+[sub_resource type="Resource" id="Resource_byics"]
+script = ExtResource("2_ne71g")
+type = &"camera_restore"
+params = {
+"duration": 0.8,
+"wait": true
+}
+
+[sub_resource type="Resource" id="Resource_7vscn"]
+script = ExtResource("2_ne71g")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_wmwem"]
+script = ExtResource("1_csur5")
+commands = Array[ExtResource("2_ne71g")]([SubResource("Resource_ni14x"), SubResource("Resource_mmdel"), SubResource("Resource_occyc"), SubResource("Resource_826o7"), SubResource("Resource_qcije"), SubResource("Resource_lx1o4"), SubResource("Resource_436to"), SubResource("Resource_byics"), SubResource("Resource_7vscn")])
+
+[resource]
+script = ExtResource("4_fmsuw")
+event_id = &"basement_cutscene"
+display_name = "地下室剧情"
+pages = Array[ExtResource("1_csur5")]([SubResource("Resource_wmwem")])

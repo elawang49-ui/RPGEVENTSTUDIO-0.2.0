@@ -1,0 +1,8 @@
+[gd_resource type="Theme" format=3]
+
+[sub_resource type="SystemFont" id="SystemFont_7t7hi"]
+font_names = PackedStringArray("PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "sans-serif")
+
+[resource]
+default_font = SubResource("SystemFont_7t7hi")
+default_font_size = 16

@@ -1,0 +1,105 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_m53pe"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_4jifd"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_condition.gd" id="3_r3eke"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="4_b5aqc"]
+
+[sub_resource type="Resource" id="Resource_qwxk7"]
+script = ExtResource("2_4jifd")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "图书管理员",
+"text": "你看起来在找什么？"
+}
+
+[sub_resource type="Resource" id="Resource_h233d"]
+script = ExtResource("2_4jifd")
+type = &"show_choices"
+params = {
+"options": ["询问钥匙", "离开"],
+"prompt": "要问点什么吗？"
+}
+
+[sub_resource type="Resource" id="Resource_ismau"]
+script = ExtResource("2_4jifd")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "图书管理员",
+"text": "这把钥匙给你，别弄丢了。"
+}
+
+[sub_resource type="Resource" id="Resource_noxmq"]
+script = ExtResource("2_4jifd")
+type = &"set_switch"
+params = {
+"key": "Global.Player.HasKey",
+"value": true
+}
+
+[sub_resource type="Resource" id="Resource_vyo1k"]
+script = ExtResource("2_4jifd")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "获得【教室钥匙】！"
+}
+
+[sub_resource type="Resource" id="Resource_uxr0r"]
+script = ExtResource("2_4jifd")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "图书管理员",
+"text": "那就随便看看吧。"
+}
+
+[sub_resource type="Resource" id="Resource_plsdj"]
+script = ExtResource("2_4jifd")
+type = &"if"
+params = {
+"key": "@@self.choice",
+"op": "==",
+"value": "0"
+}
+children = Array[ExtResource("2_4jifd")]([SubResource("Resource_ismau"), SubResource("Resource_noxmq"), SubResource("Resource_vyo1k")])
+else_children = Array[ExtResource("2_4jifd")]([SubResource("Resource_uxr0r")])
+
+[sub_resource type="Resource" id="Resource_s73na"]
+script = ExtResource("2_4jifd")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_l4pog"]
+script = ExtResource("1_m53pe")
+commands = Array[ExtResource("2_4jifd")]([SubResource("Resource_qwxk7"), SubResource("Resource_h233d"), SubResource("Resource_plsdj"), SubResource("Resource_s73na")])
+
+[sub_resource type="Resource" id="Resource_670jq"]
+script = ExtResource("2_4jifd")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "图书管理员",
+"text": "钥匙要收好，教室门就在右边。"
+}
+
+[sub_resource type="Resource" id="Resource_k1hfh"]
+script = ExtResource("2_4jifd")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_38iq0"]
+script = ExtResource("3_r3eke")
+key = "Global.Player.HasKey"
+
+[sub_resource type="Resource" id="Resource_24txv"]
+script = ExtResource("1_m53pe")
+conditions = Array[ExtResource("3_r3eke")]([SubResource("Resource_38iq0")])
+commands = Array[ExtResource("2_4jifd")]([SubResource("Resource_670jq"), SubResource("Resource_k1hfh")])
+
+[resource]
+script = ExtResource("4_b5aqc")
+event_id = &"librarian"
+display_name = "图书管理员"
+pages = Array[ExtResource("1_m53pe")]([SubResource("Resource_l4pog"), SubResource("Resource_24txv")])

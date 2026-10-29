@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_6rdsj"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_7p8uw"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_condition.gd" id="3_spvci"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="4_tw5f2"]
+
+[sub_resource type="Resource" id="Resource_8cnvb"]
+script = ExtResource("2_7p8uw")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "黑板上留着奇怪的粉笔痕，像是某种开门顺序。"
+}
+
+[sub_resource type="Resource" id="Resource_53epe"]
+script = ExtResource("2_7p8uw")
+type = &"set_switch"
+params = {
+"key": "School.Classroom.ClueFound",
+"value": true
+}
+
+[sub_resource type="Resource" id="Resource_m7e6g"]
+script = ExtResource("2_7p8uw")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "获得线索：异常的粉笔痕"
+}
+
+[sub_resource type="Resource" id="Resource_80unw"]
+script = ExtResource("2_7p8uw")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_qc1vi"]
+script = ExtResource("3_spvci")
+key = "School.Classroom.ClueFound"
+value = false
+
+[sub_resource type="Resource" id="Resource_lwtok"]
+script = ExtResource("1_6rdsj")
+conditions = Array[ExtResource("3_spvci")]([SubResource("Resource_qc1vi")])
+commands = Array[ExtResource("2_7p8uw")]([SubResource("Resource_8cnvb"), SubResource("Resource_53epe"), SubResource("Resource_m7e6g"), SubResource("Resource_80unw")])
+
+[sub_resource type="Resource" id="Resource_ne8im"]
+script = ExtResource("2_7p8uw")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "粉笔痕已经被记下来了。"
+}
+
+[sub_resource type="Resource" id="Resource_kbgye"]
+script = ExtResource("2_7p8uw")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_0yu1r"]
+script = ExtResource("3_spvci")
+key = "School.Classroom.ClueFound"
+
+[sub_resource type="Resource" id="Resource_nqhiu"]
+script = ExtResource("1_6rdsj")
+conditions = Array[ExtResource("3_spvci")]([SubResource("Resource_0yu1r")])
+commands = Array[ExtResource("2_7p8uw")]([SubResource("Resource_ne8im"), SubResource("Resource_kbgye")])
+
+[resource]
+script = ExtResource("4_tw5f2")
+event_id = &"classroom_board"
+display_name = "教室黑板"
+pages = Array[ExtResource("1_6rdsj")]([SubResource("Resource_lwtok"), SubResource("Resource_nqhiu")])

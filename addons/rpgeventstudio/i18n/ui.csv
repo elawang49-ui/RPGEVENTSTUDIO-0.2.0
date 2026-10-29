@@ -1,0 +1,309 @@
+keys,zh_CN,en
+cat.audio,声音,Audio
+cat.character,角色与镜头,Characters & Camera
+cat.dialogue,对话与剧情,Dialogue & Story
+cat.flow,流程控制,Flow Control
+cat.other,其它,Other
+cat.state,开关与变量,Switches & Variables
+cmd.call_common,调用公共事件,Call Common Event
+cmd.camera_focus,镜头聚焦,Camera Focus
+cmd.camera_restore,镜头恢复,Camera Restore
+cmd.end,结束事件,End Event
+cmd.fade,淡入淡出,Fade
+cmd.if,条件分歧,Conditional Branch
+cmd.move_actor,移动角色,Move Character
+cmd.play_sfx,播放音效,Play Sound
+cmd.set_switch,设置开关,Set Switch
+cmd.set_variable,设置变量,Set Variable
+cmd.show_choices,显示选项,Show Choices
+cmd.show_text,显示文字,Show Text
+cmd.variable_op,变量运算,Variable Operation
+cmd.wait,等待,Wait
+debug.close,关闭,Close
+debug.condition_fail,✗ {name}（现在是 {value}，要求 {op} {expected}）,"✗ {name} (now {value}, needs {op} {expected})"
+debug.hint,按 F2 打开/关闭。这里显示的名字和编辑器里完全一致。,Press F2 to toggle. Names here are the same as in the editor.
+debug.level,当前关卡：{level},Level: {level}
+debug.no_conditions,没有出现条件,No conditions
+debug.page,第 {page} 页 · 触发：{trigger},Page {page} · trigger: {trigger}
+debug.rejection_no_pages,   没有任何可用的事件页,   no usable event page
+debug.section.rejections,最近没有执行的事件,Recently skipped events
+debug.section.states,状态,States
+debug.section.unknown,未登记的状态（旧资源里出现，建议登记）,Unregistered states (found in old data)
+debug.stage,当前阶段：{stage},Stage: {stage}
+debug.title,状态调试,State Debug
+debug.trigger_mismatch,触发方式不匹配（这次不是用这种方式触发的）,Trigger mismatch
+debug.value_false,否,no
+debug.value_none,（无）,(none)
+debug.value_true,是,yes
+diag.command_failed,指令执行失败,Command failed
+diag.common_missing,找不到公共事件：{ref},Common event not found: {ref}
+diag.divide_zero,变量运算：除以 0，已跳过,Divide by zero skipped
+diag.event_missing,找不到事件：{ref},Event not found: {ref}
+diag.no_key,未填写名称,Missing key name
+diag.no_presenter,没有可用的对话界面，跳过这段文字。,No dialogue UI available; skipping text.
+diag.panel_missing,找不到事件编辑面板脚本,Event editor panel script not found
+diag.recursion,调用层数过深（{depth}），疑似递归,Call depth too deep ({depth})
+diag.selftest_missing,找不到自测脚本,Self-test script not found
+diag.sfx_missing,找不到音频：{path},Sound not found: {path}
+diag.state_compare,状态 {key} 与 {value} 不能比大小,State {key} cannot be compared with {value}
+diag.state_not_number,状态 {key} 不是数字，无法加减,State {key} is not a number
+diag.state_type_changed,状态 {key} 类型变化 {old} → {new},State {key} type changed {old} → {new}
+diag.state_type_mismatch,状态 {key} 类型不符：期望 {expected}，收到 {actual},"State {key} type mismatch: expected {expected}, got {actual}"
+diag.unknown_command,未注册的指令：{type},Unknown command: {type}
+editor.bind_event,已把新事件绑到选中的节点,Bound the new event to the selected node
+editor.branch.add,＋ 添加到「{branch}」,"+ Add to ""{branch}"""
+editor.branch.else,否,Else
+editor.branch.empty,（空）,(empty)
+editor.branch.then,是,Then
+editor.commands.add,＋ 指令,+ Command
+editor.commands.cut,剪切,Cut
+editor.commands.delete,删除,Delete
+editor.commands.down,↓,↓
+editor.commands.empty,还没有指令，点上方「＋ 指令」添加。,"No commands yet. Use ""+ Command""."
+editor.commands.out_of_branch,移出分支,Move out
+editor.commands.paste,粘贴,Paste
+editor.commands.to_branch,→ 另一分支,→ Other branch
+editor.commands.up,↑,↑
+editor.condition.add,＋ 添加条件,+ Condition
+editor.condition.bool_op_tip,开关只有「是 / 否」两种取值，比较符固定为「==」,Switches only have yes/no; comparison is fixed to ==
+editor.condition.value,值,Value
+editor.conditions,出现条件（全部满足才生效）,Conditions (all must be true)
+editor.insert_target,将插入到：{path},Insert into: {path}
+editor.language,语言,Language
+editor.new_event,新建事件…,New Event…
+editor.new_event_bind,已把新事件绑到选中的节点,Bound the new event to the selected node
+editor.page.add_tip,添加事件页（页序号越大优先级越高）,Add page (higher number wins)
+editor.page.remove_tip,删除当前事件页,Remove current page
+editor.params.block_note,分支内指令直接在列表里编辑：点「是」「否」下的加号即可在分支里新增。,"Edit branch commands in the list: use the ""+"" under Then/Else."
+editor.params.empty,先在上面的指令列表里点一条指令。,Select a command in the list above.
+editor.params.none,这条指令没有参数。,This command has no parameters.
+editor.params.title,选中指令的参数,Parameters
+editor.path.branch_else,「否」分支,"""Else"" branch"
+editor.path.branch_then,「是」分支,"""Then"" branch"
+editor.path.command,{name} #{index},{name} #{index}
+editor.path.page,第 {page} 页,Page {page}
+editor.placeholder,在场景里选中一个挂了事件组件的节点，或在文件系统里选中事件资源。,"Select a node with an event component, or an event resource in the FileSystem."
+editor.save,保存,Save
+editor.show_internal,显示标识,Show keys
+editor.state_library,状态库,State Library
+editor.status.no_path,⚠ 该事件还没有保存路径，请先另存为 .tres。,⚠ This event has no save path yet.
+editor.status.resource,资源：{path},Resource: {path}
+editor.status.save_failed,⚠ 保存失败（错误码 {code}）,⚠ Save failed (error {code})
+editor.status.saved,已保存：{path},Saved: {path}
+editor.title,事件,Events
+editor.toast.saved,事件已保存,Event saved
+editor.tooltip.page,事件页 {page},Page {page}
+editor.tooltip.select,点击选中；在下方编辑参数,Click to select; edit parameters below
+editor.trigger,触发,Trigger
+editor.undo.add,添加事件指令,Add command
+editor.undo.branch,移动到另一分支,Move to other branch
+editor.undo.delete,删除事件指令,Delete command
+editor.undo.move,移动事件指令,Move command
+editor.undo.param,修改指令参数,Edit parameter
+editor.unset,(未设置),(not set)
+eventlist.details.hint,选中一项，这里会显示它挂在哪里。,Select an item to see where it is used.
+eventlist.events,事件,Events
+eventlist.graphs,关卡图,Level Graphs
+eventlist.only_unreferenced,只看未挂到场景的,Only unmounted
+eventlist.refresh,刷新,Refresh
+eventlist.refs.graph,被 {count} 张关卡图调用：,Called from {count} graph(s):
+eventlist.refs.none,没有被任何场景对象引用。,Not referenced by any scene node.
+eventlist.refs.none_hint,也可能被关卡图或脚本动态调用。,It may still be called from a graph or script.
+eventlist.refs.scene,被 {count} 个场景对象引用：,Used by {count} scene node(s):
+eventlist.search,搜索名称 / 标识 / 路径…,Search name / id / path…
+eventlist.status,显示 {events} 个事件、{graphs} 张图,"Showing {events} events, {graphs} graphs"
+eventlist.title,事件列表,Event List
+eventlist.unmounted_mark,（未挂场景）,(unmounted)
+fade.in,从黑淡入,Fade In
+fade.out,淡出到黑,Fade Out
+game.advance_hint,空格 / 鼠标左键 / 手柄 A,Space / Left Click / Pad A
+game.choice_hint,↑↓ 选择 / 手柄十字键 / 鼠标点击,"↑↓ or D-pad to choose, click to pick"
+game.hud.door,教室门,Classroom Door
+game.hud.has,已获得,Owned
+game.hud.key,钥匙,Key
+game.hud.line,{key}：{key_state}　　{door}：{door_state},{key}: {key_state}    {door}: {door_state}
+game.hud.line2,阶段：{stage}　　地下室：{basement},Stage: {stage}    Basement: {basement}
+game.hud.locked,锁着,Locked
+game.hud.locked_short,未解锁,Locked
+game.hud.none,无,None
+game.hud.opened,已打开,Unlocked
+game.hud.unlocked_short,已解锁,Unlocked
+game.prompt.hint,空格 / 鼠标左键 / 手柄 A,Space / Left Click / Pad A
+graph.add_node,＋ 节点,+ Node
+graph.delete,删除,Delete
+graph.disabled,（已禁用）,(disabled)
+graph.enabled,启用这个节点,Enabled
+graph.highlight,运行高亮,Run Highlight
+graph.highlight.tip,从编辑器启动游戏时，实时高亮正在执行的节点与当前阶段,Highlights the running node and current stage when you launch from the editor
+graph.new,新建…,New…
+graph.no_graph,还没有打开关卡图。点上方「打开…」选一个 .tres 关卡图资源。,"No graph open yet. Use ""Open…"" to pick a LevelGraph resource."
+graph.node.action,动作,Action
+graph.node.condition,条件,Condition
+graph.node.end,关卡完成,Level End
+graph.node.event,调用事件,Event
+graph.node.merge_and,等待全部,Wait All
+graph.node.merge_or,等待任一,Wait Any
+graph.node.stage,阶段,Stage
+graph.node.start,开始,Start
+graph.open,打开…,Open…
+graph.params,节点参数,Node Parameters
+graph.params.empty,在画布上点一个节点查看参数。,Select a node to edit its parameters.
+graph.port.else,否,Else
+graph.save,保存,Save
+graph.state_library,状态库,State Library
+graph.status.no_path,⚠ 这个图还没有保存路径。,⚠ This graph has no save path yet.
+graph.status.resource,资源：{path},Resource: {path}
+graph.status.save_failed,⚠ 保存失败（错误码 {code}）,⚠ Save failed (error {code})
+graph.status.saved,已保存：{path},Saved: {path}
+graph.title,关卡图,Level Graph
+graph.toast.saved,关卡图已保存,Level graph saved
+graph.undo.add,添加图节点,Add node
+graph.undo.connect,连接节点,Connect nodes
+graph.undo.delete,删除图节点,Delete node
+graph.undo.disconnect,断开连接,Disconnect nodes
+graph.undo.param,修改节点参数,Edit node parameter
+graph.validate.action,动作节点没选状态（{node}）,Action has no state ({node})
+graph.validate.condition,条件节点没选状态（{node}）,Condition has no state ({node})
+graph.validate.event,事件节点没选事件（{node}）,Event node has no event ({node})
+graph.validate.issues,⚠ {count} 个节点还需要填参数：{list},⚠ {count} node(s) need parameters: {list}
+graph.validate.no_start,缺「开始」节点,Missing Start node
+graph.validate.ok,参数检查：没有发现问题,Validation: no problems found
+graph.validate.stage,阶段节点没填阶段 ID（{node}）,Stage node has no stage id ({node})
+input.action.cancel,取消 / 返回,Cancel / Back
+input.action.choice_down,选项下移,Choice Down
+input.action.choice_up,选项上移,Choice Up
+input.action.confirm,确认 / 对话推进,Confirm / Advance
+input.action.interact,交互,Interact
+input.action.move_down,向下移动,Move Down
+input.action.move_left,向左移动,Move Left
+input.action.move_right,向右移动,Move Right
+input.action.move_up,向上移动,Move Up
+input.action.toggle_debug,状态调试,State Debug
+input.action.toggle_settings,打开/关闭按键设置,Open/Close Input Settings
+input.bind_anyway,仍然绑定,Bind Anyway
+input.cancel,取消,Cancel
+input.close,关闭,Close
+input.conflict,「{action}」已经使用了这个输入。,"""{action}"" already uses this input."
+input.language,语言,Language
+input.press_hint,请按下新的按键、鼠标按键或手柄按键（Esc 取消）,"Press a key, mouse button or pad button (Esc to cancel)"
+input.rebind,修改,Change
+input.remove_binding,解除,Remove
+input.restore_defaults,恢复默认,Restore Defaults
+input.saved,按键设置已保存,Input settings saved
+input.status.conflict_hint,请换个键，或选择「仍然绑定」。,"Choose another input, or use ""Bind Anyway""."
+input.title,按键设置,Input Settings
+input.unbound,未绑定,Unbound
+key.alt,Alt,Alt
+key.axis,摇杆轴 {index},Axis {index}
+key.backspace,Backspace,Backspace
+key.ctrl,Ctrl,Ctrl
+key.down,↓,Down
+key.enter,回车,Enter
+key.escape,Esc,Esc
+key.left,←,Left
+key.mouse_left,鼠标左键,Left Click
+key.mouse_middle,鼠标中键,Middle Click
+key.mouse_other,鼠标键 {index},Mouse {index}
+key.mouse_right,鼠标右键,Right Click
+key.pad_a,手柄 A,Pad A
+key.pad_b,手柄 B,Pad B
+key.pad_back,手柄 Back,Pad Back
+key.pad_button,手柄键 {index},Pad {index}
+key.pad_dpad_down,十字键↓,D-pad Down
+key.pad_dpad_left,十字键←,D-pad Left
+key.pad_dpad_right,十字键→,D-pad Right
+key.pad_dpad_up,十字键↑,D-pad Up
+key.pad_start,手柄 Start,Pad Start
+key.pad_x,手柄 X,Pad X
+key.pad_y,手柄 Y,Pad Y
+key.right,→,Right
+key.shift,Shift,Shift
+key.space,空格,Space
+key.stick_left_down,左摇杆↓,Left Stick Down
+key.stick_left_left,左摇杆←,Left Stick Left
+key.stick_left_right,左摇杆→,Left Stick Right
+key.stick_left_up,左摇杆↑,Left Stick Up
+key.stick_right_down,右摇杆↓,Right Stick Down
+key.stick_right_left,右摇杆←,Right Stick Left
+key.stick_right_right,右摇杆→,Right Stick Right
+key.stick_right_up,右摇杆↑,Right Stick Up
+key.tab,Tab,Tab
+key.unknown,未知键,Unknown
+key.up,↑,Up
+param.action_op,操作,Operation
+param.actor,角色（节点路径）,Character (node path)
+param.arith,运算,Operation
+param.auto_advance,自动推进（秒，0 = 等按键）,"Auto-advance (s, 0 = wait)"
+param.camera_target,镜头目标（留空 = 玩家）,Camera target (empty = player)
+param.clear_node,清除,Clear
+param.common_event,公共事件资源,Common event resource
+param.completed_key,完成标记,Completion Key
+param.duration,时长（秒）,Duration (s)
+param.event_path,事件资源,Event Resource
+param.event_trigger_hint,通常保持「交互」；如果事件页写的是「自动执行」，这里也要选「自动执行」。,"Usually keep ""interact"". If the page is an autorun page, pick ""autorun"" here too."
+param.fade_mode,方向,Direction
+param.monitor,持续监视（状态变化时重新判断）,Monitor (re-check on state change)
+param.node_missing,⚠ 已失效：当前场景里找不到这个节点,⚠ Invalid: node not found in the current scene
+param.node_other_scene,⚠ 这个对象属于另一个场景（复用事件时请重新选择）,⚠ Belongs to another scene (re-pick when reusing)
+param.node_ref_hint,从当前场景里点选对象，不需要手写路径,Pick an object from the current scene
+param.number,数值,Amount
+param.offset_x,横向偏移,Horizontal Offset
+param.offset_y,纵向偏移,Vertical Offset
+param.op,比较,Compare
+param.options,选项（每行一个）,Options (one per line)
+param.pick_node,选择对象…,Pick…
+param.prompt,提示文字,Prompt
+param.required,需要几条输入（0 = 全部）,Required Inputs (0 = all)
+param.seconds,秒数,Seconds
+param.sound,音频文件,Sound file
+param.speaker,说话人,Speaker
+param.stage_id,阶段 ID,Stage ID
+param.stage_label,阶段名（可选）,Stage Label (optional)
+param.state,状态,State
+param.switch,开关,Switch
+param.switch_on,开,On
+param.text,内容,Text
+param.trigger,触发方式（从图里找哪种事件页）,Trigger (which page the graph may start)
+param.value,值,Value
+param.variable,变量,Variable
+param.volume,音量（dB）,Volume (dB)
+param.wait,等待事件结束,Wait for Event
+param.wait_done,等待完成,Wait
+picker.column_name,节点,Node
+picker.column_path,路径（用于区分同名）,Path
+picker.no_scene,没有打开的场景，请先在编辑器里打开一个场景。,No scene open. Open a scene in the editor first.
+picker.scene,场景,Scene
+picker.search,搜索节点名或路径…,Search node name or path…
+picker.title,选择场景对象,Select Scene Object
+repeat.every_time,每次都执行,Every Time
+repeat.on_change,状态变化时执行,On State Change
+repeat.once,只执行一次,Once
+sample.hint,移动：WASD / 方向键 / 左摇杆　　交互：空格 / 鼠标左键 / 手柄 A　　F1 按键设置,Move: WASD / arrows / stick   Interact: Space / Click / Pad A   F1 Input Settings
+stage.basement,地下室调查,Basement
+stage.exploration,探索,Exploration
+state.library.category,分类,Category
+state.library.default,默认值,Default
+state.library.default_name,新状态,New State
+state.library.delete,删除,Delete
+state.library.description,说明（给团队看的备注）,Description
+state.library.display,显示名称（你看到的名字）,Display Name
+state.library.hint,事件和关卡图里存的是内部标识。你只需要关心显示名称，改名不会破坏已有数据。,Events and graphs store the internal key. Only the display name matters to you; renaming never breaks data.
+state.library.key_value,内部标识：{key}（程序与存档使用）,Internal key: {key} (used by code and saves)
+state.library.new,新建状态,New State
+state.library.search,搜索状态名 / 标识 / 分类…,Search name / key / category…
+state.library.title,状态库,State Library
+state.library.type,类型,Type
+state.selector.new,新建或登记状态,Create or register state
+state.selector.tooltip,选择状态。列表里显示的是名字，内部标识只在打开「显示标识」时出现。,"Pick a state by name. Internal keys only show when ""Show keys"" is on."
+state.selector.unknown,⚠ {key}（未登记，点 + 登记）,"⚠ {key} (not registered, click +)"
+state.type.bool,开关（是/否）,Switch (yes/no)
+state.type.float,小数,Decimal
+state.type.int,整数,Integer
+state.type.string,文本,Text
+trigger.autorun,自动执行,Autorun
+trigger.call,被调用,Called
+trigger.interact,玩家交互,Player Interact
+trigger.parallel,并行执行,Parallel
+trigger.region_enter,进入区域,Enter Region
+trigger.region_exit,离开区域,Leave Region
+trigger.touch,玩家接触,Player Touch

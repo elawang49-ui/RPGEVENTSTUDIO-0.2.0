@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_paqgi"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_ny5fs"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_condition.gd" id="3_cctyv"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="4_5eqrf"]
+
+[sub_resource type="Resource" id="Resource_4v7lv"]
+script = ExtResource("2_ny5fs")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "你用钥匙打开了教室的门。"
+}
+
+[sub_resource type="Resource" id="Resource_im2hj"]
+script = ExtResource("2_ny5fs")
+type = &"set_switch"
+params = {
+"key": "School.ClassroomUnlocked",
+"value": true
+}
+
+[sub_resource type="Resource" id="Resource_6phmv"]
+script = ExtResource("2_ny5fs")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_isl3s"]
+script = ExtResource("3_cctyv")
+key = "Global.Player.HasKey"
+
+[sub_resource type="Resource" id="Resource_xnhyb"]
+script = ExtResource("1_paqgi")
+conditions = Array[ExtResource("3_cctyv")]([SubResource("Resource_isl3s")])
+commands = Array[ExtResource("2_ny5fs")]([SubResource("Resource_4v7lv"), SubResource("Resource_im2hj"), SubResource("Resource_6phmv")])
+
+[sub_resource type="Resource" id="Resource_eret2"]
+script = ExtResource("2_ny5fs")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "门被锁住了，需要一把钥匙。"
+}
+
+[sub_resource type="Resource" id="Resource_lupky"]
+script = ExtResource("2_ny5fs")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_rtmhg"]
+script = ExtResource("3_cctyv")
+key = "Global.Player.HasKey"
+value = false
+
+[sub_resource type="Resource" id="Resource_ldb2c"]
+script = ExtResource("1_paqgi")
+conditions = Array[ExtResource("3_cctyv")]([SubResource("Resource_rtmhg")])
+commands = Array[ExtResource("2_ny5fs")]([SubResource("Resource_eret2"), SubResource("Resource_lupky")])
+
+[resource]
+script = ExtResource("4_5eqrf")
+event_id = &"locked_door"
+display_name = "教室门"
+pages = Array[ExtResource("1_paqgi")]([SubResource("Resource_xnhyb"), SubResource("Resource_ldb2c")])

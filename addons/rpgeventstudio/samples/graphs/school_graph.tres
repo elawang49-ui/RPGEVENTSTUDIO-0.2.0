@@ -1,0 +1,121 @@
+[gd_resource type="Resource" script_class="LevelGraph" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/level_connection.gd" id="1_7or4f"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/level_node.gd" id="2_uwoay"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/level_graph.gd" id="3_5tsxt"]
+
+[sub_resource type="Resource" id="Resource_spcwq"]
+script = ExtResource("1_7or4f")
+from_node = &"start_1"
+to_node = &"stage_1"
+
+[sub_resource type="Resource" id="Resource_i0l7k"]
+script = ExtResource("1_7or4f")
+from_node = &"condition_1"
+from_port = "true"
+to_node = &"merge_and_1"
+
+[sub_resource type="Resource" id="Resource_crrtf"]
+script = ExtResource("1_7or4f")
+from_node = &"condition_2"
+from_port = "true"
+to_node = &"merge_and_1"
+
+[sub_resource type="Resource" id="Resource_xm011"]
+script = ExtResource("1_7or4f")
+from_node = &"merge_and_1"
+to_node = &"action_1"
+
+[sub_resource type="Resource" id="Resource_cjqhq"]
+script = ExtResource("1_7or4f")
+from_node = &"action_1"
+to_node = &"event_1"
+
+[sub_resource type="Resource" id="Resource_6kev2"]
+script = ExtResource("1_7or4f")
+from_node = &"event_1"
+from_port = "done"
+to_node = &"stage_2"
+
+[sub_resource type="Resource" id="Resource_5wq5e"]
+script = ExtResource("2_uwoay")
+node_id = &"start_1"
+type = "start"
+position = Vector2(40, 60)
+
+[sub_resource type="Resource" id="Resource_famlx"]
+script = ExtResource("2_uwoay")
+node_id = &"stage_1"
+type = "stage"
+params = {
+"stage_id": "exploration"
+}
+position = Vector2(280, 60)
+
+[sub_resource type="Resource" id="Resource_1dqwj"]
+script = ExtResource("2_uwoay")
+node_id = &"condition_1"
+type = "condition"
+params = {
+"key": "School.Office.DiaryFound",
+"monitor": true,
+"op": "==",
+"value": "true"
+}
+position = Vector2(40, 220)
+
+[sub_resource type="Resource" id="Resource_h6ysm"]
+script = ExtResource("2_uwoay")
+node_id = &"condition_2"
+type = "condition"
+params = {
+"key": "School.Classroom.ClueFound",
+"monitor": true,
+"op": "==",
+"value": "true"
+}
+position = Vector2(40, 360)
+
+[sub_resource type="Resource" id="Resource_a0anb"]
+script = ExtResource("2_uwoay")
+node_id = &"merge_and_1"
+type = "merge_and"
+params = {
+"required": 2
+}
+position = Vector2(320, 290)
+
+[sub_resource type="Resource" id="Resource_r1hnx"]
+script = ExtResource("2_uwoay")
+node_id = &"action_1"
+params = {
+"key": "School.BasementUnlocked",
+"op": "set",
+"value": "true"
+}
+position = Vector2(540, 290)
+
+[sub_resource type="Resource" id="Resource_gf2ib"]
+script = ExtResource("2_uwoay")
+node_id = &"event_1"
+type = "event"
+params = {
+"event_path": "res://addons/rpgeventstudio/samples/events/basement_cutscene.tres",
+"trigger": "interact",
+"wait": true
+}
+position = Vector2(760, 290)
+
+[sub_resource type="Resource" id="Resource_67xbf"]
+script = ExtResource("2_uwoay")
+node_id = &"stage_2"
+type = "stage"
+params = {
+"stage_id": "basement"
+}
+position = Vector2(980, 290)
+
+[resource]
+script = ExtResource("3_5tsxt")
+nodes = Array[ExtResource("2_uwoay")]([SubResource("Resource_5wq5e"), SubResource("Resource_famlx"), SubResource("Resource_1dqwj"), SubResource("Resource_h6ysm"), SubResource("Resource_a0anb"), SubResource("Resource_r1hnx"), SubResource("Resource_gf2ib"), SubResource("Resource_67xbf")])
+connections = Array[ExtResource("1_7or4f")]([SubResource("Resource_spcwq"), SubResource("Resource_i0l7k"), SubResource("Resource_crrtf"), SubResource("Resource_xm011"), SubResource("Resource_cjqhq"), SubResource("Resource_6kev2")])

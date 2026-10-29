@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_7yr7q"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_mahkn"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_condition.gd" id="3_2p373"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="4_6d5pc"]
+
+[sub_resource type="Resource" id="Resource_14tqw"]
+script = ExtResource("2_mahkn")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "抽屉里有一把生锈的钥匙。"
+}
+
+[sub_resource type="Resource" id="Resource_21nn3"]
+script = ExtResource("2_mahkn")
+type = &"set_switch"
+params = {
+"key": "Global.Player.HasKey",
+"value": true
+}
+
+[sub_resource type="Resource" id="Resource_xbrwu"]
+script = ExtResource("2_mahkn")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "获得【教室钥匙】！"
+}
+
+[sub_resource type="Resource" id="Resource_vkq5j"]
+script = ExtResource("2_mahkn")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_xvmd6"]
+script = ExtResource("3_2p373")
+key = "Global.Player.HasKey"
+value = false
+
+[sub_resource type="Resource" id="Resource_7bsud"]
+script = ExtResource("1_7yr7q")
+conditions = Array[ExtResource("3_2p373")]([SubResource("Resource_xvmd6")])
+commands = Array[ExtResource("2_mahkn")]([SubResource("Resource_14tqw"), SubResource("Resource_21nn3"), SubResource("Resource_xbrwu"), SubResource("Resource_vkq5j")])
+
+[sub_resource type="Resource" id="Resource_sfofk"]
+script = ExtResource("2_mahkn")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "抽屉已经空了。"
+}
+
+[sub_resource type="Resource" id="Resource_0thyh"]
+script = ExtResource("2_mahkn")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_jmr4i"]
+script = ExtResource("3_2p373")
+key = "Global.Player.HasKey"
+
+[sub_resource type="Resource" id="Resource_h64na"]
+script = ExtResource("1_7yr7q")
+conditions = Array[ExtResource("3_2p373")]([SubResource("Resource_jmr4i")])
+commands = Array[ExtResource("2_mahkn")]([SubResource("Resource_sfofk"), SubResource("Resource_0thyh")])
+
+[resource]
+script = ExtResource("4_6d5pc")
+event_id = &"key_pickup"
+display_name = "抽屉"
+pages = Array[ExtResource("1_7yr7q")]([SubResource("Resource_7bsud"), SubResource("Resource_h64na")])

@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://du457y1w6wqjv"
+
+[deps]
+
+files=["res://addons/rpgeventstudio/i18n/ui.zh_CN.translation", "res://addons/rpgeventstudio/i18n/ui.en.translation"]
+
+source_file="res://addons/rpgeventstudio/i18n/ui.csv"
+dest_files=["res://addons/rpgeventstudio/i18n/ui.zh_CN.translation", "res://addons/rpgeventstudio/i18n/ui.en.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true
