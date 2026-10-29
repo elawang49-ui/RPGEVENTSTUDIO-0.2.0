@@ -313,3 +313,40 @@ bbcode.unclosed,未闭合的 BBCode 标签：{tags},Unclosed BBCode tags: {tags}
 bbcode.mismatch,BBCode 闭合标签不匹配：{tags},Mismatched BBCode closing tags: {tags}
 bbcode.malformed_close,BBCode 闭合标签不应带参数：{tags},BBCode closing tags should not have parameters: {tags}
 bbcode.unsupported,不支持或写法有误的 BBCode 标签：{tags}（会按原文显示）,Unsupported or malformed BBCode tags: {tags} (shown literally)
+map.title,地图事件,Map Events
+map.place,放置事件,Place Event
+map.kind.npc,NPC,NPC
+map.kind.inspect,调查点,Inspect Point
+map.kind.chest,宝箱,Chest
+map.kind.door,门,Door
+map.kind.mechanism,机关,Mechanism
+map.kind.trigger,触发区域,Trigger Area
+map.trigger.interact,玩家交互,Interact
+map.trigger.region_enter,进入区域,Region Enter
+map.trigger.region_exit,离开区域,Region Exit
+map.trigger.autorun,自动执行,Autorun
+map.trigger.parallel,并行执行,Parallel
+map.layer.below,角色下方,Below Player
+map.layer.same,角色同层,Same Layer
+map.layer.above,角色上方,Above Player
+map.layer.custom,自定义,Custom
+map.button.refresh,刷新,Refresh
+map.button.focus,定位,Locate
+map.button.open,打开事件,Open Event
+map.status.no_scene,请先打开一个 2D 场景,Open a 2D scene first
+map.status.empty,当前场景还没有地图事件,No map events in this scene
+map.status.missing,未关联,Not linked
+map.status.invalid,引用失效,Broken reference
+map.status.not_event,不是事件资源,Not an event resource
+map.status.count,当前场景：{count} 个地图事件,{count} map event(s) in this scene
+map.details.hint,选中一个地图事件查看详情。,Select a map event to see details.
+map.details.kind,类型：{kind},Type: {kind}
+map.details.trigger,触发：{trigger},Trigger: {trigger}
+map.details.layer,层级：{layer},Layer: {layer}
+map.details.position,位置：{pos},Position: {pos}
+map.details.event,关联事件：{event},Event: {event}
+map.event.none,未关联事件,No event linked
+map.warning.no_event,未关联事件资源（在 Inspector 里拖入 .tres，或在地图事件面板打开事件）。,No event resource linked (drop a .tres in the Inspector or open an event from the Map Events panel).
+map.warning.invalid_path,事件资源路径失效：{path},Event resource path is broken: {path}
+map.warning.not_event,关联的资源不是事件资源：{path},Linked resource is not an event: {path}
+map.warning.trigger_mismatch,事件没有匹配「{trigger}」的页；运行时不会触发。,The event has no page matching "{trigger}"; it will not run.

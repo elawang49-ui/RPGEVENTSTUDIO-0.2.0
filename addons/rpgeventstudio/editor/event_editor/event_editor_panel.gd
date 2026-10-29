@@ -85,6 +85,8 @@ func open_from_selection(nodes: Array) -> void:
 			if definition != null:
 				open_definition(definition, node)
 				return
+	if _definition != null and _definition.changed.is_connected(_on_definition_changed):
+		_definition.changed.disconnect(_on_definition_changed)
 	_definition = null
 	_source_node = null
 	_show_placeholder(L10n.ui("editor.placeholder"))

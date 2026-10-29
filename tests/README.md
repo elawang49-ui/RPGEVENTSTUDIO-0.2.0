@@ -25,3 +25,12 @@ godot --headless --path . --script res://tests/run.gd
 | M5 | 未触发原因求值、状态快照恢复 |
 
 Godot 无内置断言框架，`tests/framework/assert.gd` 提供 `assert_eq / assert_true / assert_signal / assert_awaits`。
+
+## 地图事件（编辑器内自测）
+
+```bash
+RPGEVENTSTUDIO_MAP_SELFTEST=1 godot --headless --editor --path . --quit-after 3000
+```
+
+真实打开 `samples/scenes/map_events_demo.tscn`，验证地图事件总览、选中同步、双击打开事件、
+放置与 Undo/Redo、失效引用、定位按钮。

@@ -6,6 +6,9 @@ extends Node2D
 @export_file("*.tres") var event_path: String = ""
 @export var radius: float = 80.0
 @export var show_debug_circle: bool = false
+## 进入/离开可以分别关闭；默认都开启，保持原有场景行为不变。
+@export var trigger_on_enter: bool = true
+@export var trigger_on_exit: bool = true
 
 var _runtime: Node
 var _player: Node2D
@@ -29,8 +32,9 @@ func _process(_delta: float) -> void:
 	if _runtime == null or event == null:
 		return
 	if _inside:
-		_runtime.call("start_event", event, {}, [&"touch", &"region_enter"])
-	else:
+		if trigger_on_enter:
+			_runtime.call("start_event", event, {}, [&"touch", &"region_enter"])
+	elif trigger_on_exit:
 		_runtime.call("start_event", event, {}, [&"region_exit"])
 
 func _draw() -> void:

@@ -28,6 +28,7 @@ func _run() -> void:
 	await _test_cancel()
 	await _test_presenter_injection()
 	await _test_bbcode_presenter()
+	await _test_map_event()
 	_report()
 	quit(0 if _failures.is_empty() else 1)
 
@@ -682,6 +683,173 @@ func _test_cancel() -> void:
 
 	_check(result["received"], "取消后应收到事件结束通知")
 	_check(int(result["result"]) == EventRunner.Result.CANCELLED, "结果应为 CANCELLED（实际 %d）" % int(result["result"]))
+
+# ── 地图事件对象 ────────────────────────────────────────
+
+func _test_map_event() -> void:
+	var librarian: EventDefinition = load("res://addons/rpgeventstudio/samples/events/librarian.tres")
+	_check(librarian != null, "地图事件测试需要示例事件资源")
+	if librarian == null:
+		return
+
+	# 事件关联 / 状态
+	var node := MapEvent2D.new()
+	root.add_child(node)
+	await process_frame
+	_check(node.event_link_status() == MapEvent2D.LINK_MISSING, "新建地图事件默认未关联")
+	_check(node.status_text() != "", "未关联时应有状态文案")
+	node.event = librarian
+	_check(node.event_link_status() == MapEvent2D.LINK_OK, "关联事件后状态正常")
+	_check(node.resolved_event() == librarian, "能解析关联事件")
+	_check(node.kind_label() != "" and node.trigger_label() != "" and node.layer_label() != "", "地图事件有类型/触发/层级文案")
+
+	# 层级映射到 Godot 原生 z_index
+	node.layer_mode = MapEvent2D.LayerMode.BELOW_PLAYER
+	_check(node.z_index == -1 and node.z_as_relative, "角色下方映射为相对 z_index = -1")
+	node.layer_mode = MapEvent2D.LayerMode.SAME_LAYER
+	_check(node.z_index == 0, "角色同层映射为 z_index = 0")
+	node.layer_mode = MapEvent2D.LayerMode.ABOVE_PLAYER
+	_check(node.z_index == 1, "角色上方映射为 z_index = 1")
+	node.layer_mode = MapEvent2D.LayerMode.CUSTOM
+	node.custom_z_index = 7
+	_check(node.z_index == 7, "自定义层级使用 custom_z_index")
+
+	# 交互组件
+	node.trigger_mode = MapEvent2D.TriggerMode.INTERACT
+	node.interaction_radius = 96.0
+	node._setup_runtime()
+	var interactor := node.get_node_or_null(MapEvent2D.RUNTIME_INTERACTOR)
+	_check(interactor is EventInteractor2D, "交互模式挂载 EventInteractor2D")
+	if interactor is EventInteractor2D:
+		_check(interactor.event == librarian, "交互组件拿到事件")
+		_check(is_equal_approx(interactor.interaction_radius, 96.0), "交互组件拿到交互半径")
+
+	# 进入区域
+	node.trigger_mode = MapEvent2D.TriggerMode.REGION_ENTER
+	node.trigger_radius = 140.0
+	node._setup_runtime()
+	var area := node.get_node_or_null(MapEvent2D.RUNTIME_TRIGGER)
+	_check(area is EventTriggerArea2D, "进入区域挂载 EventTriggerArea2D")
+	if area is EventTriggerArea2D:
+		_check(area.trigger_on_enter and not area.trigger_on_exit, "进入区域只开启进入触发")
+		_check(is_equal_approx(area.radius, 140.0), "触发区域拿到半径")
+
+	# 离开区域
+	node.trigger_mode = MapEvent2D.TriggerMode.REGION_EXIT
+	node._setup_runtime()
+	area = node.get_node_or_null(MapEvent2D.RUNTIME_TRIGGER)
+	if area is EventTriggerArea2D:
+		_check(not area.trigger_on_enter and area.trigger_on_exit, "离开区域只开启离开触发")
+
+	# 自动 / 并行
+	node.trigger_mode = MapEvent2D.TriggerMode.AUTORUN
+	node._setup_runtime()
+	var auto := node.get_node_or_null(MapEvent2D.RUNTIME_AUTORUN)
+	_check(auto is EventAutoRun2D and not auto.is_parallel, "自动执行挂载 EventAutoRun2D")
+	node.trigger_mode = MapEvent2D.TriggerMode.PARALLEL
+	node._setup_runtime()
+	auto = node.get_node_or_null(MapEvent2D.RUNTIME_AUTORUN)
+	_check(auto is EventAutoRun2D and auto.is_parallel, "并行执行挂载 EventAutoRun2D(is_parallel)")
+
+	# 配置警告
+	node.event = null
+	node.event_path = ""
+	_check(_has_warning(node, "map.warning.no_event"), "未关联事件应产生配置警告")
+	node.event_path = "res://no_such_event.tres"
+	_check(_has_warning(node, "map.warning.invalid_path", {"path": node.event_path}), "失效路径应产生配置警告")
+	node.event_path = "res://addons/rpgeventstudio/samples/demo_theme.tres"
+	_check(_has_warning(node, "map.warning.not_event", {"path": node.event_path}), "非事件资源应产生配置警告")
+	node.event = librarian
+	node.event_path = ""
+	node.trigger_mode = MapEvent2D.TriggerMode.REGION_ENTER
+	_check(_has_warning(node, "map.warning.trigger_mismatch", {"trigger": node.trigger_label()}), "触发方式没有匹配页时应警告")
+
+	# 示例场景里的事件总览扫描
+	var scene_root := Node2D.new()
+	root.add_child(scene_root)
+	var a := MapEvent2D.new()
+	a.name = "A"
+	scene_root.add_child(a)
+	var b := MapEvent2D.new()
+	b.name = "B"
+	scene_root.add_child(b)
+	_check(MapEvent2D.collect_in(scene_root).size() == 2, "能扫描当前场景里的地图事件")
+	scene_root.queue_free()
+
+	# 运行时真正触发：交互 / 进入区域 / 自动 / 并行
+	var runtime: Node = root.get_node_or_null("RPGEventStudio")
+	if runtime != null:
+		runtime.call("restore_default_presenter")
+		var interact_node := MapEvent2D.new()
+		interact_node.event = _make_switch_event(&"map_event_interact_probe", "interact", "Test.MapEvent.Interact")
+		interact_node.trigger_mode = MapEvent2D.TriggerMode.INTERACT
+		root.add_child(interact_node)
+		await process_frame
+		var runtime_interactor := interact_node.get_node_or_null(MapEvent2D.RUNTIME_INTERACTOR)
+		_check(runtime_interactor is EventInteractor2D, "运行时交互组件已挂载")
+		if runtime_interactor is EventInteractor2D:
+			runtime_interactor.trigger()
+			await process_frame
+			await process_frame
+			_check(bool(runtime.call("get_state", "Test.MapEvent.Interact", false)), "交互模式能真正启动事件")
+		interact_node.queue_free()
+
+		var player := Node2D.new()
+		player.name = "MapEventTestPlayer"
+		player.add_to_group("player")
+		root.add_child(player)
+		var region_node := MapEvent2D.new()
+		region_node.event = _make_switch_event(&"map_event_region_probe", "region_enter", "Test.MapEvent.Region")
+		region_node.trigger_mode = MapEvent2D.TriggerMode.REGION_ENTER
+		region_node.trigger_radius = 40.0
+		root.add_child(region_node)
+		await process_frame
+		await process_frame
+		await process_frame
+		_check(bool(runtime.call("get_state", "Test.MapEvent.Region", false)), "进入区域能真正启动事件")
+		region_node.queue_free()
+		player.queue_free()
+
+		var auto_node := MapEvent2D.new()
+		auto_node.event = _make_switch_event(&"map_event_autorun_probe", "autorun", "Test.MapEvent.Autorun")
+		auto_node.trigger_mode = MapEvent2D.TriggerMode.AUTORUN
+		root.add_child(auto_node)
+		await process_frame
+		await process_frame
+		_check(bool(runtime.call("get_state", "Test.MapEvent.Autorun", false)), "自动执行能真正启动事件")
+		auto_node.queue_free()
+
+		var parallel_node := MapEvent2D.new()
+		parallel_node.event = _make_switch_event(&"map_event_parallel_probe", "parallel", "Test.MapEvent.Parallel")
+		parallel_node.trigger_mode = MapEvent2D.TriggerMode.PARALLEL
+		root.add_child(parallel_node)
+		await process_frame
+		await process_frame
+		_check(bool(runtime.call("get_state", "Test.MapEvent.Parallel", false)), "并行执行能真正启动事件")
+		parallel_node.queue_free()
+
+	await process_frame
+	node.queue_free()
+	await process_frame
+
+func _make_switch_event(id: StringName, trigger: String, key: String) -> EventDefinition:
+	var definition := EventDefinition.new()
+	definition.event_id = id
+	var page := EventPage.new()
+	page.trigger = trigger
+	var command := CommandRegistry.create_command(&"set_switch")
+	command.params["key"] = key
+	command.params["value"] = true
+	page.commands = [command]
+	definition.pages = [page]
+	return definition
+
+func _has_warning(node: MapEvent2D, key: String, params: Dictionary = {}) -> bool:
+	var expected := L10n.ui(key, params)
+	for text in node._get_configuration_warnings():
+		if String(text).contains(expected):
+			return true
+	return false
 
 # ── 展示层注入 ───────────────────────────────────────────
 
