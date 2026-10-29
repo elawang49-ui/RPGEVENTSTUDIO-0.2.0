@@ -18,6 +18,7 @@ func _run() -> void:
 	_test_input_service()
 	_test_input_settings_panel()
 	_test_l10n()
+	_test_bbcode()
 	_test_nested_serialization()
 	await _test_graph_flow()
 	await _test_graph_merge_or()
@@ -25,6 +26,9 @@ func _run() -> void:
 	await _test_give_key_flow()
 	await _test_choice_branch()
 	await _test_cancel()
+	await _test_presenter_injection()
+	await _test_bbcode_presenter()
+	await _test_map_event()
 	_report()
 	quit(0 if _failures.is_empty() else 1)
 
@@ -325,6 +329,80 @@ func _test_l10n() -> void:
 	_check(missing_zh.is_empty(), "中文翻译不应缺条目：%s" % str(missing_zh.slice(0, 5)))
 	_check(missing_en.is_empty(), "英文翻译不应缺条目：%s" % str(missing_en.slice(0, 5)))
 
+# ── BBCode 检查器 ────────────────────────────────────────
+
+func _test_bbcode() -> void:
+	var valid := "[b]粗体[/b] [i]斜体[/i] [color=#FFD700]金色[/color]\n[font_size=24]大[/font_size] [center]居中[/center]"
+	var clean := Bbcode.analyze(valid)
+	_check(not Bbcode.has_issues(clean), "合法 BBCode 不应报警")
+
+	var unclosed := Bbcode.analyze("[b]重点")
+	_check((unclosed.get("unclosed", []) as Array).has("b"), "应检测出未闭合的 [b]")
+	_check(Bbcode.describe(unclosed, false).contains("[b]"), "未闭合提示应包含标签名")
+
+	var mismatch := Bbcode.analyze("[b]文字[/i]")
+	_check((mismatch.get("mismatch", []) as Array).has("i"), "应检测出闭合标签不匹配")
+	_check((mismatch.get("unclosed", []) as Array).has("b"), "不匹配时同时报告未闭合的 [b]")
+
+	var unsupported := Bbcode.analyze("[foo]未知[/foo]")
+	_check((unsupported.get("unsupported", []) as Array).has("foo"), "应检测出不支持的标签")
+	_check(Bbcode.describe(unsupported, false).contains("[foo]"), "不支持提示应包含标签名")
+
+	var malformed := Bbcode.analyze("[color=red]x[/color=red]")
+	_check((malformed.get("malformed_close", []) as Array).has("color"), "闭合标签带参数应被提示")
+
+	var code_text := Bbcode.analyze("[code][b]不是标签[/b][/code]")
+	_check(not Bbcode.has_issues(code_text), "[code] 里的标签不应被误判")
+	_check(not Bbcode.has_issues(Bbcode.analyze("普通文字 [1] 和 [提示]")), "普通方括号不应被误判")
+
+# ── BBCode 打字机 ────────────────────────────────────────
+
+func _test_bbcode_presenter() -> void:
+	var presenter := DialoguePresenter.new()
+	presenter.name = "BbcodePresenter"
+	root.add_child(presenter)
+	await process_frame
+
+	var raw := "[b]粗体[/b] [color=#FFD700]金色[/color]\n第二行"
+	presenter.show_text("", raw)
+	var parsed := str(presenter.get("last_parsed_text"))
+	_check(parsed == "粗体 金色\n第二行", "默认 UI 应解析 BBCode（实际：%s）" % parsed)
+	_check(int(presenter.get("_reveal_total")) == parsed.length(), "打字机总长应按可见字符计算")
+	_check(not Bbcode.has_issues(presenter.get("last_bbcode_issues")), "合法文本不应记录 BBCode 问题")
+	_check(presenter.shown_texts.size() == 1 and presenter.shown_texts[0] == raw, "原始 BBCode 应原样保留")
+
+	presenter.show_choices("[b]选项提示[/b]", ["选项 A", "选项 B"])
+	_check(str(presenter.get("last_parsed_text")) == "选项提示", "默认 UI 的选项提示也解析 BBCode")
+
+	presenter.show_text("", "[b]未闭合")
+	var issues: Dictionary = presenter.get("last_bbcode_issues")
+	_check((issues.get("unclosed", []) as Array).has("b"), "未闭合文本应记录问题供排查")
+	_check(str(presenter.get("last_text")) == "[b]未闭合", "未闭合文本也不应被静默改写")
+
+	presenter.close_all()
+	presenter.queue_free()
+	await process_frame
+
+	# 保存为事件资源再读回，用默认 UI 真正跑一遍
+	var runtime: Node = root.get_node_or_null("RPGEventStudio")
+	if runtime == null:
+		return
+	runtime.call("restore_default_presenter")
+	var path := "res://.godot/test_bbcode_default_ui.tres"
+	var definition := _make_text_event(&"bbcode_default_ui", raw)
+	_check(ResourceSaver.save(definition, path) == OK, "BBCode 事件资源应能保存（默认 UI）")
+	var loaded: EventDefinition = load(path)
+	var loaded_text := ""
+	if loaded != null and not loaded.pages.is_empty() and not loaded.pages[0].commands.is_empty():
+		loaded_text = str(loaded.pages[0].commands[0].params.get("text", ""))
+	_check(loaded_text == raw, "读回后 BBCode 原文完整（默认 UI）")
+	var default_presenter: Node = runtime.get("presenter")
+	var finished := await _run_runtime_event_with_default(runtime, loaded, 300)
+	_check(finished, "保存后的 BBCode 事件在默认 UI 中能完成")
+	_check(str(default_presenter.get("last_parsed_text")) == parsed, "默认 UI 运行时渲染 BBCode")
+	_check(default_presenter.shown_texts.size() > 0 and default_presenter.shown_texts[default_presenter.shown_texts.size() - 1] == raw, "默认 UI 保留原始 BBCode")
+	DirAccess.remove_absolute(path)
+
 # ── 嵌套结构：保存 / 读取 / 兼容 ─────────────────────────
 
 func _test_nested_serialization() -> void:
@@ -606,7 +684,293 @@ func _test_cancel() -> void:
 	_check(result["received"], "取消后应收到事件结束通知")
 	_check(int(result["result"]) == EventRunner.Result.CANCELLED, "结果应为 CANCELLED（实际 %d）" % int(result["result"]))
 
-# ── 工具 ─────────────────────────────────────────────────
+# ── 地图事件对象 ────────────────────────────────────────
+
+func _test_map_event() -> void:
+	var librarian: EventDefinition = load("res://addons/rpgeventstudio/samples/events/librarian.tres")
+	_check(librarian != null, "地图事件测试需要示例事件资源")
+	if librarian == null:
+		return
+
+	# 事件关联 / 状态
+	var node := MapEvent2D.new()
+	root.add_child(node)
+	await process_frame
+	_check(node.event_link_status() == MapEvent2D.LINK_MISSING, "新建地图事件默认未关联")
+	_check(node.status_text() != "", "未关联时应有状态文案")
+	node.event = librarian
+	_check(node.event_link_status() == MapEvent2D.LINK_OK, "关联事件后状态正常")
+	_check(node.resolved_event() == librarian, "能解析关联事件")
+	_check(node.kind_label() != "" and node.trigger_label() != "" and node.layer_label() != "", "地图事件有类型/触发/层级文案")
+
+	# 层级映射到 Godot 原生 z_index
+	node.layer_mode = MapEvent2D.LayerMode.BELOW_PLAYER
+	_check(node.z_index == -1 and node.z_as_relative, "角色下方映射为相对 z_index = -1")
+	node.layer_mode = MapEvent2D.LayerMode.SAME_LAYER
+	_check(node.z_index == 0, "角色同层映射为 z_index = 0")
+	node.layer_mode = MapEvent2D.LayerMode.ABOVE_PLAYER
+	_check(node.z_index == 1, "角色上方映射为 z_index = 1")
+	node.layer_mode = MapEvent2D.LayerMode.CUSTOM
+	node.custom_z_index = 7
+	_check(node.z_index == 7, "自定义层级使用 custom_z_index")
+
+	# 交互组件
+	node.trigger_mode = MapEvent2D.TriggerMode.INTERACT
+	node.interaction_radius = 96.0
+	node._setup_runtime()
+	var interactor := node.get_node_or_null(MapEvent2D.RUNTIME_INTERACTOR)
+	_check(interactor is EventInteractor2D, "交互模式挂载 EventInteractor2D")
+	if interactor is EventInteractor2D:
+		_check(interactor.event == librarian, "交互组件拿到事件")
+		_check(is_equal_approx(interactor.interaction_radius, 96.0), "交互组件拿到交互半径")
+
+	# 进入区域
+	node.trigger_mode = MapEvent2D.TriggerMode.REGION_ENTER
+	node.trigger_radius = 140.0
+	node._setup_runtime()
+	var area := node.get_node_or_null(MapEvent2D.RUNTIME_TRIGGER)
+	_check(area is EventTriggerArea2D, "进入区域挂载 EventTriggerArea2D")
+	if area is EventTriggerArea2D:
+		_check(area.trigger_on_enter and not area.trigger_on_exit, "进入区域只开启进入触发")
+		_check(is_equal_approx(area.radius, 140.0), "触发区域拿到半径")
+
+	# 离开区域
+	node.trigger_mode = MapEvent2D.TriggerMode.REGION_EXIT
+	node._setup_runtime()
+	area = node.get_node_or_null(MapEvent2D.RUNTIME_TRIGGER)
+	if area is EventTriggerArea2D:
+		_check(not area.trigger_on_enter and area.trigger_on_exit, "离开区域只开启离开触发")
+
+	# 自动 / 并行
+	node.trigger_mode = MapEvent2D.TriggerMode.AUTORUN
+	node._setup_runtime()
+	var auto := node.get_node_or_null(MapEvent2D.RUNTIME_AUTORUN)
+	_check(auto is EventAutoRun2D and not auto.is_parallel, "自动执行挂载 EventAutoRun2D")
+	node.trigger_mode = MapEvent2D.TriggerMode.PARALLEL
+	node._setup_runtime()
+	auto = node.get_node_or_null(MapEvent2D.RUNTIME_AUTORUN)
+	_check(auto is EventAutoRun2D and auto.is_parallel, "并行执行挂载 EventAutoRun2D(is_parallel)")
+
+	# 配置警告
+	node.event = null
+	node.event_path = ""
+	_check(_has_warning(node, "map.warning.no_event"), "未关联事件应产生配置警告")
+	node.event_path = "res://no_such_event.tres"
+	_check(_has_warning(node, "map.warning.invalid_path", {"path": node.event_path}), "失效路径应产生配置警告")
+	node.event_path = "res://addons/rpgeventstudio/samples/demo_theme.tres"
+	_check(_has_warning(node, "map.warning.not_event", {"path": node.event_path}), "非事件资源应产生配置警告")
+	node.event = librarian
+	node.event_path = ""
+	node.trigger_mode = MapEvent2D.TriggerMode.REGION_ENTER
+	_check(_has_warning(node, "map.warning.trigger_mismatch", {"trigger": node.trigger_label()}), "触发方式没有匹配页时应警告")
+
+	# 示例场景里的事件总览扫描
+	var scene_root := Node2D.new()
+	root.add_child(scene_root)
+	var a := MapEvent2D.new()
+	a.name = "A"
+	scene_root.add_child(a)
+	var b := MapEvent2D.new()
+	b.name = "B"
+	scene_root.add_child(b)
+	_check(MapEvent2D.collect_in(scene_root).size() == 2, "能扫描当前场景里的地图事件")
+	scene_root.queue_free()
+
+	# 运行时真正触发：交互 / 进入区域 / 自动 / 并行
+	var runtime: Node = root.get_node_or_null("RPGEventStudio")
+	if runtime != null:
+		runtime.call("restore_default_presenter")
+		var interact_node := MapEvent2D.new()
+		interact_node.event = _make_switch_event(&"map_event_interact_probe", "interact", "Test.MapEvent.Interact")
+		interact_node.trigger_mode = MapEvent2D.TriggerMode.INTERACT
+		root.add_child(interact_node)
+		await process_frame
+		var runtime_interactor := interact_node.get_node_or_null(MapEvent2D.RUNTIME_INTERACTOR)
+		_check(runtime_interactor is EventInteractor2D, "运行时交互组件已挂载")
+		if runtime_interactor is EventInteractor2D:
+			runtime_interactor.trigger()
+			await process_frame
+			await process_frame
+			_check(bool(runtime.call("get_state", "Test.MapEvent.Interact", false)), "交互模式能真正启动事件")
+		interact_node.queue_free()
+
+		var player := Node2D.new()
+		player.name = "MapEventTestPlayer"
+		player.add_to_group("player")
+		root.add_child(player)
+		var region_node := MapEvent2D.new()
+		region_node.event = _make_switch_event(&"map_event_region_probe", "region_enter", "Test.MapEvent.Region")
+		region_node.trigger_mode = MapEvent2D.TriggerMode.REGION_ENTER
+		region_node.trigger_radius = 40.0
+		root.add_child(region_node)
+		await process_frame
+		await process_frame
+		await process_frame
+		_check(bool(runtime.call("get_state", "Test.MapEvent.Region", false)), "进入区域能真正启动事件")
+		region_node.queue_free()
+		player.queue_free()
+
+		var auto_node := MapEvent2D.new()
+		auto_node.event = _make_switch_event(&"map_event_autorun_probe", "autorun", "Test.MapEvent.Autorun")
+		auto_node.trigger_mode = MapEvent2D.TriggerMode.AUTORUN
+		root.add_child(auto_node)
+		await process_frame
+		await process_frame
+		_check(bool(runtime.call("get_state", "Test.MapEvent.Autorun", false)), "自动执行能真正启动事件")
+		auto_node.queue_free()
+
+		var parallel_node := MapEvent2D.new()
+		parallel_node.event = _make_switch_event(&"map_event_parallel_probe", "parallel", "Test.MapEvent.Parallel")
+		parallel_node.trigger_mode = MapEvent2D.TriggerMode.PARALLEL
+		root.add_child(parallel_node)
+		await process_frame
+		await process_frame
+		_check(bool(runtime.call("get_state", "Test.MapEvent.Parallel", false)), "并行执行能真正启动事件")
+		parallel_node.queue_free()
+
+	await process_frame
+	node.queue_free()
+	await process_frame
+
+func _make_switch_event(id: StringName, trigger: String, key: String) -> EventDefinition:
+	var definition := EventDefinition.new()
+	definition.event_id = id
+	var page := EventPage.new()
+	page.trigger = trigger
+	var command := CommandRegistry.create_command(&"set_switch")
+	command.params["key"] = key
+	command.params["value"] = true
+	page.commands = [command]
+	definition.pages = [page]
+	return definition
+
+func _has_warning(node: MapEvent2D, key: String, params: Dictionary = {}) -> bool:
+	var expected := L10n.ui(key, params)
+	for text in node._get_configuration_warnings():
+		if String(text).contains(expected):
+			return true
+	return false
+
+# ── 展示层注入 ───────────────────────────────────────────
+
+func _test_presenter_injection() -> void:
+	var runtime: Node = root.get_node_or_null("RPGEventStudio")
+	_check(runtime != null, "运行时 Autoload 可用于展示层注入测试")
+	if runtime == null:
+		return
+
+	runtime.call("restore_default_presenter")
+	var default_presenter: Node = runtime.get("presenter")
+	var runner: EventRunner = runtime.get("runner")
+	var bus: EventBus = runtime.get("bus")
+	_check(default_presenter is DialoguePresenter, "默认展示层应是插件自带的 DialoguePresenter")
+	_check(bool(runtime.call("is_using_default_presenter")), "初始状态应使用默认展示层")
+
+	var custom := MockPresenter.new()
+	custom.name = "InjectedPresenter"
+	root.add_child(custom)
+	custom.auto_confirm = true
+	_check(bool(runtime.call("set_presenter", custom)), "满足协议的对象应能注入")
+	_check(runtime.get("presenter") == custom, "运行时当前展示层应切到注入对象")
+	_check(runner.presenter == custom, "事件运行时也应使用注入对象")
+	_check(not default_presenter.visible, "注入后默认 UI 应隐藏")
+	_check(not default_presenter.is_processing(), "注入后默认 UI 不应继续处理")
+
+	var text_event := _make_text_event(&"injected_text", "注入后的文本")
+	_check(await _run_runtime_event(runtime, text_event, 90), "注入展示层后事件应能完成")
+	_check(_contains(custom.shown_texts, "注入后的文本"), "事件文本应交给注入的展示层")
+
+	# 不满足协议的对象必须被拒绝，且不能破坏当前展示层
+	var broken := Object.new()
+	_check(not bool(runtime.call("set_presenter", broken)), "缺少协议方法的对象应被拒绝")
+	_check(runtime.get("presenter") == custom, "拒绝非法对象后展示层应保持不变")
+
+	# 运行中替换展示层：旧事件应被取消、旧 UI 应收到 close_all
+	custom.never_finish = true
+	var report := {}
+	var handler := func(value: Dictionary) -> void:
+		report["value"] = value
+	bus.event_finished.connect(handler)
+	runtime.call("start_event", _make_text_event(&"injected_cancel", "等待替换"), {}, [])
+	await process_frame
+	await process_frame
+	_check(custom.last_text == "等待替换", "替换前应正在显示文本")
+	var replacement := MockPresenter.new()
+	replacement.name = "ReplacementPresenter"
+	root.add_child(replacement)
+	_check(bool(runtime.call("set_presenter", replacement)), "运行中应允许替换展示层")
+	var waited := 0
+	while report.is_empty() and waited < 120:
+		await process_frame
+		waited += 1
+	bus.event_finished.disconnect(handler)
+	_check(int((report.get("value", {}) as Dictionary).get("result", -1)) == EventRunner.Result.CANCELLED, "替换展示层应取消旧事件")
+	_check(custom.close_count > 0, "旧展示层应收到 close_all")
+	_check(runner.presenter == replacement, "替换后运行时指向新展示层")
+
+	# 恢复默认：默认 UI 重新可见，并且仍然能正常工作
+	_check(bool(runtime.call("restore_default_presenter")), "应能恢复默认展示层")
+	_check(runtime.get("presenter") == default_presenter, "恢复后当前展示层应是默认 UI")
+	_check(runner.presenter == default_presenter, "恢复后事件运行时也应回到默认 UI")
+	_check(default_presenter.visible and default_presenter.is_processing(), "恢复后默认 UI 应重新工作")
+	_check(await _run_runtime_event_with_default(runtime, _make_text_event(&"default_ui_text", "默认界面文本"), 240), "恢复默认 UI 后事件应能完成")
+	_check(_contains(default_presenter.shown_texts, "默认界面文本"), "默认 UI 应收到事件文本")
+
+	# 测试收尾：换成新的注入对象，避免影响其它用例
+	var cleanup := MockPresenter.new()
+	cleanup.name = "CleanupPresenter"
+	root.add_child(cleanup)
+	runtime.call("set_presenter", cleanup)
+	runtime.call("restore_default_presenter")
+	cleanup.queue_free()
+	custom.queue_free()
+	replacement.queue_free()
+
+func _make_text_event(id: StringName, text: String) -> EventDefinition:
+	var definition := EventDefinition.new()
+	definition.event_id = id
+	definition.display_name = String(text)
+	var page := EventPage.new()
+	page.trigger = "interact"
+	var command := CommandRegistry.create_command(&"show_text")
+	command.params["text"] = text
+	page.commands = [command]
+	definition.pages = [page]
+	return definition
+
+func _run_runtime_event(runtime: Node, definition: EventDefinition, max_frames: int) -> bool:
+	var finished := {"done": false}
+	var callback := func(_report: Dictionary) -> void:
+		finished["done"] = true
+	var bus: EventBus = runtime.get("bus")
+	bus.event_finished.connect(callback)
+	runtime.call("start_event", definition, {}, [])
+	var frames := 0
+	while not finished["done"] and frames < max_frames:
+		await process_frame
+		frames += 1
+	bus.event_finished.disconnect(callback)
+	_check(finished["done"], "事件应在 %d 帧内结束（%s）" % [max_frames, definition.event_id])
+	return finished["done"]
+
+## 默认 DialoguePresenter 需要真人按键；测试里用“点击推进”把它走完。
+func _run_runtime_event_with_default(runtime: Node, definition: EventDefinition, max_frames: int) -> bool:
+	var finished := {"done": false}
+	var callback := func(_report: Dictionary) -> void:
+		finished["done"] = true
+	var bus: EventBus = runtime.get("bus")
+	var presenter: Node = runtime.get("presenter")
+	bus.event_finished.connect(callback)
+	runtime.call("start_event", definition, {}, [])
+	var frames := 0
+	while not finished["done"] and frames < max_frames:
+		await process_frame
+		if presenter != null and bool(presenter.get("_waiting_confirm")):
+			presenter.set("_mouse_click", true)
+		frames += 1
+	bus.event_finished.disconnect(callback)
+	return finished["done"]
+
 
 func _make_harness() -> Dictionary:
 	var host := Node.new()

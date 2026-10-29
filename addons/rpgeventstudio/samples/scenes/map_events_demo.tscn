@@ -1,0 +1,106 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/runtime/components/map_event.gd" id="1_map"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/librarian.tres" id="2_librarian"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/office_desk.tres" id="3_inspect"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/key_pickup.tres" id="4_chest"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/locked_door.tres" id="5_door"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/classroom_board.tres" id="6_mechanism"]
+[ext_resource type="Resource" path="res://addons/rpgeventstudio/samples/events/map_region_demo.tres" id="7_region"]
+
+[node name="MapEventsDemo" type="Node2D"]
+
+[node name="Background" type="ColorRect" parent="."]
+z_index = -20
+offset_right = 980.0
+offset_bottom = 600.0
+mouse_filter = 2
+color = Color(0.075, 0.09, 0.12, 1)
+
+[node name="Title" type="Label" parent="."]
+offset_left = 28.0
+offset_top = 18.0
+offset_right = 720.0
+offset_bottom = 48.0
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.78, 0.85, 0.96, 1)
+text = "地图事件放置示例：拖动节点 / 改 Inspector / 看右下角地图事件面板"
+
+[node name="PlayerMarker" type="Node2D" parent="."]
+position = Vector2(490, 300)
+
+[node name="Body" type="Polygon2D" parent="PlayerMarker"]
+color = Color(0.35, 0.62, 0.95, 0.85)
+polygon = PackedVector2Array(-14, -18, 14, -18, 14, 18, -14, 18)
+
+[node name="Label" type="Label" parent="PlayerMarker"]
+offset_left = -50.0
+offset_top = 22.0
+offset_right = 50.0
+offset_bottom = 42.0
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.72, 0.82, 0.95, 1)
+text = "玩家"
+horizontal_alignment = 1
+
+[node name="NPC_Librarian" type="Node2D" parent="."]
+position = Vector2(170, 150)
+script = ExtResource("1_map")
+kind = 0
+event = ExtResource("2_librarian")
+trigger_mode = 0
+layer_mode = 0
+interaction_radius = 78.0
+
+[node name="Inspect_Desk" type="Node2D" parent="."]
+position = Vector2(400, 150)
+script = ExtResource("1_map")
+kind = 1
+event = ExtResource("3_inspect")
+trigger_mode = 0
+layer_mode = 1
+interaction_radius = 70.0
+
+[node name="Chest_Key" type="Node2D" parent="."]
+position = Vector2(640, 150)
+script = ExtResource("1_map")
+kind = 2
+event = ExtResource("4_chest")
+trigger_mode = 0
+layer_mode = 2
+interaction_radius = 56.0
+
+[node name="Door_Classroom" type="Node2D" parent="."]
+position = Vector2(170, 390)
+script = ExtResource("1_map")
+kind = 3
+event = ExtResource("5_door")
+trigger_mode = 0
+layer_mode = 1
+interaction_radius = 64.0
+
+[node name="Mechanism_Board" type="Node2D" parent="."]
+position = Vector2(400, 390)
+script = ExtResource("1_map")
+kind = 4
+event = ExtResource("6_mechanism")
+trigger_mode = 0
+layer_mode = 0
+interaction_radius = 62.0
+
+[node name="Trigger_Region" type="Node2D" parent="."]
+position = Vector2(650, 390)
+script = ExtResource("1_map")
+kind = 5
+event = ExtResource("7_region")
+trigger_mode = 1
+trigger_radius = 95.0
+layer_mode = 1
+
+[node name="Inspect_Unlinked" type="Node2D" parent="."]
+position = Vector2(820, 270)
+script = ExtResource("1_map")
+kind = 1
+trigger_mode = 0
+layer_mode = 1
+interaction_radius = 54.0

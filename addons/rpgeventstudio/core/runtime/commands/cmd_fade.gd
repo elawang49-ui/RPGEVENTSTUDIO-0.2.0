@@ -4,7 +4,11 @@ extends CommandHandler
 ## 画面淡入淡出。取消时立刻清掉遮罩，避免游戏黑屏卡死。
 
 func execute(ctx: EventContext) -> int:
-	if ctx.presenter == null or not ctx.presenter.has_method("fade_to"):
+	if ctx.presenter == null:
+		return CmdResult.CONTINUE
+	if not ctx.presenter.has_method("fade_to"):
+		# 自定义展示层可以明确不支持淡入淡出：跳过并在调试日志里说明，不假装已执行。
+		ctx.log("当前展示层不支持 fade_to，跳过淡入淡出")
 		return CmdResult.CONTINUE
 
 	var mode := str(ctx.get_param("mode", "out"))

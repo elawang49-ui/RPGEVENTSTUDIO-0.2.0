@@ -37,6 +37,7 @@ func _run() -> void:
 	var page: EventPage = definition.pages[0]
 	await _test_basic_edit(panel, page)
 	await _test_state_selector(panel)
+	await _test_bbcode_preview(panel, page)
 	await _test_branch_edit(panel, page)
 	await _test_move_between_branches(panel, page)
 	await _test_nested_edit(panel, page)
@@ -79,6 +80,49 @@ func _test_state_selector(panel: Control) -> void:
 				shown = option.get_item_text(index)
 		_check(shown.contains("教室钥匙"), "选择器显示可读名称（实际：%s）" % shown)
 	panel.call("_on_page_selected", 0)
+
+# ── BBCode 编辑 / 预览 ───────────────────────────────────
+
+func _test_bbcode_preview(panel: Control, page: EventPage) -> void:
+	var command := _find_first(page.commands, &"show_text")
+	_check(command != null, "示例事件里应有显示文字指令")
+	if command == null:
+		return
+	panel.call("_on_command_row_pressed", command)
+	await process_frame
+
+	var preview: RichTextLabel = panel.find_child("BBCodePreview", true, false)
+	var warning: Label = panel.find_child("BBCodeWarning", true, false)
+	var edits := panel.find_children("*", "TextEdit", true, false)
+	_check(preview != null, "显示文字参数下应有 BBCode 预览")
+	_check(warning != null, "显示文字参数下应有 BBCode 警告标签")
+	_check(not edits.is_empty(), "显示文字仍有原始 TextEdit")
+	if preview == null or warning == null or edits.is_empty():
+		return
+	var edit: TextEdit = edits[0]
+	var original := str(command.params.get("text", ""))
+
+	var sample := "[b]重点文字[/b]\n[color=#FFD700]关键线索[/color] [font_size=24]大字[/font_size]\n[center]居中[/center]"
+	edit.text = sample
+	edit.text_changed.emit()
+	await process_frame
+	_check(str(command.params.get("text", "")) == sample, "原始 BBCode 应原样写入参数")
+	_check(preview.text == sample, "预览应保留原始 BBCode 文本")
+	_check(preview.get_parsed_text() == "重点文字\n关键线索 大字\n居中", "预览应渲染标签并保留换行（实际：%s）" % preview.get_parsed_text())
+	_check(not warning.visible, "合法 BBCode 不应显示警告")
+
+	var invalid := "[b]未闭合 [foo]未知[/foo]"
+	edit.text = invalid
+	edit.text_changed.emit()
+	await process_frame
+	_check(warning.visible, "未闭合 / 不支持的标签应显示警告")
+	_check(warning.text.contains("[b]") and warning.text.contains("[foo]"), "警告应指出具体标签（实际：%s）" % warning.text)
+	_check(str(command.params.get("text", "")) == invalid, "有问题时也不应改写原始文本")
+
+	edit.text = original
+	edit.text_changed.emit()
+	await process_frame
+	_check(not warning.visible, "恢复合法文本后警告应消失")
 
 # ── 分支内编辑 ───────────────────────────────────────────
 
@@ -206,6 +250,13 @@ func _test_cut_paste(panel: Control, page: EventPage) -> void:
 func _test_save_and_reload(panel: Control, definition: EventDefinition) -> void:
 	var path := "res://.godot/test_panel_roundtrip.tres"
 
+	# BBCode 文本保存后必须原样读回
+	var bbcode_sample := "[b]粗体[/b] [color=#FFD700]金色[/color]\n[font_size=24]大字[/font_size]\n[center]居中[/center]"
+	var text_command := _find_first(definition.pages[0].commands, &"show_text")
+	if text_command != null:
+		panel.call("_on_command_row_pressed", text_command)
+		panel.call("_change_param", text_command, "text", bbcode_sample)
+
 	# 改一个参数，确认保存后仍能读到
 	var if_command := _find_first(definition.pages[0].commands, &"if")
 	if if_command != null:
@@ -223,6 +274,8 @@ func _test_save_and_reload(panel: Control, definition: EventDefinition) -> void:
 			_check(str(loaded_if.params.get("value", "")) == "3", "重新读取后修改过的参数应保留")
 			_check(loaded_if.children.size() == if_command.children.size(), "重新读取后「是」分支指令数一致")
 			_check(loaded_if.else_children.size() == if_command.else_children.size(), "重新读取后「否」分支指令数一致")
+		var loaded_text := _find_first(loaded.pages[0].commands, &"show_text")
+		_check(loaded_text != null and str(loaded_text.params.get("text", "")) == bbcode_sample, "重新读取后 BBCode 原文应完整保留")
 	DirAccess.remove_absolute(path)
 
 # ── 语言 ─────────────────────────────────────────────────

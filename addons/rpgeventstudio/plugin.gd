@@ -11,6 +11,7 @@ extends EditorPlugin
 const PANEL_SCRIPT := "res://addons/rpgeventstudio/editor/event_editor/event_editor_panel.gd"
 const GRAPH_SCRIPT := "res://addons/rpgeventstudio/editor/level_graph/level_graph_view.gd"
 const LIST_SCRIPT := "res://addons/rpgeventstudio/editor/event_list/event_list_panel.gd"
+const MAP_SCRIPT := "res://addons/rpgeventstudio/editor/map_events/map_event_panel.gd"
 const RUNTIME_SCRIPT := "res://addons/rpgeventstudio/runtime/autoload/studio_runtime.gd"
 const AUTOLOAD_NAME := "RPGEventStudio"
 const EDITOR_LANGUAGE_SETTING := "rpg_event_studio/editor_language"
@@ -18,6 +19,7 @@ const EDITOR_LANGUAGE_SETTING := "rpg_event_studio/editor_language"
 var _panel: Control
 var _main_screen: Control
 var _list_panel: Control
+var _map_panel: Control
 var _debugger_plugin: StudioDebuggerPlugin
 var _filesystem: EditorFileSystem
 var _refresh_timer: SceneTreeTimer
@@ -29,6 +31,7 @@ func _enter_tree() -> void:
 	_create_dock()
 	_create_main_screen()
 	_create_list_dock()
+	_create_map_dock()
 	_create_debugger()
 	_connect_selection()
 
@@ -36,6 +39,10 @@ func _enter_tree() -> void:
 		_start_selftest.call_deferred()
 	if OS.get_environment("RPGEVENTSTUDIO_SHOT") == "1":
 		_capture_graph_screen.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_MAP_SELFTEST") == "1":
+		_start_map_selftest.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_MAP_SHOT") == "1":
+		_capture_map_screen.call_deferred()
 
 func _exit_tree() -> void:
 	if _selection != null and _selection.selection_changed.is_connected(_on_selection_changed):
@@ -59,6 +66,11 @@ func _exit_tree() -> void:
 		remove_control_from_docks(_list_panel)
 		_list_panel.queue_free()
 		_list_panel = null
+
+	if _map_panel != null:
+		remove_control_from_docks(_map_panel)
+		_map_panel.queue_free()
+		_map_panel = null
 
 	if _debugger_plugin != null:
 		remove_debugger_plugin(_debugger_plugin)
@@ -94,6 +106,101 @@ func _create_list_dock() -> void:
 	_filesystem = EditorInterface.get_resource_filesystem()
 	if _filesystem != null and not _filesystem.filesystem_changed.is_connected(_on_filesystem_changed):
 		_filesystem.filesystem_changed.connect(_on_filesystem_changed)
+
+# ── 地图事件 ─────────────────────────────────────────────
+
+func _create_map_dock() -> void:
+	var script := load(MAP_SCRIPT)
+	if script == null:
+		push_error("[RPGEventStudio] 找不到地图事件面板脚本")
+		return
+	_map_panel = script.new()
+	_map_panel.name = L10n.ui("map.title")
+	_map_panel.custom_minimum_size = Vector2(300, 0)
+	_map_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_map_panel.event_activated.connect(_open_event)
+	_map_panel.place_requested.connect(_on_place_map_event)
+	add_control_to_dock(DOCK_SLOT_RIGHT_UR, _map_panel)
+
+func refresh_map_events() -> void:
+	if _map_panel != null:
+		_map_panel.call("refresh")
+
+func _on_place_map_event(kind: int) -> void:
+	place_map_event(kind)
+
+## 在当前编辑场景里生成一个 MapEvent2D，并登记到 UndoRedo。
+func place_map_event(kind: int) -> MapEvent2D:
+	var root := EditorInterface.get_edited_scene_root()
+	if root == null:
+		push_warning("[RPGEventStudio] 请先打开一个 2D 场景再放置地图事件")
+		return null
+	var parent := _map_event_parent(root)
+	var node := MapEvent2D.new()
+	node.kind = kind
+	node.trigger_mode = MapEvent2D.TriggerMode.REGION_ENTER if kind == MapEvent2D.Kind.TRIGGER else MapEvent2D.TriggerMode.INTERACT
+	node.layer_mode = MapEvent2D.LayerMode.SAME_LAYER
+	node.name = _unique_map_event_name(parent, kind)
+	node.position = _map_event_spawn_position(parent)
+
+	var undo := get_undo_redo()
+	if undo != null:
+		undo.create_action("Place Map Event", UndoRedo.MERGE_DISABLE, root)
+		undo.add_do_method(parent, "add_child", node)
+		undo.add_do_method(node, "set_owner", root)
+		undo.add_do_reference(node)
+		undo.add_undo_method(parent, "remove_child", node)
+		undo.commit_action()
+	else:
+		parent.add_child(node)
+		node.owner = root
+
+	if EditorInterface.has_method("mark_scene_as_unsaved"):
+		EditorInterface.mark_scene_as_unsaved()
+	var selection := EditorInterface.get_selection()
+	if selection != null:
+		selection.clear()
+		selection.add_node(node)
+	refresh_map_events()
+	return node
+
+func _map_event_parent(root: Node) -> Node:
+	var selection := EditorInterface.get_selection()
+	if selection != null:
+		var nodes := selection.get_selected_nodes()
+		if nodes.size() == 1:
+			var selected := nodes[0]
+			if selected is Node2D and selected != root and root.is_ancestor_of(selected):
+				# 不要把新事件塞进已有 MapEvent2D（或它的美术子节点）里。
+				var ancestor := selected
+				while ancestor != null and ancestor != root:
+					if ancestor is MapEvent2D and ancestor.get_parent() != null:
+						return ancestor.get_parent()
+					ancestor = ancestor.get_parent()
+				return selected
+	return root
+
+func _map_event_spawn_position(parent: Node) -> Vector2:
+	var world := Vector2.ZERO
+	if EditorInterface.has_method("get_editor_viewport_2d"):
+		var viewport = EditorInterface.get_editor_viewport_2d()
+		if viewport is SubViewport:
+			var sub := viewport as SubViewport
+			world = sub.get_canvas_transform().affine_inverse() * (Vector2(sub.size) * 0.5)
+	if parent is Node2D:
+		return (parent as Node2D).to_local(world)
+	return world
+
+func _unique_map_event_name(parent: Node, kind: int) -> String:
+	var bases := ["NPCEvent", "InspectEvent", "ChestEvent", "DoorEvent", "MechanismEvent", "TriggerEvent"]
+	var base: String = bases[clampi(kind, 0, bases.size() - 1)]
+	if not parent.has_node(NodePath(base)):
+		return base
+	var index := 2
+	while parent.has_node(NodePath(base + str(index))):
+		index += 1
+	return base + str(index)
 
 func _on_filesystem_changed() -> void:
 	# 导入/保存会连续触发，做个简单防抖
@@ -190,6 +297,8 @@ func _on_selection_changed() -> void:
 		_panel.call("open_from_selection", nodes)
 	if _main_screen != null:
 		_main_screen.call("open_from_selection", nodes)
+	if _map_panel != null:
+		_map_panel.call("on_selection_changed", nodes)
 
 # ── 语言 ─────────────────────────────────────────────────
 
@@ -267,6 +376,44 @@ func _capture_graph_screen() -> void:
 		if image != null:
 			image.save_png("res://docs/images/graph_editor.png")
 			print("[SHOT] 已保存 docs/images/graph_editor.png")
+	get_tree().quit()
+
+func _start_map_selftest() -> void:
+	if Engine.has_meta("rpg_eventstudio_map_selftest_started"):
+		return
+	Engine.set_meta("rpg_eventstudio_map_selftest_started", true)
+	var script := load("res://tests/map_event_editor_selftest.gd")
+	if script == null:
+		push_error("[RPGEventStudio] 找不到地图事件自测脚本")
+		get_tree().quit(2)
+		return
+	var runner: Node = script.new()
+	runner.name = "MapEventSelfTest"
+	add_child(runner)
+	runner.call_deferred("start", self)
+
+func _capture_map_screen() -> void:
+	await get_tree().create_timer(2.0).timeout
+	EditorInterface.open_scene_from_path("res://addons/rpgeventstudio/samples/scenes/map_events_demo.tscn")
+	await get_tree().create_timer(1.2).timeout
+	EditorInterface.set_main_screen_editor("2D")
+	await get_tree().create_timer(0.6).timeout
+	var root := EditorInterface.get_edited_scene_root()
+	if root != null:
+		var node := root.get_node_or_null("Trigger_Region")
+		if node != null:
+			var selection := EditorInterface.get_selection()
+			selection.clear()
+			selection.add_node(node)
+	if _map_panel != null:
+		_map_panel.call("refresh")
+	await get_tree().create_timer(0.5).timeout
+	var base := EditorInterface.get_base_control()
+	if base != null:
+		var image := base.get_viewport().get_texture().get_image()
+		if image != null:
+			image.save_png("res://docs/images/map_events_editor.png")
+			print("[SHOT] 已保存 docs/images/map_events_editor.png")
 	get_tree().quit()
 
 func _start_selftest() -> void:

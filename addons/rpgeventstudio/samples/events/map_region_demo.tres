@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_page"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_cmd"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="3_def"]
+
+[sub_resource type="Resource" id="Resource_text"]
+script = ExtResource("2_cmd")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "",
+"text": "你踏入了触发区域。"
+}
+
+[sub_resource type="Resource" id="Resource_page"]
+script = ExtResource("1_page")
+trigger = "region_enter"
+commands = Array[ExtResource("2_cmd")]([SubResource("Resource_text")])
+
+[resource]
+script = ExtResource("3_def")
+event_id = &"map_region_demo"
+display_name = "区域触发示例"
+pages = Array[ExtResource("1_page")]([SubResource("Resource_page")])
