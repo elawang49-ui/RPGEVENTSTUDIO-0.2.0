@@ -277,7 +277,8 @@ func _build_ui() -> void:
 	add_child(params_title)
 
 	var params_scroll := ScrollContainer.new()
-	params_scroll.custom_minimum_size = Vector2(0, 170)
+	# 多行文本下面有 BBCode 预览与警告，参数区需要比原来高一些。
+	params_scroll.custom_minimum_size = Vector2(0, 360)
 	add_child(params_scroll)
 
 	_params_box = VBoxContainer.new()
@@ -733,16 +734,76 @@ func _make_param_control(command: EventCommand, name: String, type: String, para
 			)
 			return option
 		"multiline", "options":
+			var editor_box := VBoxContainer.new()
+			editor_box.add_theme_constant_override("separation", 4)
 			var text := TextEdit.new()
 			text.custom_minimum_size = Vector2(0, 88)
 			text.text = _to_text(current)
+			editor_box.add_child(text)
+
+			var preview: RichTextLabel = null
+			var warning: Label = null
+			if type == "multiline":
+				var preview_title := Label.new()
+				preview_title.text = L10n.ui("editor.bbcode.preview")
+				preview_title.add_theme_font_size_override("font_size", 10)
+				preview_title.add_theme_color_override("font_color", Color(0.64, 0.72, 0.86))
+				editor_box.add_child(preview_title)
+
+				var preview_panel := PanelContainer.new()
+				preview_panel.name = "BBCodePreviewPanel"
+				preview_panel.custom_minimum_size = Vector2(0, 64)
+				var style := StyleBoxFlat.new()
+				style.bg_color = Color(0.06, 0.07, 0.10, 0.92)
+				style.border_color = Color(0.24, 0.28, 0.38, 0.9)
+				style.set_border_width_all(1)
+				style.set_corner_radius_all(4)
+				style.content_margin_left = 8.0
+				style.content_margin_right = 8.0
+				style.content_margin_top = 6.0
+				style.content_margin_bottom = 6.0
+				preview_panel.add_theme_stylebox_override("panel", style)
+				editor_box.add_child(preview_panel)
+
+				preview = RichTextLabel.new()
+				preview.name = "BBCodePreview"
+				preview.bbcode_enabled = true
+				preview.fit_content = true
+				preview.scroll_active = false
+				preview.selection_enabled = false
+				preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				preview.add_theme_font_size_override("normal_font_size", 14)
+				preview.add_theme_color_override("default_color", Color(0.90, 0.92, 0.96))
+				preview.add_theme_constant_override("line_separation", 4)
+				preview_panel.add_child(preview)
+
+				var bbcode_hint := Label.new()
+				bbcode_hint.text = L10n.ui("editor.bbcode.hint")
+				bbcode_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				bbcode_hint.add_theme_font_size_override("font_size", 9)
+				bbcode_hint.add_theme_color_override("font_color", Color(0.55, 0.60, 0.68))
+				editor_box.add_child(bbcode_hint)
+
+				warning = Label.new()
+				warning.name = "BBCodeWarning"
+				warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				warning.add_theme_font_size_override("font_size", 10)
+				warning.add_theme_color_override("font_color", Color(0.98, 0.68, 0.42))
+				warning.visible = false
+				editor_box.add_child(warning)
+				_refresh_bbcode_preview(text.text, preview, warning)
+
 			text.text_changed.connect(func() -> void:
 				var value: Variant = text.text
 				if type == "options":
 					value = text.text.split("\n", false)
 				_change_param(command, name, value)
+				if preview != null:
+					_refresh_bbcode_preview(text.text, preview, warning)
 			)
-			return text
+			return editor_box
 		"node_ref":
 			var wrap := VBoxContainer.new()
 			var box := HBoxContainer.new()
@@ -817,6 +878,16 @@ func _to_text(value: Variant) -> String:
 			lines.append(str(item))
 		return "\n".join(lines)
 	return str(value)
+
+## 预览完全由 RichTextLabel 渲染；警告只做提示，不修改原始文本。
+func _refresh_bbcode_preview(source: String, preview: RichTextLabel, warning: Label) -> void:
+	if preview == null or warning == null:
+		return
+	preview.text = source
+	var issues := Bbcode.analyze(source)
+	var has_issues := Bbcode.has_issues(issues)
+	warning.visible = has_issues
+	warning.text = Bbcode.describe(issues, true) if has_issues else ""
 
 func _change_param(command: EventCommand, name: String, value: Variant) -> void:
 	if _building or command == null:

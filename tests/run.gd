@@ -18,6 +18,7 @@ func _run() -> void:
 	_test_input_service()
 	_test_input_settings_panel()
 	_test_l10n()
+	_test_bbcode()
 	_test_nested_serialization()
 	await _test_graph_flow()
 	await _test_graph_merge_or()
@@ -26,6 +27,7 @@ func _run() -> void:
 	await _test_choice_branch()
 	await _test_cancel()
 	await _test_presenter_injection()
+	await _test_bbcode_presenter()
 	_report()
 	quit(0 if _failures.is_empty() else 1)
 
@@ -325,6 +327,80 @@ func _test_l10n() -> void:
 	_check(total >= 150, "翻译条目应覆盖全部界面（实际 %d 条）" % total)
 	_check(missing_zh.is_empty(), "中文翻译不应缺条目：%s" % str(missing_zh.slice(0, 5)))
 	_check(missing_en.is_empty(), "英文翻译不应缺条目：%s" % str(missing_en.slice(0, 5)))
+
+# ── BBCode 检查器 ────────────────────────────────────────
+
+func _test_bbcode() -> void:
+	var valid := "[b]粗体[/b] [i]斜体[/i] [color=#FFD700]金色[/color]\n[font_size=24]大[/font_size] [center]居中[/center]"
+	var clean := Bbcode.analyze(valid)
+	_check(not Bbcode.has_issues(clean), "合法 BBCode 不应报警")
+
+	var unclosed := Bbcode.analyze("[b]重点")
+	_check((unclosed.get("unclosed", []) as Array).has("b"), "应检测出未闭合的 [b]")
+	_check(Bbcode.describe(unclosed, false).contains("[b]"), "未闭合提示应包含标签名")
+
+	var mismatch := Bbcode.analyze("[b]文字[/i]")
+	_check((mismatch.get("mismatch", []) as Array).has("i"), "应检测出闭合标签不匹配")
+	_check((mismatch.get("unclosed", []) as Array).has("b"), "不匹配时同时报告未闭合的 [b]")
+
+	var unsupported := Bbcode.analyze("[foo]未知[/foo]")
+	_check((unsupported.get("unsupported", []) as Array).has("foo"), "应检测出不支持的标签")
+	_check(Bbcode.describe(unsupported, false).contains("[foo]"), "不支持提示应包含标签名")
+
+	var malformed := Bbcode.analyze("[color=red]x[/color=red]")
+	_check((malformed.get("malformed_close", []) as Array).has("color"), "闭合标签带参数应被提示")
+
+	var code_text := Bbcode.analyze("[code][b]不是标签[/b][/code]")
+	_check(not Bbcode.has_issues(code_text), "[code] 里的标签不应被误判")
+	_check(not Bbcode.has_issues(Bbcode.analyze("普通文字 [1] 和 [提示]")), "普通方括号不应被误判")
+
+# ── BBCode 打字机 ────────────────────────────────────────
+
+func _test_bbcode_presenter() -> void:
+	var presenter := DialoguePresenter.new()
+	presenter.name = "BbcodePresenter"
+	root.add_child(presenter)
+	await process_frame
+
+	var raw := "[b]粗体[/b] [color=#FFD700]金色[/color]\n第二行"
+	presenter.show_text("", raw)
+	var parsed := str(presenter.get("last_parsed_text"))
+	_check(parsed == "粗体 金色\n第二行", "默认 UI 应解析 BBCode（实际：%s）" % parsed)
+	_check(int(presenter.get("_reveal_total")) == parsed.length(), "打字机总长应按可见字符计算")
+	_check(not Bbcode.has_issues(presenter.get("last_bbcode_issues")), "合法文本不应记录 BBCode 问题")
+	_check(presenter.shown_texts.size() == 1 and presenter.shown_texts[0] == raw, "原始 BBCode 应原样保留")
+
+	presenter.show_choices("[b]选项提示[/b]", ["选项 A", "选项 B"])
+	_check(str(presenter.get("last_parsed_text")) == "选项提示", "默认 UI 的选项提示也解析 BBCode")
+
+	presenter.show_text("", "[b]未闭合")
+	var issues: Dictionary = presenter.get("last_bbcode_issues")
+	_check((issues.get("unclosed", []) as Array).has("b"), "未闭合文本应记录问题供排查")
+	_check(str(presenter.get("last_text")) == "[b]未闭合", "未闭合文本也不应被静默改写")
+
+	presenter.close_all()
+	presenter.queue_free()
+	await process_frame
+
+	# 保存为事件资源再读回，用默认 UI 真正跑一遍
+	var runtime: Node = root.get_node_or_null("RPGEventStudio")
+	if runtime == null:
+		return
+	runtime.call("restore_default_presenter")
+	var path := "res://.godot/test_bbcode_default_ui.tres"
+	var definition := _make_text_event(&"bbcode_default_ui", raw)
+	_check(ResourceSaver.save(definition, path) == OK, "BBCode 事件资源应能保存（默认 UI）")
+	var loaded: EventDefinition = load(path)
+	var loaded_text := ""
+	if loaded != null and not loaded.pages.is_empty() and not loaded.pages[0].commands.is_empty():
+		loaded_text = str(loaded.pages[0].commands[0].params.get("text", ""))
+	_check(loaded_text == raw, "读回后 BBCode 原文完整（默认 UI）")
+	var default_presenter: Node = runtime.get("presenter")
+	var finished := await _run_runtime_event_with_default(runtime, loaded, 300)
+	_check(finished, "保存后的 BBCode 事件在默认 UI 中能完成")
+	_check(str(default_presenter.get("last_parsed_text")) == parsed, "默认 UI 运行时渲染 BBCode")
+	_check(default_presenter.shown_texts.size() > 0 and default_presenter.shown_texts[default_presenter.shown_texts.size() - 1] == raw, "默认 UI 保留原始 BBCode")
+	DirAccess.remove_absolute(path)
 
 # ── 嵌套结构：保存 / 读取 / 兼容 ─────────────────────────
 

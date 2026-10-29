@@ -29,8 +29,10 @@ var _choice_result := -1
 var _choice_index := -1
 var _choice_buttons: Array[Button] = []
 
-## 调试用：最近显示过的文字（集成测试与问题排查会读它）
+## 调试用：最近显示过的文字与解析结果（集成测试与问题排查会读它）
 var last_text := ""
+var last_parsed_text := ""
+var last_bbcode_issues: Dictionary = {}
 var shown_texts: PackedStringArray = []
 
 func _ready() -> void:
@@ -146,9 +148,14 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	_text_label.text = text
 	_text_label.visible_characters = 0
 	_hint_label.visible = false
+	last_parsed_text = _text_label.get_parsed_text()
+	last_bbcode_issues = Bbcode.analyze(text)
+	if Bbcode.has_issues(last_bbcode_issues):
+		push_warning("[RPGEventStudio] " + Bbcode.describe(last_bbcode_issues, false))
 
 	_reveal = 0.0
-	_reveal_total = text.length()
+	# 按解析后的可见字符数推进，不能把 [b] 这类标签字符算进打字机。
+	_reveal_total = _text_label.get_total_character_count()
 	_typing = _reveal_total > 0
 	_waiting_confirm = false
 	_text_done = false

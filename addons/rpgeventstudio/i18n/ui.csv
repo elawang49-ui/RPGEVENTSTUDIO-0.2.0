@@ -307,3 +307,9 @@ trigger.parallel,并行执行,Parallel
 trigger.region_enter,进入区域,Enter Region
 trigger.region_exit,离开区域,Leave Region
 trigger.touch,玩家接触,Player Touch
+editor.bbcode.preview,BBCode 预览,BBCode preview
+editor.bbcode.hint,支持 [b] [i] [color] [font_size] [center] 等 Godot RichTextLabel 标签,Supports Godot RichTextLabel tags such as [b] [i] [color] [font_size] [center]
+bbcode.unclosed,未闭合的 BBCode 标签：{tags},Unclosed BBCode tags: {tags}
+bbcode.mismatch,BBCode 闭合标签不匹配：{tags},Mismatched BBCode closing tags: {tags}
+bbcode.malformed_close,BBCode 闭合标签不应带参数：{tags},BBCode closing tags should not have parameters: {tags}
+bbcode.unsupported,不支持或写法有误的 BBCode 标签：{tags}（会按原文显示）,Unsupported or malformed BBCode tags: {tags} (shown literally)
