@@ -12,7 +12,9 @@ var state: StateStore
 var bus: EventBus
 var registry: CommandRegistry
 var runner: EventRunner
-var presenter: DialoguePresenter
+## 当前展示层。默认是插件的 DialoguePresenter，游戏可通过 set_presenter() 换成自己的实现。
+var presenter
+var default_presenter: DialoguePresenter
 var input: InputService
 var interaction: InteractionManager
 var settings_panel: InputSettingsPanel
@@ -49,15 +51,16 @@ func _ready() -> void:
 	interaction.runtime = self
 	add_child(interaction)
 
-	presenter = DialoguePresenter.new()
-	presenter.name = "Presenter"
-	presenter.input = input
-	add_child(presenter)
+	default_presenter = DialoguePresenter.new()
+	default_presenter.name = "Presenter"
+	default_presenter.input = input
+	add_child(default_presenter)
+	presenter = default_presenter
 
 	settings_panel = InputSettingsPanel.new()
 	settings_panel.name = "InputSettings"
 	settings_panel.input = input
-	settings_panel.presenter = presenter
+	settings_panel.presenter = default_presenter
 	settings_panel.locale_changed.connect(_on_locale_changed)
 	add_child(settings_panel)
 
@@ -90,6 +93,93 @@ func cancel_all(reason: String = "手动取消") -> void:
 
 func is_event_running(event_id: StringName) -> bool:
 	return runner != null and runner.is_busy(event_id)
+
+# ── 展示层注入 ───────────────────────────────────────────
+#
+# 事件指令只依赖展示协议，不依赖具体 UI：
+#   show_text(speaker, text, auto_advance)
+#   is_text_finished() -> bool
+#   show_choices(prompt, options)
+#   get_choice() -> int          # 0 起，未选择时 -1
+#   close_all()                  # 可选
+#   fade_to(alpha, duration)     # 可选
+#
+# 默认展示层永远不会被替换掉；注入自定义展示层后可随时 restore_default_presenter()。
+
+## 注入游戏自己的展示层。传 null 等价于恢复插件默认 UI。
+## 返回 false 表示对象不满足展示协议（会保持当前展示层不变）。
+func set_presenter(custom) -> bool:
+	if custom == null:
+		return restore_default_presenter()
+	if not _is_valid_presenter(custom):
+		push_error("[RPGEventStudio] 自定义 presenter 缺少协议方法：%s" % str(custom))
+		return false
+	if presenter != null and not is_instance_valid(presenter):
+		# 上一个展示层随场景被释放了：先断开，避免保留悬空引用。
+		presenter = null
+		if runner != null:
+			runner.presenter = null
+	if custom == presenter:
+		return true
+	_cancel_running_events("presenter 已替换")
+	_close_current_presenter()
+	presenter = custom
+	if custom is Node and not (custom as Node).is_inside_tree():
+		add_child(custom)
+	_apply_presenter()
+	_sync_default_presenter_activity()
+	return true
+
+## 恢复插件默认 UI（不影响游戏自己的节点）。
+func restore_default_presenter() -> bool:
+	if default_presenter == null:
+		return false
+	if presenter == default_presenter:
+		_sync_default_presenter_activity()
+		return true
+	_cancel_running_events("恢复插件默认 UI")
+	_close_current_presenter()
+	presenter = default_presenter
+	_apply_presenter()
+	_sync_default_presenter_activity()
+	return true
+
+func is_using_default_presenter() -> bool:
+	return presenter == default_presenter
+
+func _is_valid_presenter(candidate) -> bool:
+	if candidate == null or not (candidate is Object):
+		return false
+	for method in [&"show_text", &"is_text_finished", &"show_choices", &"get_choice"]:
+		if not candidate.has_method(method):
+			return false
+	return true
+
+func _cancel_running_events(reason: String) -> void:
+	if runner != null and runner.active_count() > 0:
+		runner.cancel_all(reason)
+
+func _close_current_presenter() -> void:
+	if presenter == null or not is_instance_valid(presenter):
+		return
+	if presenter.has_method("close_all"):
+		presenter.close_all()
+
+func _apply_presenter() -> void:
+	if runner != null:
+		runner.presenter = presenter
+	if settings_panel != null:
+		settings_panel.presenter = presenter
+
+## 自定义展示层生效时，默认 UI 不再显示、也不再接收输入；
+## 恢复默认时再打开。这样两套 UI 不会同时抢输入。
+func _sync_default_presenter_activity() -> void:
+	if default_presenter == null:
+		return
+	var active: bool = presenter == default_presenter
+	default_presenter.visible = active
+	default_presenter.set_process(active)
+	default_presenter.set_process_input(active)
 
 func register_graph(graph_runner: GraphRunner) -> void:
 	if graph_runner == null:
@@ -216,3 +306,11 @@ func play_sfx(path: String, volume_db: float = 0.0) -> void:
 		_sfx_player.stream = stream
 		_sfx_player.volume_db = volume_db
 		_sfx_player.play()
+
+func _exit_tree() -> void:
+	# 游戏关闭 / 运行时被释放：先让等待中的事件结束，再收掉两套 UI。
+	if runner != null:
+		runner.cancel_all("运行时退出")
+	for candidate in [presenter, default_presenter]:
+		if candidate != null and is_instance_valid(candidate) and candidate.has_method("close_all"):
+			candidate.close_all()

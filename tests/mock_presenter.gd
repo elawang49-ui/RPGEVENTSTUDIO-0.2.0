@@ -10,6 +10,7 @@ var last_speaker := ""
 var last_text := ""
 var shown_texts: PackedStringArray = []
 var shown_choices: Array = []
+var close_count := 0
 
 var _finished := true
 var _choice := -1
@@ -33,6 +34,7 @@ func get_choice() -> int:
 	return _choice
 
 func close_all() -> void:
+	close_count += 1
 	_finished = true
 	_choice = -1
 
@@ -43,3 +45,4 @@ func reset() -> void:
 	last_speaker = ""
 	_choice = -1
 	_finished = true
+	close_count = 0

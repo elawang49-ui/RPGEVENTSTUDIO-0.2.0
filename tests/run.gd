@@ -25,6 +25,7 @@ func _run() -> void:
 	await _test_give_key_flow()
 	await _test_choice_branch()
 	await _test_cancel()
+	await _test_presenter_injection()
 	_report()
 	quit(0 if _failures.is_empty() else 1)
 
@@ -606,7 +607,126 @@ func _test_cancel() -> void:
 	_check(result["received"], "取消后应收到事件结束通知")
 	_check(int(result["result"]) == EventRunner.Result.CANCELLED, "结果应为 CANCELLED（实际 %d）" % int(result["result"]))
 
-# ── 工具 ─────────────────────────────────────────────────
+# ── 展示层注入 ───────────────────────────────────────────
+
+func _test_presenter_injection() -> void:
+	var runtime: Node = root.get_node_or_null("RPGEventStudio")
+	_check(runtime != null, "运行时 Autoload 可用于展示层注入测试")
+	if runtime == null:
+		return
+
+	runtime.call("restore_default_presenter")
+	var default_presenter: Node = runtime.get("presenter")
+	var runner: EventRunner = runtime.get("runner")
+	var bus: EventBus = runtime.get("bus")
+	_check(default_presenter is DialoguePresenter, "默认展示层应是插件自带的 DialoguePresenter")
+	_check(bool(runtime.call("is_using_default_presenter")), "初始状态应使用默认展示层")
+
+	var custom := MockPresenter.new()
+	custom.name = "InjectedPresenter"
+	root.add_child(custom)
+	custom.auto_confirm = true
+	_check(bool(runtime.call("set_presenter", custom)), "满足协议的对象应能注入")
+	_check(runtime.get("presenter") == custom, "运行时当前展示层应切到注入对象")
+	_check(runner.presenter == custom, "事件运行时也应使用注入对象")
+	_check(not default_presenter.visible, "注入后默认 UI 应隐藏")
+	_check(not default_presenter.is_processing(), "注入后默认 UI 不应继续处理")
+
+	var text_event := _make_text_event(&"injected_text", "注入后的文本")
+	_check(await _run_runtime_event(runtime, text_event, 90), "注入展示层后事件应能完成")
+	_check(_contains(custom.shown_texts, "注入后的文本"), "事件文本应交给注入的展示层")
+
+	# 不满足协议的对象必须被拒绝，且不能破坏当前展示层
+	var broken := Object.new()
+	_check(not bool(runtime.call("set_presenter", broken)), "缺少协议方法的对象应被拒绝")
+	_check(runtime.get("presenter") == custom, "拒绝非法对象后展示层应保持不变")
+
+	# 运行中替换展示层：旧事件应被取消、旧 UI 应收到 close_all
+	custom.never_finish = true
+	var report := {}
+	var handler := func(value: Dictionary) -> void:
+		report["value"] = value
+	bus.event_finished.connect(handler)
+	runtime.call("start_event", _make_text_event(&"injected_cancel", "等待替换"), {}, [])
+	await process_frame
+	await process_frame
+	_check(custom.last_text == "等待替换", "替换前应正在显示文本")
+	var replacement := MockPresenter.new()
+	replacement.name = "ReplacementPresenter"
+	root.add_child(replacement)
+	_check(bool(runtime.call("set_presenter", replacement)), "运行中应允许替换展示层")
+	var waited := 0
+	while report.is_empty() and waited < 120:
+		await process_frame
+		waited += 1
+	bus.event_finished.disconnect(handler)
+	_check(int((report.get("value", {}) as Dictionary).get("result", -1)) == EventRunner.Result.CANCELLED, "替换展示层应取消旧事件")
+	_check(custom.close_count > 0, "旧展示层应收到 close_all")
+	_check(runner.presenter == replacement, "替换后运行时指向新展示层")
+
+	# 恢复默认：默认 UI 重新可见，并且仍然能正常工作
+	_check(bool(runtime.call("restore_default_presenter")), "应能恢复默认展示层")
+	_check(runtime.get("presenter") == default_presenter, "恢复后当前展示层应是默认 UI")
+	_check(runner.presenter == default_presenter, "恢复后事件运行时也应回到默认 UI")
+	_check(default_presenter.visible and default_presenter.is_processing(), "恢复后默认 UI 应重新工作")
+	_check(await _run_runtime_event_with_default(runtime, _make_text_event(&"default_ui_text", "默认界面文本"), 240), "恢复默认 UI 后事件应能完成")
+	_check(_contains(default_presenter.shown_texts, "默认界面文本"), "默认 UI 应收到事件文本")
+
+	# 测试收尾：换成新的注入对象，避免影响其它用例
+	var cleanup := MockPresenter.new()
+	cleanup.name = "CleanupPresenter"
+	root.add_child(cleanup)
+	runtime.call("set_presenter", cleanup)
+	runtime.call("restore_default_presenter")
+	cleanup.queue_free()
+	custom.queue_free()
+	replacement.queue_free()
+
+func _make_text_event(id: StringName, text: String) -> EventDefinition:
+	var definition := EventDefinition.new()
+	definition.event_id = id
+	definition.display_name = String(text)
+	var page := EventPage.new()
+	page.trigger = "interact"
+	var command := CommandRegistry.create_command(&"show_text")
+	command.params["text"] = text
+	page.commands = [command]
+	definition.pages = [page]
+	return definition
+
+func _run_runtime_event(runtime: Node, definition: EventDefinition, max_frames: int) -> bool:
+	var finished := {"done": false}
+	var callback := func(_report: Dictionary) -> void:
+		finished["done"] = true
+	var bus: EventBus = runtime.get("bus")
+	bus.event_finished.connect(callback)
+	runtime.call("start_event", definition, {}, [])
+	var frames := 0
+	while not finished["done"] and frames < max_frames:
+		await process_frame
+		frames += 1
+	bus.event_finished.disconnect(callback)
+	_check(finished["done"], "事件应在 %d 帧内结束（%s）" % [max_frames, definition.event_id])
+	return finished["done"]
+
+## 默认 DialoguePresenter 需要真人按键；测试里用“点击推进”把它走完。
+func _run_runtime_event_with_default(runtime: Node, definition: EventDefinition, max_frames: int) -> bool:
+	var finished := {"done": false}
+	var callback := func(_report: Dictionary) -> void:
+		finished["done"] = true
+	var bus: EventBus = runtime.get("bus")
+	var presenter: Node = runtime.get("presenter")
+	bus.event_finished.connect(callback)
+	runtime.call("start_event", definition, {}, [])
+	var frames := 0
+	while not finished["done"] and frames < max_frames:
+		await process_frame
+		if presenter != null and bool(presenter.get("_waiting_confirm")):
+			presenter.set("_mouse_click", true)
+		frames += 1
+	bus.event_finished.disconnect(callback)
+	return finished["done"]
+
 
 func _make_harness() -> Dictionary:
 	var host := Node.new()

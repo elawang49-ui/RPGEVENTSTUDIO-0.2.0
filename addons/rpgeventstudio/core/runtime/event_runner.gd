@@ -97,8 +97,10 @@ func _drive(ctx: EventContext) -> void:
 		"duration_ms": Time.get_ticks_msec() - started_at,
 	}
 	bus.event_finished.emit(report)
-	if presenter != null and presenter.has_method("close_all") and _running_instances.is_empty():
-		presenter.close_all()
+	# 收尾时关闭「本事件实际使用的」展示层：presenter 可能在事件中途被替换，
+	# 不能拿新的展示层去关别人的 UI。
+	if ctx.presenter != null and ctx.presenter.has_method("close_all") and _running_instances.is_empty():
+		ctx.presenter.close_all()
 
 func _execute_list(ctx: EventContext, commands: Array) -> int:
 	var executed := 0
@@ -207,7 +209,7 @@ func _run_nested_event(parent: EventContext, target: EventDefinition, call_args:
 	child.host = host
 	child.state = state
 	child.bus = bus
-	child.presenter = presenter
+	child.presenter = parent.presenter
 	child.definition = target
 	child.page = target.pages[page_index]
 	child.event_id = target.event_id

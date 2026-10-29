@@ -6,7 +6,9 @@ extends CanvasLayer
 signal locale_changed(locale: String)
 
 var input: InputService
-var presenter: DialoguePresenter
+## 当前展示层：默认是 DialoguePresenter，也可能是游戏注入的展示层。
+## 只有实现了 blocked 属性的实现才会被暂停。
+var presenter
 
 var _root: Control
 var _title: Label
@@ -156,8 +158,7 @@ func open() -> void:
 	_hint.text = L10n.game("input.press_hint")
 	_status.text = ""
 	_conflict_row.visible = false
-	if presenter != null:
-		presenter.blocked = true
+	_set_presenter_blocked(true)
 	_sync_language_option()
 	_refresh_texts()
 	_rebuild_rows()
@@ -169,8 +170,14 @@ func close() -> void:
 	_listen_action = ""
 	_conflict_row.visible = false
 	_status.text = ""
-	if presenter != null:
-		presenter.blocked = false
+	_set_presenter_blocked(false)
+
+## 自定义展示层不一定实现 blocked；没有这个属性时保持原样即可。
+func _set_presenter_blocked(value: bool) -> void:
+	if presenter == null or not is_instance_valid(presenter):
+		return
+	if "blocked" in presenter:
+		presenter.set("blocked", value)
 
 func is_open() -> bool:
 	return visible
