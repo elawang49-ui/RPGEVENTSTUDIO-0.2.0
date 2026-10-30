@@ -13,6 +13,7 @@ const GRAPH_SCRIPT := "res://addons/rpgeventstudio/editor/level_graph/level_grap
 const LIST_SCRIPT := "res://addons/rpgeventstudio/editor/event_list/event_list_panel.gd"
 const THEME_SCRIPT := "res://addons/rpgeventstudio/editor/theme/dialogue_theme_view.gd"
 const MAP_SCRIPT := "res://addons/rpgeventstudio/editor/map_events/map_event_panel.gd"
+const STORY_SCRIPT := "res://addons/rpgeventstudio/editor/story/story_editor_panel.gd"
 const RUNTIME_SCRIPT := "res://addons/rpgeventstudio/runtime/autoload/studio_runtime.gd"
 const AUTOLOAD_NAME := "RPGEventStudio"
 const EDITOR_LANGUAGE_SETTING := "rpg_event_studio/editor_language"
@@ -23,6 +24,7 @@ var _main_screen: Control
 var _theme_view: Control
 var _list_panel: Control
 var _map_panel: Control
+var _story_view: Control
 var _debugger_plugin: StudioDebuggerPlugin
 var _filesystem: EditorFileSystem
 var _refresh_timer: SceneTreeTimer
@@ -48,6 +50,8 @@ func _enter_tree() -> void:
 		_capture_map_screen.call_deferred()
 	if OS.get_environment("RPGEVENTSTUDIO_THEME_SHOT") == "1":
 		_capture_theme_screen.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_STORY_SELFTEST") == "1" or OS.get_environment("RPGEVENTSTUDIO_STORY_SHOT") == "1":
+		_start_story_test.call_deferred()
 
 func _exit_tree() -> void:
 	if _selection != null and _selection.selection_changed.is_connected(_on_selection_changed):
@@ -64,6 +68,7 @@ func _exit_tree() -> void:
 		_main_tabs = null
 	_main_screen = null
 	_theme_view = null
+	_story_view = null
 
 	if _filesystem != null and _filesystem.filesystem_changed.is_connected(_on_filesystem_changed):
 		_filesystem.filesystem_changed.disconnect(_on_filesystem_changed)
@@ -226,6 +231,14 @@ func refresh_event_list() -> void:
 func _open_event(definition: EventDefinition) -> void:
 	if _panel != null and definition != null:
 		_panel.call("open_definition", definition, null)
+	if _story_view != null and definition != null:
+		_story_view.call("open_definition", definition, null)
+
+## 打开「剧情」标签页（剧情创作工作台）。
+func open_story_tab() -> void:
+	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	if _main_tabs != null:
+		_main_tabs.current_tab = 2
 
 func _open_graph(graph: LevelGraph) -> void:
 	if graph == null:
@@ -286,6 +299,16 @@ func _create_main_screen() -> void:
 		_main_tabs.set_tab_title(1, L10n.ui("theme.title"))
 	else:
 		push_error("[RPGEventStudio] 找不到 UI 主题页脚本")
+
+	var story_script := load(STORY_SCRIPT)
+	if story_script != null:
+		_story_view = story_script.new()
+		_story_view.name = "StoryWorkbench"
+		_story_view.call("bind_plugin", self)
+		_main_tabs.add_child(_story_view)
+		_main_tabs.set_tab_title(2, L10n.ui("story.title"))
+	else:
+		push_error("[RPGEventStudio] 找不到剧情工作台脚本")
 	_make_visible(false)
 
 func _has_main_screen() -> bool:
@@ -328,6 +351,8 @@ func _on_selection_changed() -> void:
 		_main_screen.call("open_from_selection", nodes)
 	if _map_panel != null:
 		_map_panel.call("on_selection_changed", nodes)
+	if _story_view != null and _main_tabs != null and _main_tabs.current_tab == 2:
+		_story_view.call("open_from_selection", nodes)
 
 # ── 语言 ─────────────────────────────────────────────────
 
@@ -487,3 +512,18 @@ func _start_selftest() -> void:
 	runner.name = "EditorSelfTest"
 	add_child(runner)
 	runner.call_deferred("start", _panel)
+
+## 剧情工作台自测 / 截图（RPGEVENTSTUDIO_STORY_SELFTEST=1 / RPGEVENTSTUDIO_STORY_SHOT=1）。
+func _start_story_test() -> void:
+	if Engine.has_meta("rpg_eventstudio_story_test_started"):
+		return
+	Engine.set_meta("rpg_eventstudio_story_test_started", true)
+	var script := load("res://tests/story_editor_selftest.gd")
+	if script == null:
+		push_error("[RPGEventStudio] 找不到剧情工作台自测脚本")
+		get_tree().quit(2)
+		return
+	var runner: Node = script.new()
+	runner.name = "StorySelfTest"
+	add_child(runner)
+	runner.call_deferred("start", self, _story_view)

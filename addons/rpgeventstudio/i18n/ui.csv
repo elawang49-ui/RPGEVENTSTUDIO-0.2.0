@@ -431,3 +431,114 @@ theme.cap.choices,选项,Choices
 theme.cap.bbcode,BBCode,BBCode
 theme.cap.fade,淡入淡出,Fade
 theme.cap.auto_advance,自动推进,Auto Advance
+story.title,剧情,Story
+story.open_hint,从事件列表双击一个事件，或在 2D 场景里选中带事件的节点来开始写剧情。,Double-click an event in the event list or select a node with an event in the 2D scene to start writing.
+story.open_button,打开事件…,Open Event…
+story.template_menu,从模板新建…,New from Template…
+story.undo_button,撤销,Undo
+story.redo_button,重做,Redo
+story.insert.line,＋ 台词,+ Line
+story.insert.choice,＋ 选项,+ Choices
+story.insert.condition,＋ 条件,+ Condition
+story.insert.switch,＋ 开关,+ Switch
+story.insert.variable,＋ 变量,+ Variable
+story.insert.command,＋ 指令…,+ Command…
+story.insert_target,插入位置：{target},Insert at: {target}
+story.list.empty,还没有内容。点上方「＋ 台词」开始写第一句。,"Nothing here yet. Use ""+ Line"" above to write the first one."
+story.row.narration,旁白,Narration
+story.row.choice,选项×{count} {prompt},Choices×{count} {prompt}
+story.row.condition,条件：{expr},Condition: {expr}
+story.row.duplicate,复制,Duplicate
+story.option.header,选项{number}：{text},Option {number}: {text}
+story.option.add_line,在这一分支末尾加一句台词,Add a line to this branch
+story.option.no_branch,（尚无分支内容）,(no branch content yet)
+story.where.page,第{page}页,Page {page}
+story.where.choice_branch,第{page}页 › 选项{number}分支,Page {page} › Option {number} branch
+story.where.then,第{page}页 › 条件「是」分支,Page {page} › Then branch
+story.where.else,第{page}页 › 条件「否」分支,Page {page} › Else branch
+story.editor.empty,选中上面任意一行进行编辑。,Select any row above to edit it.
+story.editor.speaker_none,（无说话人 / 旁白）,(No speaker / Narration)
+story.editor.command_hint,这类指令的参数请在右侧「事件」面板中编辑；本视图保证它在剧情中的位置不变。,Edit this command's parameters in the Events dock; the story view keeps its position unchanged.
+story.editor.option_add,＋ 添加选项,+ Add Option
+story.editor.option_remove,删除该选项及其分支,Delete this option and its branch
+story.editor.option_default,新选项,New option
+story.editor.option_branches_generate,为每个选项生成分支,Generate a branch for each option
+story.editor.choice_not_well_formed,这个选项块带有「其它情况」尾巴或结构特殊：可以改文字，但增删选项请在「事件」面板操作，以免改变语义。,"This choice block has a special shape: text edits are safe, but please add/remove options in the Events dock to avoid changing its meaning."
+story.preview.title,文案预览,Text Preview
+story.preview.option,▸ {number}. {text},▸ {number}. {text}
+story.preview.condition,条件：{expr},Condition: {expr}
+story.preview.else,否则：,Else:
+story.preview.state,状态：{summary},State: {summary}
+story.preview.command,指令：{summary},Command: {summary}
+story.preview.choice_raw,（此选项块含特殊结构，预览可能不完全）,(This choice block has a special shape; preview may be partial)
+story.preview.issues_title,BBCode 提示,BBCode Notes
+story.preview.clean,文案没有检测到 BBCode 问题。,No BBCode issues detected.
+story.preview.unsupported_hint,以下标签问题需要注意（原文保持不变）：,The following tag issues were found (original text is never modified):
+story.roster.title,角色花名册,Character Roster
+story.roster.add,新增角色,Add Character
+story.roster.save,保存,Save
+story.roster.save_tip,把花名册保存到 state/story_characters.tres,Save the roster to state/story_characters.tres
+story.roster.empty,还没有角色。点「＋」新增一个。,"No characters yet. Use ""+"" to add one."
+story.roster.id,标识（如 lily）,ID (e.g. lily)
+story.roster.name,显示名（运行时显示这个名字）,Display name (shown in game)
+story.roster.avatar,头像 / 立绘参考（仅创作参考，运行时不渲染）,Avatar reference (authoring only; not rendered at runtime)
+story.roster.notes,备注,Notes
+story.roster.remove,删除角色,Remove Character
+story.roster.default_name,新角色,New Character
+story.roster.saved,花名册已保存。,Roster saved.
+story.roster.save_failed,花名册保存失败。,Failed to save the roster.
+story.roster.hint,游戏运行时只显示说话人名字，不渲染头像；头像与颜色只是写作者的创作参考。,"The game only shows the speaker's name; avatars and colors are authoring references only."
+story.undo.insert,插入条目,Insert item
+story.undo.delete,删除条目,Delete item
+story.undo.duplicate,复制条目,Duplicate item
+story.undo.move,移动条目,Move item
+story.undo.param,修改参数,Edit parameter
+story.undo.option,修改选项文字,Edit option text
+story.undo.choice_add,添加选项,Add option
+story.undo.choice_remove,删除选项,Remove option
+story.undo.choice_move,调整选项顺序,Reorder options
+story.undo.choice_branches,生成分支,Generate branches
+story.toast.not_well_formed,这个选项块结构特殊，请到「事件」面板调整。,This choice block has a special shape; adjust it in the Events dock.
+story.toast.template_created,已从模板创建事件。,Event created from template.
+story.toast.not_event,选中的文件不是事件资源。,The selected file is not an event resource.
+story.template.npc,NPC 普通对话,NPC Dialogue
+story.template.npc_hint,一页交互事件：两三句来回台词，适合最常见的 NPC 搭话。,"One interact page with a few lines, for the most common NPC talks."
+story.template.investigate,首次调查 / 重复调查,First / Repeat Investigation
+story.template.investigate_hint,第一次调查有发现并记录开关，之后再调查只说一句话。,"First time reveals something and records a switch; later investigations show one line."
+story.template.multi_choice,多选项对话,Multi-choice Dialogue
+story.template.multi_choice_hint,一个提问加三个选项，每个选项有自己的分支台词。,"One prompt with three options, each with its own branch lines."
+story.template.condition_branch,条件分支,Conditional Branch
+story.template.condition_branch_hint,按开关状态说不同的话（已接任务 / 未接任务）。,Say different lines depending on a switch (quest accepted or not).
+story.template.item_get,物品获取,Item Pickup
+story.template.item_get_hint,第一次拿到物品（写开关），之后提示已经拿过。,"First time grants the item (records a switch); later visits say it is empty."
+story.template.door_lock,门锁与机关,Door Lock & Mechanism
+story.template.door_lock_hint,有钥匙开门并写开关，没钥匙被挡住。两页条件互斥。,"Open with the key (records a switch) or get stopped without it. Two exclusive pages."
+story.template.autorun,自动触发事件,Autorun Event
+story.template.autorun_hint,进入场景或触发区时自动演出，只跑一次。,"Plays automatically on scene / region enter, once."
+story.template.notes,用「剧情」工作台或「事件」面板编辑本资源。,Edit this resource in the Story workbench or the Events dock.
+story.template.speaker_a,阿澈,A-Che
+story.template.speaker_b,莉莉,Lily
+story.template.npc_line1,今天也辛苦了，有什么想问的吗？,Another busy day. Anything you want to ask?
+story.template.npc_narration,（风吹过走廊，远处传来上课铃。）,(Wind sweeps the corridor; a bell rings in the distance.)
+story.template.npc_line2,那我先去准备下一节课了。,Then I'll go prepare for the next class.
+story.template.investigate_repeat,（再没有发现什么新的东西。）,(Nothing new to be found.)
+story.template.investigate_first,（仔细检查这张课桌……抽屉里好像藏着什么。）,(You examine the desk carefully... something hides in the drawer.)
+story.template.investigate_found,获得线索【揉皱的纸条】！,Clue gained: [A Crumpled Note]!
+story.template.multi_line,你要参加文化节的话，得先想清楚三件事。,"If you're joining the festival, three things first."
+story.template.multi_prompt,想先聊哪一个？,Which one first?
+story.template.choice_a,节目安排,The program
+story.template.choice_b,场地布置,The venue
+story.template.choice_c,宣传海报,The posters
+story.template.multi_reply_a,节目要提前一周定下来，不然排不开。,The program must be set a week ahead or nothing fits.
+story.template.multi_reply_b,场地要找学生会盖章，别忘了带表格。,The venue needs the student council stamp; don't forget the form.
+story.template.multi_reply_c,海报交给你了，字要写得大一点。,Posters are on you; make the letters big.
+story.template.branch_intro,你现在有空吗？我有点事想拜托你。,Got a minute? There is something I want to ask.
+story.template.branch_then,太好了！那任务就交给你了。,Great! Then the task is yours.
+story.template.branch_else,等你接下任务再来找我吧。,Come back when you take the quest.
+story.template.item_empty,（架子上已经空了。）,(The shelf is empty now.)
+story.template.item_found,（书架的夹层里放着一瓶墨水。）,(An ink bottle sits in the shelf's hidden gap.)
+story.template.item_obtained,获得【旧墨水】！,Obtained: [Old Ink]!
+story.template.door_open,你用钥匙打开了办公室的门。,You unlock the office door with the key.
+story.template.door_locked,门锁着，门牌上写着「主任室」。,"The door is locked; the plate reads ""Director's Office""."
+story.template.autorun_line1,（走廊尽头的广播忽然响了。）,(The speaker at the end of the corridor crackles to life.)
+story.template.autorun_line2,全体同学请到操场集合。,"All students, gather at the field."
