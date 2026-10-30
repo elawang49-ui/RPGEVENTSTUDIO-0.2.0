@@ -12,6 +12,7 @@ var _state_filter: LineEdit
 var _result_filter: OptionButton
 var _tree: Tree
 var _details: RichTextLabel
+var _detail_mode: OptionButton
 var _status: Label
 var _current: Label
 
@@ -60,6 +61,12 @@ func _build() -> void:
 	_result_filter.add_item(L10n.game("trace.result.failed"), 3)
 	_result_filter.item_selected.connect(func(_index: int) -> void: refresh(true))
 	toolbar.add_child(_result_filter)
+
+	_detail_mode = OptionButton.new()
+	_detail_mode.add_item(L10n.game("trace.detail.natural"), 0)
+	_detail_mode.add_item(L10n.game("trace.detail.raw"), 1)
+	_detail_mode.item_selected.connect(func(_index: int) -> void: _on_selected())
+	toolbar.add_child(_detail_mode)
 
 	var clear_button := Button.new()
 	clear_button.text = L10n.game("trace.clear")
@@ -246,43 +253,95 @@ func _kind_color(kind: String) -> Color:
 			return Color(0.86, 0.72, 0.95)
 	return Color(0.82, 0.84, 0.90)
 
+func _command_label(command_type: String) -> String:
+	var text := L10n.game("cmd." + command_type)
+	return command_type if text.begins_with("cmd.") else text
+
 func _summary(record: Dictionary) -> String:
 	match str(record.get("kind", "")):
 		"event_start":
-			return "%s（%s）" % [str(record.get("event_name", "")), str(record.get("event_id", ""))]
+			return L10n.game("trace.summary.event_start", {
+				"name": str(record.get("event_name", record.get("event_id", ""))),
+			})
 		"event_end":
-			return "%s  #%d" % [str(record.get("result", "")), int(record.get("trace_id", 0))]
+			return L10n.game("trace.summary.event_end", {
+				"name": str(record.get("trace_id", 0)),
+				"result": _result_label(str(record.get("result", ""))),
+			})
 		"event_rejected":
-			return "%s · %s" % [str(record.get("event_name", "")), str(record.get("event_id", ""))]
+			return L10n.game("trace.summary.event_rejected", {
+				"name": str(record.get("event_name", record.get("event_id", ""))),
+			})
 		"event_ignored":
-			return "%s · %s" % [str(record.get("event_name", "")), _reason_label(record)]
+			return L10n.game("trace.summary.event_ignored", {
+				"name": str(record.get("event_name", record.get("event_id", ""))),
+				"reason": _reason_label(record),
+			})
 		"page":
 			return L10n.game("trace.summary.page", {
 				"page": int(record.get("page_index", 0)) + 1,
-				"trigger": str(record.get("trigger", "")),
+				"trigger": _trigger_label(str(record.get("trigger", ""))),
 				"state": L10n.game("trace.selected" if bool(record.get("selected", false)) else "trace.not_selected"),
 			})
 		"command_start":
-			return "#%d %s" % [int(record.get("command_index", 0)), str(record.get("command_type", ""))]
+			return L10n.game("trace.summary.command_start", {
+				"command": _command_label(str(record.get("command_type", ""))),
+			})
 		"command_end":
-			return "#%d %s → %s" % [int(record.get("command_index", 0)), str(record.get("command_type", "")), str(record.get("result", ""))]
+			return L10n.game("trace.summary.command_end", {
+				"command": _command_label(str(record.get("command_type", ""))),
+			})
 		"condition":
 			return L10n.game("trace.summary.condition", {
-				"key": str(record.get("key", "")),
+				"key": StateCatalogStore.display(str(record.get("key", ""))),
 				"actual": _value_text(record.get("actual", null)),
-				"branch": str(record.get("branch", "")),
+				"branch": _branch_label(str(record.get("branch", ""))),
 			})
 		"state":
-			return "%s：%s → %s" % [str(record.get("key", "")), _value_text(record.get("old", null)), _value_text(record.get("new", null))]
+			return L10n.game("trace.summary.state", {
+				"name": StateCatalogStore.display(str(record.get("key", ""))),
+				"old": _value_text(record.get("old", null)),
+				"new": _value_text(record.get("new", null)),
+			})
 		"call":
-			return "%s %s %s" % [str(record.get("phase", "")), str(record.get("call_kind", "")), str(record.get("target", ""))]
+			return L10n.game("trace.summary.call", {
+				"phase": L10n.game("trace.call.enter" if str(record.get("phase", "")) == "enter" else "trace.call.exit"),
+				"target": str(record.get("target", "")).get_file(),
+			})
 		"graph_node":
-			return "%s · %s · %s" % [str(record.get("graph_id", "")), str(record.get("node_id", "")), str(record.get("phase", ""))]
+			return L10n.game("trace.summary.graph_node", {
+				"graph": str(record.get("graph_id", "")),
+				"node": str(record.get("node_id", "")),
+				"phase": L10n.game("trace.graph.enter" if str(record.get("phase", "")) == "enter" else "trace.graph.exit"),
+			})
 		"graph_branch":
-			return "%s：%s → %s" % [str(record.get("node_id", "")), str(record.get("port", "")), str(record.get("to_node", ""))]
+			return L10n.game("trace.summary.graph_branch", {
+				"node": str(record.get("node_id", "")),
+				"port": str(record.get("port", "")),
+				"to": str(record.get("to_node", "")),
+			})
 		"graph_merge":
-			return "%s %s %d/%d" % [str(record.get("node_id", "")), str(record.get("mode", "")), int(record.get("count", 0)), int(record.get("required", 0))]
+			return L10n.game("trace.summary.graph_merge", {
+				"node": str(record.get("node_id", "")),
+				"mode": "AND" if str(record.get("mode", "")) == "and" else "OR",
+				"count": int(record.get("count", 0)),
+				"required": int(record.get("required", 0)),
+			})
 	return str(record.get("kind", ""))
+
+func _trigger_label(trigger: String) -> String:
+	var text := L10n.game("trigger." + trigger)
+	return trigger if text.begins_with("trigger.") else text
+
+func _branch_label(branch: String) -> String:
+	return L10n.game("trace.cond.branch.then" if branch == "true" else "trace.cond.branch.else")
+
+func _result_label(result: String) -> String:
+	match result:
+		"completed": return L10n.game("trace.result.completed")
+		"cancelled": return L10n.game("trace.result.cancelled")
+		"failed": return L10n.game("trace.result.failed")
+	return result
 
 func _reason_label(record: Dictionary) -> String:
 	match str(record.get("reason", "")):
@@ -328,7 +387,100 @@ func _on_selected() -> void:
 	var record: Dictionary = item.get_metadata(0)
 	if record.is_empty():
 		return
-	_details.text = _summary(record) + "\n\n" + JSON.stringify(record, "  ")
+	_details.text = _detail_text(record)
+
+## 详情三层：自然语言（普通视图）/ 原始 JSON（专业模式）。时间线摘要即普通视图。
+func _detail_text(record: Dictionary) -> String:
+	if _detail_mode != null and int(_detail_mode.get_item_id(_detail_mode.selected)) == 1:
+		return _summary(record) + "\n\n" + JSON.stringify(record, "  ")
+	return _natural_detail(record)
+
+func _natural_detail(record: Dictionary) -> String:
+	var lines := PackedStringArray()
+	lines.append(_summary(record))
+	var kind := str(record.get("kind", ""))
+	match kind:
+		"event_start":
+			var source: Dictionary = record.get("source", {})
+			if not source.is_empty():
+				lines.append(L10n.game("trace.detail.source", {
+					"source": _source_label(source),
+				}))
+			if int(record.get("page_index", -1)) >= 0:
+				lines.append(L10n.game("trace.detail.selected_page", {
+					"page": int(record.get("page_index", 0)) + 1,
+				}))
+		"event_rejected":
+			var src: Dictionary = record.get("source", {})
+			if not src.is_empty():
+				lines.append(L10n.game("trace.detail.source", {"source": _source_label(src)}))
+			lines.append(L10n.game("trace.detail.rejected_hint"))
+			var pages: Array = record.get("pages", [])
+			for page in pages:
+				lines.append("  " + L10n.game("trace.summary.page", {
+					"page": int(page.get("index", 0)) + 1,
+					"trigger": _trigger_label(str(page.get("trigger", ""))),
+					"state": L10n.game("trace.selected" if bool(page.get("active", false)) else "trace.not_selected"),
+				}))
+				for condition in page.get("conditions", []):
+					lines.append("    " + L10n.game("trace.summary.condition", {
+						"key": StateCatalogStore.display(str(condition.get("key", ""))),
+						"actual": _value_text(condition.get("actual", null)),
+						"branch": L10n.game("trace.cond.branch.then" if bool(condition.get("ok", false)) else "trace.cond.branch.else"),
+					}))
+		"event_ignored":
+			lines.append(L10n.game("trace.detail.ignored_hint", {"reason": _reason_label(record)}))
+		"condition":
+			lines.append(L10n.game("trace.detail.condition_expected", {
+				"expected": _value_text(record.get("expected", null)),
+			}))
+			lines.append(L10n.game("trace.detail.condition_actual", {
+				"actual": _value_text(record.get("actual", null)),
+			}))
+			lines.append(L10n.game("trace.cond.matched" if bool(record.get("matched", false)) else "trace.cond.not_matched"))
+			lines.append(L10n.game("trace.detail.condition_branch", {
+				"branch": _branch_label(str(record.get("branch", ""))),
+			}))
+			if str(record.get("node_id", "")) != "":
+				lines.append(L10n.game("trace.detail.graph_location", {
+					"graph": str(record.get("graph_id", "")),
+					"node": str(record.get("node_id", "")),
+				}))
+		"state":
+			lines.append(L10n.game("trace.detail.state_old", {"value": _value_text(record.get("old", null))}))
+			lines.append(L10n.game("trace.detail.state_new", {"value": _value_text(record.get("new", null))}))
+			if int(record.get("command_index", -1)) >= 0:
+				lines.append(L10n.game("trace.detail.state_by_command", {
+					"command": _command_label(str(record.get("command_type", ""))),
+				}))
+		"graph_merge":
+			if not bool(record.get("fired", false)):
+				lines.append(L10n.game("trace.detail.merge_waiting", {
+					"required": int(record.get("required", 0)),
+				}))
+		"graph_node":
+			var phase := str(record.get("phase", ""))
+			if phase == "stage":
+				var cause: Dictionary = record.get("cause", {})
+				lines.append(L10n.game("trace.detail.stage", {"stage": str(cause.get("stage_id", ""))}))
+	return "\n".join(lines)
+
+func _source_label(source: Dictionary) -> String:
+	match str(source.get("kind", "")):
+		"graph":
+			return L10n.game("trace.source.graph", {
+				"graph": str(source.get("graph_id", "")),
+				"node": str(source.get("node_id", "")),
+			})
+		"interactor":
+			return L10n.game("trace.source.interactor", {"node": str(source.get("node", ""))})
+		"trigger_area":
+			return L10n.game("trace.source.trigger_area", {"node": str(source.get("node", ""))})
+		"autorun":
+			return L10n.game("trace.source.autorun", {"node": str(source.get("node", ""))})
+		"nested":
+			return L10n.game("trace.source.nested", {"parent": str(source.get("parent_event_id", ""))})
+	return JSON.stringify(source)
 
 func _on_activated() -> void:
 	var item := _tree.get_selected()

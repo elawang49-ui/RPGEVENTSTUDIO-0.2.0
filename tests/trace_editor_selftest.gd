@@ -87,7 +87,12 @@ func start(_plugin: EditorPlugin) -> void:
 	tree.set_selected(first, 0)
 	_view.call("_on_selected")
 	var details: RichTextLabel = _view.get("_details")
-	_check(details != null and details.text.contains("\"kind\""), "详情显示记录 JSON")
+	_check(details != null and details.text.contains("剧情"), "默认自然语言详情")
+	var mode: OptionButton = _view.get("_detail_mode")
+	if mode != null:
+		mode.select(1)
+		_view.call("_on_selected")
+	_check(details != null and details.text.contains("\"kind\""), "切到原始 JSON 详情")
 
 	# 编辑器调试器通道：F2 的 trace_node / trace_event 消息应被解析。
 	var debugger := StudioDebuggerPlugin.new()

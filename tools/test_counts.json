@@ -12,7 +12,7 @@
     "interaction_test": 19,
     "node_ref_test": 12,
     "runtime_trace_test": 63,
-    "trace_ui_test": 11
+    "trace_ui_test": 14
   },
   "editor": {
     "editor": 19,
@@ -20,6 +20,6 @@
     "gvl": 59,
     "story": 20,
     "audit": 14,
-    "trace": 7
+    "trace": 8
   }
 }

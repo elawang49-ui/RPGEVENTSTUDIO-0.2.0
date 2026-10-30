@@ -803,3 +803,42 @@ trace.kind.event_ignored,事件被忽略,Event ignored
 trace.reason.reentry,同一事件正在执行,Same event already running
 trace.reason.repeat_policy,执行策略不允许（{policy}）,Repeat policy blocked ({policy})
 trace.reason.unknown,未知原因,Unknown reason
+trace.detail.natural,自然语言,Natural language
+trace.detail.raw,原始 JSON,Raw JSON
+trace.summary.event_start,剧情开始：{name},Story start: {name}
+trace.summary.event_end,剧情结束：trace #{name} · {result},Story end: trace #{name} · {result}
+trace.summary.event_rejected,剧情未触发：{name},Story not triggered: {name}
+trace.summary.event_ignored,剧情被忽略：{name}（{reason}）,Story ignored: {name} ({reason})
+trace.summary.command_start,开始执行指令：{command},Command start: {command}
+trace.summary.command_end,指令结束：{command},Command end: {command}
+trace.summary.state,游戏状态变化：{name}：{old} → {new},State change: {name}: {old} → {new}
+trace.summary.call,调用{phase}：{target},Call {phase}: {target}
+trace.summary.graph_node,关卡图 {graph} · 节点 {node} · {phase},Graph {graph} · node {node} · {phase}
+trace.summary.graph_branch,关卡图分支：{node} 的「{port}」→ {to},"Graph branch: {node} ""{port}"" → {to}"
+trace.summary.graph_merge,剧情线汇合：{node} {mode} {count}/{required},Merge: {node} {mode} {count}/{required}
+trace.call.enter,进入,enter
+trace.call.exit,返回,exit
+trace.graph.enter,进入,enter
+trace.graph.exit,退出,exit
+trace.cond.branch.then,「是」分支,then branch
+trace.cond.branch.else,「否」分支,else branch
+trace.cond.matched,结果：条件满足,Result: matched
+trace.cond.not_matched,结果：条件不满足,Result: not matched
+trace.detail.source,触发来源：{source},Triggered by: {source}
+trace.detail.selected_page,选中第 {page} 页,Selected page {page}
+trace.detail.rejected_hint,当前没有符合条件的事件页。,No page matches the current conditions.
+trace.detail.ignored_hint,原因：{reason},Reason: {reason}
+trace.detail.condition_expected,预期：{expected},Expected: {expected}
+trace.detail.condition_actual,实际：{actual},Actual: {actual}
+trace.detail.condition_branch,执行：进入{branch},Flow: enters {branch}
+trace.detail.graph_location,位置：关卡图 {graph} · 节点 {node},Location: graph {graph} · node {node}
+trace.detail.state_old,原状态：{value},Before: {value}
+trace.detail.state_new,新状态：{value},After: {value}
+trace.detail.state_by_command,来自指令：{command},Written by: {command}
+trace.detail.merge_waiting,还需 {required} 条输入才会触发,Waiting for {required} inputs
+trace.detail.stage,阶段切换：{stage},Stage changed: {stage}
+trace.source.interactor,交互对象：{node},Interactor: {node}
+trace.source.trigger_area,触发区域：{node},Trigger area: {node}
+trace.source.autorun,自动事件：{node},Autorun: {node}
+trace.source.graph,关卡图节点：{graph} · {node},Graph node: {graph} · {node}
+trace.source.nested,嵌套调用（父事件 {parent}）,Nested call (parent {parent})

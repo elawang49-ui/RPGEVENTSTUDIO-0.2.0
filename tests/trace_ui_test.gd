@@ -83,12 +83,26 @@ func _run() -> void:
 			"导出 JSON 可解析且带版本")
 		DirAccess.remove_absolute(path)
 
-	# 详情：选中第一条记录应显示 JSON
+	# 普通视图：时间线摘要用自然语言（状态行显示 显示名 + 前后值）
+	var state_summary := ""
+	for i in tree.get_root().get_child_count():
+		var row := tree.get_root().get_child(i)
+		var record: Dictionary = row.get_metadata(0)
+		if str(record.get("kind", "")) == "state":
+			state_summary = row.get_text(2)
+	_check(state_summary.contains("→") or state_summary.contains("游戏状态"), "状态行使用自然语言摘要")
+
+	# 详情三层：自然语言 / 原始 JSON
 	var first := tree.get_root().get_child(0)
 	tree.set_selected(first, 0)
 	view.call("_on_selected")
 	var details: RichTextLabel = view.get("_details")
-	_check(details != null and details.text.contains("kind"), "选中记录显示详情")
+	_check(details != null and details.text.contains("剧情"), "默认显示自然语言详情")
+	var mode: OptionButton = view.get("_detail_mode")
+	_check(mode != null and mode.item_count == 2, "详情提供两种模式")
+	mode.select(1)
+	view.call("_on_selected")
+	_check(details != null and details.text.contains("\"kind\""), "原始 JSON 详情保留专业字段")
 
 	view.queue_free()
 	_report()
