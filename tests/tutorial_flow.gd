@@ -74,9 +74,10 @@ func _run() -> void:
 	graph_panel.call("_on_connection_request", action.node_id, 0, stage.node_id, 0)
 	_check(graph.connections.size() == 5, "连线都写进了数据（%d）" % graph.connections.size())
 
-	# 参数检查：所有节点都填好了，应无警告
+	# 参数检查：所有节点都填好了，不应有错误/警告（未接的条件出口只算提示）
 	var check_text := str(graph_panel.get("_check_label").text)
-	_check(check_text.contains("没有发现问题"), "参数检查应通过（实际：%s）" % check_text)
+	_check(check_text.contains("0 错误") and check_text.contains("0 警告"),
+		"参数检查应通过且无错误/警告（实际：%s）" % check_text)
 
 	graph_panel.call("_on_save_pressed")
 	var reloaded: LevelGraph = load(graph_path)

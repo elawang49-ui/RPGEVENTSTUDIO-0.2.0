@@ -6,6 +6,8 @@ extends SceneTree
 ## 3) 列出 CSV 里没人引用的键（只提示，不自动删）。
 
 const CSV_PATH := "res://addons/rpgeventstudio/i18n/ui.csv"
+## 状态扫描器内部「使用类型」常量：形似本地化键，实际由 state.bulk.kind.* 映射文案。
+const NON_I18N_KEYS := ["cmd.custom", "graph.condition", "graph.action", "graph.end"]
 
 func _init() -> void:
 	var failures := 0
@@ -133,13 +135,18 @@ func _collect(path: String, keys: Dictionary) -> void:
 		"game.", "sample.", "diag.", "state.", "graph.", "eventlist.", "picker.", "debug.", "fade.", "stage."]
 	var regex := RegEx.new()
 	regex.compile("\"([a-z][a-z0-9_]*\\.[a-z0-9_.]*)\"")
-	for match_result in regex.search_all(text):
-		var key := match_result.get_string(1)
-		if key.ends_with(".") or key.contains(".tres") or key.contains(".tscn") or key.contains(".gd"):
+	# 逐行扫描：状态扫描器的 KIND_* 是内部使用类型常量（如 "graph.condition"），
+	# 不是本地化键，其界面文案由 state.bulk.kind.* 映射，必须排除。
+	for line in text.split("\n"):
+		if line.strip_edges().begins_with("const KIND_"):
 			continue
-		if key == "no.such.key":
-			continue
-		for prefix in prefixes:
-			if key.begins_with(prefix):
-				keys[key] = true
-				break
+		for match_result in regex.search_all(line):
+			var key := match_result.get_string(1)
+			if key.ends_with(".") or key.contains(".tres") or key.contains(".tscn") or key.contains(".gd"):
+				continue
+			if key == "no.such.key" or NON_I18N_KEYS.has(key):
+				continue
+			for prefix in prefixes:
+				if key.begins_with(prefix):
+					keys[key] = true
+					break

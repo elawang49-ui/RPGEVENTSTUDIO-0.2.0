@@ -437,6 +437,7 @@ state.bulk.preview_title,登记预览,Register Preview
 state.bulk.preview_header,将向 {path} 登记以下 {count} 个状态（原文件先备份，已登记的状态不会被覆盖）：,Registering {count} states into {path} (original file is backed up; existing states are never overwritten):
 state.bulk.preview_line,{key} · {type} · 默认 {default} · 分类 {category} · 显示「{display}」,"{key} · {type} · default {default} · category {category} · display ""{display}"""
 state.bulk.preview_cancel,取消,Cancel
+state.bulk.close,关闭,Close
 state.bulk.registered,已登记 {added} 个状态，跳过 {skipped} 个（已存在）。,"Registered {added} states, skipped {skipped} (already existed)."
 state.bulk.blocked,有 {count} 个勾选状态未设置类型，不能登记：{keys},{count} checked states have no type set and cannot be registered: {keys}
 state.bulk.nothing_selected,请先勾选要登记的状态。,Check at least one state to register.
