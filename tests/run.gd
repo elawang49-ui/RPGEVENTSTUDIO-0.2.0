@@ -265,14 +265,16 @@ func _test_input_registry() -> void:
 	service.extend_action_defaults(InputService.ACTION_DIALOGUE_ADVANCE, [
 		{"type": "key", "keycode": KEY_E},
 	])
-	var described: Dictionary = service.describe("dialogue_advance")["keyboard"]
-	_check(described.has("E"), "未改键时补充默认键应生效")
-	_check(described.has("Space"), "补充默认键不应挤掉原有绑定")
+	# 界面标签随语言变化（中文是“空格”），这里按真实按键事件断言。
+	_check(_has_event(service.events_of(InputService.ACTION_DIALOGUE_ADVANCE), _key(KEY_E)),
+		"未改键时补充默认键应生效")
+	_check(_has_event(service.events_of(InputService.ACTION_DIALOGUE_ADVANCE), _key(KEY_SPACE)),
+		"补充默认键不应挤掉原有绑定")
 
 	# 用户先改键，再补充：自定义绑定不能被覆盖
 	service.rebind(InputService.ACTION_DIALOGUE_ADVANCE, _key(KEY_Q))
 	service.extend_action_defaults(InputService.ACTION_INTERACT, [{"type": "key", "keycode": KEY_E}])
-	var after: Dictionary = service.describe("dialogue_advance")["keyboard"]
+	var after: Array = service.describe("dialogue_advance")["keyboard"]
 	_check(after.has("Q") and not after.has("E"), "用户改过的动作不应被默认键补充覆盖")
 	_check(service.describe("interact")["keyboard"].has("E"), "未改过的动作可补键")
 
