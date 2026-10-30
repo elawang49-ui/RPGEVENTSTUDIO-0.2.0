@@ -14,6 +14,7 @@ const LIST_SCRIPT := "res://addons/rpgeventstudio/editor/event_list/event_list_p
 const THEME_SCRIPT := "res://addons/rpgeventstudio/editor/theme/dialogue_theme_view.gd"
 const MAP_SCRIPT := "res://addons/rpgeventstudio/editor/map_events/map_event_panel.gd"
 const STORY_SCRIPT := "res://addons/rpgeventstudio/editor/story/story_editor_panel.gd"
+const AUDIT_SCRIPT := "res://addons/rpgeventstudio/editor/audit/story_audit_panel.gd"
 const RUNTIME_SCRIPT := "res://addons/rpgeventstudio/runtime/autoload/studio_runtime.gd"
 const AUTOLOAD_NAME := "RPGEventStudio"
 const EDITOR_LANGUAGE_SETTING := "rpg_event_studio/editor_language"
@@ -25,6 +26,7 @@ var _theme_view: Control
 var _list_panel: Control
 var _map_panel: Control
 var _story_view: Control
+var _audit_view: Control
 var _debugger_plugin: StudioDebuggerPlugin
 var _filesystem: EditorFileSystem
 var _refresh_timer: SceneTreeTimer
@@ -58,6 +60,8 @@ func _enter_tree() -> void:
 		_capture_bulk_screen.call_deferred()
 	if OS.get_environment("RPGEVENTSTUDIO_STORY_SELFTEST") == "1" or OS.get_environment("RPGEVENTSTUDIO_STORY_SHOT") == "1":
 		_start_story_test.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_AUDIT_SELFTEST") == "1":
+		_start_audit_selftest.call_deferred()
 
 func _exit_tree() -> void:
 	if _selection != null and _selection.selection_changed.is_connected(_on_selection_changed):
@@ -75,6 +79,7 @@ func _exit_tree() -> void:
 	_main_screen = null
 	_theme_view = null
 	_story_view = null
+	_audit_view = null
 
 	if _filesystem != null and _filesystem.filesystem_changed.is_connected(_on_filesystem_changed):
 		_filesystem.filesystem_changed.disconnect(_on_filesystem_changed)
@@ -246,6 +251,12 @@ func open_story_tab() -> void:
 	if _main_tabs != null:
 		_main_tabs.current_tab = 2
 
+## 打开「审计」标签页（全工程剧情资源审计）。
+func open_audit_tab() -> void:
+	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	if _main_tabs != null:
+		_main_tabs.current_tab = 3
+
 func _open_graph(graph: LevelGraph) -> void:
 	if graph == null:
 		return
@@ -254,6 +265,20 @@ func _open_graph(graph: LevelGraph) -> void:
 		_main_tabs.current_tab = 0
 	if _main_screen != null:
 		_main_screen.call("open_graph", graph)
+
+## 审计结果双击：事件/关卡图直接打开，场景问题定位到对应场景。
+func _on_audit_issue(issue: Dictionary) -> void:
+	var path := str(issue.get("path", ""))
+	if path == "":
+		return
+	if path.ends_with(".tscn"):
+		EditorInterface.open_scene_from_path(path)
+		return
+	var resource := load(path)
+	if resource is EventDefinition:
+		_open_event(resource)
+	elif resource is LevelGraph:
+		_open_graph(resource)
 
 ## 打开「UI 主题」页（主屏内标签）。
 func open_theme_page() -> void:
@@ -315,6 +340,16 @@ func _create_main_screen() -> void:
 		_main_tabs.set_tab_title(2, L10n.ui("story.title"))
 	else:
 		push_error("[RPGEventStudio] 找不到剧情工作台脚本")
+
+	var audit_script := load(AUDIT_SCRIPT)
+	if audit_script != null:
+		_audit_view = audit_script.new()
+		_audit_view.name = "StoryAudit"
+		_audit_view.issue_activated.connect(_on_audit_issue)
+		_main_tabs.add_child(_audit_view)
+		_main_tabs.set_tab_title(3, L10n.ui("audit.title"))
+	else:
+		push_error("[RPGEventStudio] 找不到剧情审计面板脚本")
 	_make_visible(false)
 
 func _has_main_screen() -> bool:
@@ -594,3 +629,18 @@ func _start_story_test() -> void:
 	runner.name = "StorySelfTest"
 	add_child(runner)
 	runner.call_deferred("start", self, _story_view)
+
+## 剧情资源审计自测（真实编辑器环境）：RPGEVENTSTUDIO_AUDIT_SELFTEST=1。
+func _start_audit_selftest() -> void:
+	if Engine.has_meta("rpg_eventstudio_audit_selftest_started"):
+		return
+	Engine.set_meta("rpg_eventstudio_audit_selftest_started", true)
+	var script := load("res://tests/story_audit_editor_selftest.gd")
+	if script == null:
+		push_error("[RPGEventStudio] 找不到剧情审计自测脚本")
+		get_tree().quit(2)
+		return
+	var runner: Node = script.new()
+	runner.name = "StoryAuditSelfTest"
+	add_child(runner)
+	runner.call_deferred("start", self, _audit_view)

@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_vjv8m"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_3xeof"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_condition.gd" id="3_ol0tq"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="4_kcrrt"]
+
+[sub_resource type="Resource" id="Resource_7qtcp"]
+script = ExtResource("2_3xeof")
+type = &"show_text"
+params = {
+"auto_advance": 0.0,
+"speaker": "Audit",
+"text": "hello"
+}
+
+[sub_resource type="Resource" id="Resource_n8dxx"]
+script = ExtResource("2_3xeof")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_u3gb7"]
+script = ExtResource("1_vjv8m")
+commands = Array[ExtResource("2_3xeof")]([SubResource("Resource_7qtcp"), SubResource("Resource_n8dxx")])
+
+[resource]
+script = ExtResource("4_kcrrt")
+event_id = &"valid_event"
+display_name = "Audit Valid"
+pages = Array[ExtResource("1_vjv8m")]([SubResource("Resource_u3gb7")])

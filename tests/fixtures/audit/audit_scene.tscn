@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/runtime/components/map_event.gd" id="1_gek16"]
+
+[node name="AuditScene" type="Node2D" unique_id=1000322341]
+
+[node name="ValidEvent" type="Node2D" parent="." unique_id=2020038144]
+script = ExtResource("1_gek16")
+event_path = "res://tests/fixtures/audit/valid_event.tres"
+
+[node name="MissingEvent" type="Node2D" parent="." unique_id=705312039]
+script = ExtResource("1_gek16")
+event_path = "res://tests/fixtures/audit/no_such_event.tres"
+
+[node name="MissingState" type="Node2D" parent="." unique_id=1984696343]
+script = ExtResource("1_gek16")
+event_path = "res://tests/fixtures/audit/missing_state.tres"
+
+[node name="MissingCommon" type="Node2D" parent="." unique_id=350085892]
+script = ExtResource("1_gek16")
+event_path = "res://tests/fixtures/audit/missing_common.tres"

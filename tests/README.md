@@ -46,3 +46,13 @@ THEME_PERSIST_MODE=create godot --headless --path . --script res://tools/check_t
 THEME_PERSIST_MODE=verify godot --headless --path . --script res://tools/check_theme_persist.gd
 THEME_PERSIST_MODE=cleanup godot --headless --path . --script res://tools/check_theme_persist.gd
 ```
+
+## 剧情资源审计
+
+```bash
+# 全工程审计核心（夹具：空事件/重复 ID/断裂引用/缺失公共事件/未登记状态/图错误）
+godot --headless --path . --script res://tests/story_audit_test.gd
+
+# 真实编辑器里的审计面板：扫描、筛选、双击定位、只读性
+RPGEVENTSTUDIO_AUDIT_SELFTEST=1 godot --headless --editor --path .
+```

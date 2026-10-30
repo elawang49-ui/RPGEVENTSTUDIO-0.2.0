@@ -22,6 +22,7 @@ func _run() -> void:
 	_test_nested_serialization()
 	_test_graph_validator()
 	_test_group_persistence()
+	_test_story_audit()
 	_test_story_document_mapping()
 	_test_story_document_edits()
 	_test_story_document_choice_ops()
@@ -1554,3 +1555,30 @@ func _test_group_persistence() -> void:
 	_check(reloaded.next_group_id() == StringName("group_1"), "分组 id 生成应避开节点 id")
 
 	DirAccess.remove_absolute(path)
+
+# ── 剧情资源审计 ──────────────────────────────────────────
+
+func _test_story_audit() -> void:
+	var report := StoryAudit.scan({
+		"roots": PackedStringArray(["res://tests/fixtures/audit"]),
+		"excludes": PackedStringArray(),
+		"catalog": StateCatalog.new(),
+	})
+	var issues: Array = report["issues"]
+	_check(int(report["stats"]["events"]) == 6, "审计应扫描到 6 个夹具事件")
+	_check(_audit_has(issues, "event.empty"), "审计应报告空事件")
+	_check(_audit_has(issues, "event.duplicate_id"), "审计应报告重复事件标识")
+	_check(_audit_has(issues, "ref.broken"), "审计应报告断裂引用")
+	_check(StoryAudit.has_errors(issues), "夹具中应存在错误级问题")
+	var sample := StoryAudit.scan({
+		"roots": PackedStringArray(["res://addons/rpgeventstudio/samples"]),
+		"excludes": PackedStringArray(),
+		"catalog": StateCatalogStore.catalog(),
+	})
+	_check(not StoryAudit.has_errors(sample["issues"]), "样例资源不应有审计错误")
+
+func _audit_has(issues: Array, code: String) -> bool:
+	for issue in issues:
+		if str(issue["code"]) == code:
+			return true
+	return false

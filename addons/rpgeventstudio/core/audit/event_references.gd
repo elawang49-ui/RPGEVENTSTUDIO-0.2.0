@@ -10,12 +10,16 @@ extends RefCounted
 ##   本扫描会把子场景单独算一份，所以不会漏，但不会展开成实例路径）；
 ## - 脚本里动态 load() 的事件无法静态得知，会显示为「未引用」。
 
-static func scan() -> Dictionary:
+## root 允许限定扫描范围（审计器按目录扫描/测试夹具），默认整个工程。
+## excludes 与 StoryAudit 的排除目录一致，避免把 tests/tools 里的夹具算进引用。
+static func scan(root: String = "res://", excludes: PackedStringArray = []) -> Dictionary:
 	var result := {"by_path": {}, "scanned": 0}
-	_scan_dir("res://", result)
+	_scan_dir(root if root.strip_edges() != "" else "res://", result, excludes)
 	return result
 
-static func _scan_dir(dir_path: String, result: Dictionary) -> void:
+static func _scan_dir(dir_path: String, result: Dictionary, excludes: PackedStringArray = []) -> void:
+	if _excluded(dir_path, excludes):
+		return
 	var dir := DirAccess.open(dir_path)
 	if dir == null:
 		return
@@ -27,13 +31,20 @@ static func _scan_dir(dir_path: String, result: Dictionary) -> void:
 			continue
 		var path := dir_path.path_join(entry)
 		if dir.current_is_dir():
-			_scan_dir(path, result)
+			_scan_dir(path, result, excludes)
 		elif entry.ends_with(".tscn"):
 			_parse_scene(path, result)
 		elif entry.ends_with(".tres"):
 			_parse_graph(path, result)
 		entry = dir.get_next()
 	dir.list_dir_end()
+
+static func _excluded(path: String, excludes: PackedStringArray) -> bool:
+	for exclude in excludes:
+		var prefix := String(exclude)
+		if path == prefix or path.begins_with(prefix + "/"):
+			return true
+	return false
 
 static func _parse_scene(path: String, result: Dictionary) -> void:
 	var file := FileAccess.open(path, FileAccess.READ)

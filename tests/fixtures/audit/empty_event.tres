@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_1l8h0"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="2_mcnxo"]
+
+[resource]
+script = ExtResource("2_mcnxo")
+event_id = &"empty_event"
+display_name = "Audit Empty"
