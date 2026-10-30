@@ -48,6 +48,12 @@ func _init() -> void:
 		failures += 1
 
 	var referenced := _collect_referenced_keys()
+	# add_runtime_message 是宿主游戏注入词条的通道：这些键本来就故意不进 CSV。
+	var injected := _collect_injected_keys()
+	for key in injected.keys():
+		referenced.erase(key)
+	if not injected.is_empty():
+		print("宿主运行时注入的键（不要求进 CSV）：%d 个" % injected.size())
 	var missing: Array = []
 	for key in referenced.keys():
 		if not keys.has(key):
@@ -112,6 +118,39 @@ func _collect_referenced_keys() -> Dictionary:
 	keys["fade.out"] = true
 	keys["fade.in"] = true
 	return keys
+
+## 收集 L10n.add_runtime_message(locale, key, ...) 调用里的键：
+## 宿主游戏在运行时注入的界面文字，CSV 不需要也不应该包含它们。
+func _collect_injected_keys() -> Dictionary:
+	var keys := {}
+	var regex := RegEx.new()
+	regex.compile("add_runtime_message\\(\"[^\"]+\",\\s*\"([a-z0-9_.]+)\"")
+	for dir in ["res://addons/rpgeventstudio", "res://tests", "res://tools"]:
+		_scan_regex(dir, regex, keys)
+	return keys
+
+func _scan_regex(dir_path: String, regex: RegEx, keys: Dictionary) -> void:
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var entry := dir.get_next()
+	while entry != "":
+		if entry.begins_with("."):
+			entry = dir.get_next()
+			continue
+		var path := dir_path.path_join(entry)
+		if dir.current_is_dir():
+			_scan_regex(path, regex, keys)
+		elif path.ends_with(".gd"):
+			var file := FileAccess.open(path, FileAccess.READ)
+			if file != null:
+				var text := file.get_as_text()
+				file.close()
+				for match_result in regex.search_all(text):
+					keys[match_result.get_string(1)] = true
+		entry = dir.get_next()
+	dir.list_dir_end()
 
 func _scan(dir_path: String, keys: Dictionary) -> void:
 	var dir := DirAccess.open(dir_path)

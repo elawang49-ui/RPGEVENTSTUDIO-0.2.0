@@ -17,6 +17,10 @@ static var _cache: Dictionary = {}
 static var _missing: Dictionary = {}
 static var _editor_locale := FALLBACK_LOCALE
 static var _game_locale := FALLBACK_LOCALE
+## 运行时注入词条（宿主游戏用）：locale -> {key: message}。
+## 导入生成的 .translation 是 OptimizedTranslation，不支持可靠的 add_message，
+## 所以注入词条单独存放，在 lookup 里作为最后兜底。
+static var _runtime_messages: Dictionary = {}
 static var game_save_path := GAME_SAVE_PATH
 
 # ── 取词 ─────────────────────────────────────────────────
@@ -35,6 +39,11 @@ static func lookup(locale: String, key: String) -> String:
 		var message := String(translation.get_message(key))
 		if message != "" and message != key:
 			return message
+	# 内置词条缺失时再查运行时注入的词条
+	for candidate in [locale, FALLBACK_LOCALE]:
+		var bucket: Dictionary = _runtime_messages.get(candidate, {})
+		if bucket.has(key):
+			return String(bucket[key])
 	_missing[key] = true
 	return key
 
@@ -69,6 +78,17 @@ static func register_runtime_translations() -> void:
 			continue
 		if not TranslationServer.get_translations().has(translation):
 			TranslationServer.add_translation(translation)
+
+## 运行时注入词条（宿主游戏给自定义动作等界面文字用）。
+## 内置词条永远优先；同一键重复注入取第一次，进程内即时生效。
+static func add_runtime_message(locale: String, key: String, message: String) -> void:
+	if not LOCALES.has(locale):
+		return
+	if not _runtime_messages.has(locale):
+		_runtime_messages[locale] = {}
+	var bucket: Dictionary = _runtime_messages[locale]
+	if not bucket.has(key):
+		bucket[key] = message
 
 # ── 语言设置 ─────────────────────────────────────────────
 

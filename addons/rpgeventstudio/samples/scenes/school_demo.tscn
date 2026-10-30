@@ -92,7 +92,7 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 13
 text = "图书管理员
-空格 / 鼠标左键 / 手柄 A"
+空格 / 回车 / 鼠标左键 / 手柄 A"
 horizontal_alignment = 1
 
 [node name="Drawer" type="Node2D" parent="." unique_id=1542857498]
@@ -130,7 +130,7 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 13
 text = "抽屉
-空格 / 鼠标左键 / 手柄 A"
+空格 / 回车 / 鼠标左键 / 手柄 A"
 horizontal_alignment = 1
 
 [node name="ClassroomDoor" type="Node2D" parent="." unique_id=1189392927]
@@ -168,7 +168,7 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 13
 text = "教室门
-空格 / 鼠标左键 / 手柄 A"
+空格 / 回车 / 鼠标左键 / 手柄 A"
 horizontal_alignment = 1
 
 [node name="OfficeDesk" type="Node2D" parent="." unique_id=1597324813]
@@ -206,7 +206,7 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 13
 text = "办公室桌子
-空格 / 鼠标左键 / 手柄 A"
+空格 / 回车 / 鼠标左键 / 手柄 A"
 horizontal_alignment = 1
 
 [node name="ClassroomBoard" type="Node2D" parent="." unique_id=1716124993]
@@ -244,7 +244,7 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 13
 text = "教室黑板
-空格 / 鼠标左键 / 手柄 A"
+空格 / 回车 / 鼠标左键 / 手柄 A"
 horizontal_alignment = 1
 
 [node name="GraphRunner" type="Node" parent="." unique_id=321966248]

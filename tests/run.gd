@@ -16,6 +16,7 @@ func _run() -> void:
 	_test_state_catalog()
 	_test_event_diagnosis()
 	_test_input_service()
+	_test_input_registry()
 	_test_input_settings_panel()
 	_test_l10n()
 	_test_bbcode()
@@ -197,7 +198,9 @@ func _test_input_service() -> void:
 	var result: Dictionary = service.rebind(InputService.ACTION_INTERACT, new_key)
 	_check(bool(result.get("ok", false)), "重新绑定应成功")
 	_check(InputMap.event_is_action(new_key, "interact"), "改键后 K 应触发交互动作")
-	_check(service.describe(InputService.ACTION_INTERACT)["keyboard"].has("K"), "设置界面应显示新的键盘绑定")
+	var rebound_keyboard: Array = service.describe(InputService.ACTION_INTERACT)["keyboard"]
+	_check(rebound_keyboard.size() == 1 and str(rebound_keyboard[0]) == "K",
+		"改键应替换同设备的全部旧绑定（不能残留回车/空格）")
 
 	var reloaded := InputService.new()
 	reloaded.save_path = save_path
@@ -225,6 +228,100 @@ func _has_event(events: Array, target: InputEvent) -> bool:
 		if InputService.same_event(event, target):
 			return true
 	return false
+
+# ── 输入注册（宿主动作 / 默认键补充 / 旧存档兼容） ──────
+
+func _test_input_registry() -> void:
+	InputService.unregister_action("toggle_journal")
+	InputService.clear_default_extensions()
+	var save_path := "res://.godot/test_input_registry.cfg"
+	if FileAccess.file_exists(save_path):
+		DirAccess.remove_absolute(save_path)
+
+	# 1) 宿主注册自己的动作：进入统一动作表，可改键、可冲突检测。
+	var service := InputService.new()
+	service.save_path = save_path
+	service.restore_defaults()
+	service.register_action({
+		"id": "toggle_journal",
+		"label": "input.action.toggle_journal",
+		"defaults": [{"type": "key", "keycode": KEY_TAB}],
+	})
+	_check(InputService.action_ids().has("toggle_journal"), "注册后动作表应包含 toggle_journal")
+	_check(InputMap.event_is_action(_key(KEY_TAB), "toggle_journal"), "注册动作应立即生效")
+	_check(service.describe("toggle_journal")["keyboard"].has("Tab"), "设置界面应显示注册动作")
+
+	# 重复注册无副作用
+	service.register_action({"id": "toggle_journal", "label": "x", "defaults": []})
+	_check(service.describe("toggle_journal")["keyboard"].has("Tab"), "重复注册不应改变绑定")
+
+	# 注册动作与内置动作冲突检测互通
+	var conflict: Dictionary = service.rebind("toggle_journal", _key(KEY_F1))
+	_check(not bool(conflict.get("ok", true)) and str(conflict.get("conflict", "")) == "toggle_settings",
+		"注册动作应与内置动作互相检测冲突")
+
+	# 2) 宿主补充默认键：未改过的动作补进 E，用户改过的不动。
+	service.extend_action_defaults(InputService.ACTION_DIALOGUE_ADVANCE, [
+		{"type": "key", "keycode": KEY_E},
+	])
+	var described: Dictionary = service.describe("dialogue_advance")["keyboard"]
+	_check(described.has("E"), "未改键时补充默认键应生效")
+	_check(described.has("Space"), "补充默认键不应挤掉原有绑定")
+
+	# 用户先改键，再补充：自定义绑定不能被覆盖
+	service.rebind(InputService.ACTION_DIALOGUE_ADVANCE, _key(KEY_Q))
+	service.extend_action_defaults(InputService.ACTION_INTERACT, [{"type": "key", "keycode": KEY_E}])
+	var after: Dictionary = service.describe("dialogue_advance")["keyboard"]
+	_check(after.has("Q") and not after.has("E"), "用户改过的动作不应被默认键补充覆盖")
+	_check(service.describe("interact")["keyboard"].has("E"), "未改过的动作可补键")
+
+	# 3) 旧格式存档（无 meta 区）：绑定与基础默认一致时补键，改过则保留。
+	var legacy := ConfigFile.new()
+	var advance_ser: Array = []
+	for event in service.events_of(InputService.ACTION_DIALOGUE_ADVANCE):
+		advance_ser.append(InputService.event_to_dict(event))
+	legacy.set_value("actions", "dialogue_advance", advance_ser)
+	var interact_ser: Array = []
+	for event in service._base_defaults_of("interact"):
+		interact_ser.append(InputService.event_to_dict(event))
+	legacy.set_value("actions", "interact", interact_ser)
+	legacy.save(save_path)
+
+	var migrated := InputService.new()
+	migrated.save_path = save_path
+	migrated.load_bindings()
+	_check(migrated.describe("dialogue_advance")["keyboard"].has("Q"),
+		"旧存档里与默认不同的绑定应视为用户自定义")
+	migrated.extend_action_defaults(InputService.ACTION_DIALOGUE_ADVANCE, [{"type": "key", "keycode": KEY_E}])
+	_check(migrated.describe("dialogue_advance")["keyboard"].has("Q"),
+		"旧存档自定义键不应被补充覆盖")
+	_check(not migrated.describe("dialogue_advance")["keyboard"].has("E"),
+		"旧存档自定义键不应被补进默认键")
+	migrated.extend_action_defaults(InputService.ACTION_INTERACT, [{"type": "key", "keycode": KEY_E}])
+	_check(migrated.describe("interact")["keyboard"].has("E"),
+		"旧存档里保持默认的动作应能补键")
+
+	# 4) 新格式存档：恢复默认后 customized 清空，默认演进跟随代码。
+	service.restore_defaults()
+	_check(not service.is_customized("interact"), "恢复默认后不应再标记为已改键")
+
+	# 5) 拆分后的动作独立存在：dialogue_advance / confirm / interact 是三个动作。
+	_check(InputService.action_ids().has("dialogue_advance"), "应有独立的对话推进动作")
+	_check(InputService.action_label_key("dialogue_advance") == "input.action.dialogue_advance",
+		"对话推进动作应有自己的翻译键")
+
+	# 清理
+	InputService.unregister_action("toggle_journal")
+	InputService.clear_default_extensions()
+	service.restore_defaults()
+	if FileAccess.file_exists(save_path):
+		DirAccess.remove_absolute(save_path)
+
+func _key(code: Key) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.pressed = true
+	return event
 
 # ── 按键设置面板（改键 / 取消 / 冲突） ───────────────────
 
@@ -311,6 +408,17 @@ func _test_l10n() -> void:
 
 	_check(L10n.translation_of("zh_CN") != null, "中文翻译资源应存在")
 	_check(L10n.translation_of("en") != null, "英文翻译资源应存在")
+
+	# 运行时词条注入：宿主游戏给自定义动作补界面文字
+	L10n.add_runtime_message("zh_CN", "input.action.toggle_journal", "打开/关闭日志")
+	L10n.add_runtime_message("en", "input.action.toggle_journal", "Open/Close Journal")
+	L10n.add_runtime_message("zh_CN", "input.action.toggle_journal", "重复注入应被忽略")
+	_check(L10n.game("input.action.toggle_journal") == "打开/关闭日志", "运行时注入的词条应可查询")
+	L10n.set_game_locale("en", false)
+	_check(L10n.game("input.action.toggle_journal") == "Open/Close Journal", "注入词条应分语言")
+	L10n.set_game_locale("zh_CN", false)
+	L10n.add_runtime_message("zh_CN", "game.advance_hint", "试图覆盖内置词条")
+	_check(L10n.game("game.advance_hint") == "空格 / 鼠标左键 / 手柄 A", "运行时注入不应覆盖内置词条")
 
 	# CSV 是翻译的源文件：逐行确认两种语言都能取到
 	var file := FileAccess.open("res://addons/rpgeventstudio/i18n/ui.csv", FileAccess.READ)
