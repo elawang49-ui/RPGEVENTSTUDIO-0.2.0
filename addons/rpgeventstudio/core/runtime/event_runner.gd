@@ -39,8 +39,22 @@ func start(definition: EventDefinition, p_args: Dictionary = {}, trigger_filter:
 	if definition == null:
 		return
 	_ensure_trace_observer()
+	# 真实来源：图节点放入 pending 的来源优先，其次是调用方显式传入（交互组件等）。
+	var event_source := {}
+	if trace != null:
+		var pending := trace.take_pending_source()
+		event_source = pending if not pending.is_empty() else source
+		# 空闲时清掉上一条因引擎异常残留的上下文，避免旧事件污染后续归因。
+		if _running_instances.is_empty():
+			trace.clear_stale_contexts()
+	else:
+		event_source = source
+
 	if _active.has(definition.event_id):
 		# 同一事件正在执行：丢弃，防止连点导致重入
+		if trace != null:
+			trace.record_ignored(trace.new_trace_id(), definition, "reentry",
+				{"running_instance": int(_active[definition.event_id])}, event_source)
 		return
 
 	var page_index := definition.get_active_page(state, trigger_filter)
@@ -48,12 +62,15 @@ func start(definition: EventDefinition, p_args: Dictionary = {}, trigger_filter:
 		# 一页都没命中：把每一页的条件结果记下来，调试面板与「为什么没触发」用
 		var rejection := diagnose(definition, trigger_filter)
 		if trace != null:
-			trace.record_rejected(trace.new_trace_id(), definition, trigger_filter, rejection)
+			trace.record_rejected(trace.new_trace_id(), definition, trigger_filter, rejection, event_source)
 		bus.event_rejected.emit(definition.event_id, rejection)
 		return
 
 	var page: EventPage = definition.pages[page_index]
 	if not _should_run(definition, page_index, page):
+		if trace != null:
+			trace.record_ignored(trace.new_trace_id(), definition, "repeat_policy",
+				{"policy": page.repeat_policy, "page_index": page_index}, event_source)
 		return
 
 	var ctx := EventContext.new()
@@ -70,11 +87,7 @@ func start(definition: EventDefinition, p_args: Dictionary = {}, trigger_filter:
 	ctx.trace = trace
 	ctx.page_index = page_index
 	ctx.trigger_filter = trigger_filter
-	if trace != null:
-		var pending := trace.take_pending_source()
-		ctx.source = pending if not pending.is_empty() else source
-	else:
-		ctx.source = source
+	ctx.source = event_source
 	if trace != null:
 		ctx.trace_pages = _page_decisions(definition, trigger_filter, page_index)
 
@@ -273,7 +286,8 @@ func _run_nested_event(parent: EventContext, target: EventDefinition, call_args:
 	var child_trace_id := trace.new_trace_id() if trace != null else 0
 	if page_index < 0:
 		if trace != null:
-			trace.record_rejected(child_trace_id, target, [], diagnose(target, []))
+			trace.record_rejected(child_trace_id, target, [], diagnose(target, []),
+				{"kind": "nested", "parent_event_id": String(parent.event_id)})
 		return
 	var child := EventContext.new()
 	child.host = host

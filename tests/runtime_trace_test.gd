@@ -24,6 +24,10 @@ func _run() -> void:
 	await _test_graph_condition_or()
 	await _test_cancel()
 	await _test_failure()
+	await _test_rejected_source()
+	await _test_reentry_ignored()
+	await _test_repeat_policy_ignored()
+	await _test_context_cleanup()
 	_test_capacity()
 	_test_json()
 	await _test_disabled_still_runs()
@@ -161,6 +165,9 @@ func _test_normal_event() -> void:
 	_check(int(state_record.get("trace_id", 0)) == int(start.get("trace_id", -1)),
 		"状态写入关联到所属事件")
 	_check(int(state_record.get("command_index", -1)) >= 0, "状态写入关联到具体指令")
+	trace.clear()
+	state.set_value("Trace.Flag", true)
+	_check(not _has("state"), "写入相同值不产生重复状态记录（观察者不改变语义）")
 	ctx["host"].queue_free()
 
 # ── 2. 多事件页 ──────────────────────────────────────────
@@ -464,11 +471,34 @@ func _test_graph_condition_or() -> void:
 	var conditions := _records("condition")
 	_check(not conditions.is_empty() and str(conditions[-1].get("branch", "")) == "true",
 		"记录关卡图条件为 true 的分支")
+	_check(str(conditions[-1].get("graph_id", "")) == "trace_or"
+		and str(conditions[-1].get("node_id", "")) == "condition_1",
+		"图条件记录包含 graph_id/node_id")
+	_check(int(conditions[-1].get("trace_id", -1)) == 0, "图条件记录保留 trace_id=0 设计")
 	var merges := _records("graph_merge")
 	_check(not merges.is_empty() and str(merges[-1].get("mode", "")) == "or",
 		"记录 OR 汇合")
 	_check(_has("graph_branch", func(r: Dictionary) -> bool: return str(r.get("to_node", "")) == "merge_1"),
 		"记录条件到 OR 汇合的实际连线")
+	# false 分支：同样要带图定位信息
+	trace.clear()
+	state.set_value("Trace.Cond", false)
+	graph.graph_id = &"trace_or_false"
+	graph_runner = GraphRunner.new()
+	graph_runner.host = host
+	graph_runner.graph = graph
+	graph_runner.state = state
+	graph_runner.bus = ctx["bus"]
+	graph_runner.trace = trace
+	graph_runner.start()
+	for i in 120:
+		if not graph_runner.running:
+			break
+		await process_frame
+	var conditions_false := _records("condition")
+	_check(str(conditions_false[-1].get("branch", "")) == "false", "记录关卡图条件为 false 的分支")
+	_check(str(conditions_false[-1].get("graph_id", "")) == "trace_or_false",
+		"false 分支同样带 graph_id")
 	ctx["host"].queue_free()
 
 # ── 8. 取消 / 9. 失败 ────────────────────────────────────
@@ -502,6 +532,100 @@ func _test_failure() -> void:
 	_check(str(end.get("result", "")) == "failed", "执行异常记录为 failed")
 	_check(_has("command_end", func(r: Dictionary) -> bool: return str(r.get("result", "")) == "abort"),
 		"失败指令记录 abort 结果")
+	ctx["host"].queue_free()
+
+func _test_rejected_source() -> void:
+	var trace := RuntimeTrace.new()
+	trace.enabled = true
+	_use(trace)
+	var ctx := _make_runner(trace)
+	var runner: EventRunner = ctx["runner"]
+	var state: StateStore = ctx["state"]
+	state.define("Trace.Gate2", TYPE_BOOL, false)
+
+	var definition := EventDefinition.new()
+	definition.event_id = &"trace_rejected_src"
+	definition.display_name = "拒绝来源测试"
+	var page := EventPage.new()
+	var gate := EventCondition.new()
+	gate.key = "Trace.Gate2"
+	gate.op = "=="
+	gate.value = true
+	page.conditions = [gate]
+	page.commands = [_end()]
+	definition.pages = [page]
+	runner.start(definition, {}, [], {"kind": "interactor", "node": "Demo/Interactor"})
+	await _wait_idle(runner)
+	var rejected := _first("event_rejected")
+	_check(str(rejected.get("event_id", "")) == "trace_rejected_src", "拒绝事件记录 event_id")
+	var source: Dictionary = rejected.get("source", {})
+	_check(str(source.get("kind", "")) == "interactor" and str(source.get("node", "")) == "Demo/Interactor",
+		"拒绝事件记录真实触发来源")
+	ctx["host"].queue_free()
+
+func _test_reentry_ignored() -> void:
+	var trace := RuntimeTrace.new()
+	trace.enabled = true
+	_use(trace)
+	var ctx := _make_runner(trace)
+	var runner: EventRunner = ctx["runner"]
+	var definition := _event(&"trace_reentry", [_cmd(&"wait", {"seconds": 0.5}), _end()])
+	runner.start(definition)
+	await process_frame
+	runner.start(definition)
+	_check(_has("event_ignored", func(r: Dictionary) -> bool: return str(r.get("reason", "")) == "reentry"),
+		"重入丢弃应记录 event_ignored/reentry")
+	runner.cancel_all("清理")
+	await _wait_idle(runner)
+	ctx["host"].queue_free()
+
+func _test_repeat_policy_ignored() -> void:
+	var trace := RuntimeTrace.new()
+	trace.enabled = true
+	_use(trace)
+	var ctx := _make_runner(trace)
+	var runner: EventRunner = ctx["runner"]
+	var state: StateStore = ctx["state"]
+	state.define("Trace.Rep", TYPE_BOOL, false)
+	var definition := _event(&"trace_repeat", [_set_state("Trace.Rep", true), _end()])
+	definition.pages[0].repeat_policy = "once"
+	runner.start(definition)
+	await _wait_idle(runner)
+	trace.clear()
+	runner.start(definition)
+	await _wait_idle(runner)
+	_check(_has("event_ignored", func(r: Dictionary) -> bool: return str(r.get("reason", "")) == "repeat_policy"),
+		"repeat_policy 不允许时应记录 event_ignored/repeat_policy")
+	_check(not _has("event_start"), "被策略拒绝时不产生 event_start")
+	ctx["host"].queue_free()
+
+func _test_context_cleanup() -> void:
+	var trace := RuntimeTrace.new()
+	trace.enabled = true
+	_use(trace)
+	var ctx := _make_runner(trace)
+	var runner: EventRunner = ctx["runner"]
+	var state: StateStore = ctx["state"]
+	state.define("Trace.One", TYPE_BOOL, false)
+	state.define("Trace.Two", TYPE_BOOL, false)
+
+	runner.start(_event(&"trace_ctx_one", [_set_state("Trace.One", true), _end()]))
+	await _wait_idle(runner)
+	_check(trace.context_count() == 0, "正常完成后事件上下文已退出")
+
+	runner.start(_event(&"trace_ctx_two", [_set_state("Trace.Two", true), _end()]))
+	await _wait_idle(runner)
+	_check(trace.context_count() == 0, "连续两个事件后上下文仍为空")
+	var two_start := {}
+	for record in _records("event_start"):
+		if str(record.get("event_id", "")) == "trace_ctx_two":
+			two_start = record
+	var state_two := {}
+	for record in _records("state"):
+		if str(record.get("key", "")) == "Trace.Two":
+			state_two = record
+	_check(not state_two.is_empty() and int(state_two.get("trace_id", -1)) == int(two_start.get("trace_id", -2)),
+		"第二个事件的状态写入归因到第二个事件，不被旧上下文污染")
 	ctx["host"].queue_free()
 
 # ── 10. 容量 / 11. JSON ──────────────────────────────────

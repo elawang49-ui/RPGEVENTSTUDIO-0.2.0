@@ -185,13 +185,7 @@ func _apply_end(node: LevelNode) -> void:
 
 func _activate_condition_once(node: LevelNode, cause: Dictionary) -> void:
 	var result := _evaluate(node)
-	if trace != null:
-		var key := _condition_key(node)
-		var expected: Variant = node.get_param("value", true)
-		if expected is String:
-			expected = ValueParser.parse(expected)
-		trace.condition(0, -1, key, str(node.get_param("op", "==")), expected,
-			state.get_value(key, null), result, "true" if result else "false")
+	_trace_graph_condition(node, result)
 	await _propagate(node, "true" if result else "false", cause)
 
 func _activate_merge_and(node: LevelNode, cause: Dictionary) -> void:
@@ -277,6 +271,7 @@ func _register_monitor(node: LevelNode) -> void:
 		"op": str(node.get_param("op", "==")),
 		"last": result,
 	}
+	_trace_graph_condition(node, result)
 	if result:
 		_emit_from(node, "true", {"kind": "condition"})
 
@@ -304,6 +299,18 @@ func _refresh_condition(node_id: StringName) -> void:
 func _emit_from(node: LevelNode, port: String, cause: Dictionary) -> void:
 	for connection in graph.outgoing(node.node_id, port):
 		_activate.call_deferred(connection.to_node, cause)
+
+## 关卡图条件记录：trace_id=0，但带 graph_id/node_id 供定位。
+func _trace_graph_condition(node: LevelNode, result: bool) -> void:
+	if trace == null:
+		return
+	var key := _condition_key(node)
+	var expected: Variant = node.get_param("value", true)
+	if expected is String:
+		expected = ValueParser.parse(expected)
+	trace.graph_condition(_graph_id(), String(node.node_id), key,
+		str(node.get_param("op", "==")), expected, state.get_value(key, null),
+		result, "true" if result else "false")
 
 func _condition_key(node: LevelNode) -> String:
 	var raw := str(node.get_param("key", ""))

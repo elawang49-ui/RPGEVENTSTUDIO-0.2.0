@@ -799,3 +799,7 @@ trace.waiting,等待中,waiting
 trace.current_event,当前事件：{event}（第 {page} 页）,Current event: {event} (page {page})
 trace.current_finished,最近结束：trace #{event},Last finished: trace #{event}
 trace.current_none,当前没有正在执行的事件,No event running
+trace.kind.event_ignored,事件被忽略,Event ignored
+trace.reason.reentry,同一事件正在执行,Same event already running
+trace.reason.repeat_policy,执行策略不允许（{policy}）,Repeat policy blocked ({policy})
+trace.reason.unknown,未知原因,Unknown reason

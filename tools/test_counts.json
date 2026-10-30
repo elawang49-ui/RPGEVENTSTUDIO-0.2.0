@@ -11,7 +11,7 @@
     "tutorial_flow": 14,
     "interaction_test": 19,
     "node_ref_test": 12,
-    "runtime_trace_test": 50,
+    "runtime_trace_test": 63,
     "trace_ui_test": 11
   },
   "editor": {

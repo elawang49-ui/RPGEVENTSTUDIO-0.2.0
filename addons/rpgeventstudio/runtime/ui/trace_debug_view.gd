@@ -238,7 +238,7 @@ func _kind_color(kind: String) -> Color:
 			return Color(0.60, 0.90, 0.65)
 		"event_end":
 			return Color(0.95, 0.82, 0.48)
-		"event_rejected", "condition":
+		"event_rejected", "event_ignored", "condition":
 			return Color(0.95, 0.66, 0.52)
 		"state":
 			return Color(0.72, 0.88, 0.62)
@@ -254,6 +254,8 @@ func _summary(record: Dictionary) -> String:
 			return "%s  #%d" % [str(record.get("result", "")), int(record.get("trace_id", 0))]
 		"event_rejected":
 			return "%s · %s" % [str(record.get("event_name", "")), str(record.get("event_id", ""))]
+		"event_ignored":
+			return "%s · %s" % [str(record.get("event_name", "")), _reason_label(record)]
 		"page":
 			return L10n.game("trace.summary.page", {
 				"page": int(record.get("page_index", 0)) + 1,
@@ -281,6 +283,15 @@ func _summary(record: Dictionary) -> String:
 		"graph_merge":
 			return "%s %s %d/%d" % [str(record.get("node_id", "")), str(record.get("mode", "")), int(record.get("count", 0)), int(record.get("required", 0))]
 	return str(record.get("kind", ""))
+
+func _reason_label(record: Dictionary) -> String:
+	match str(record.get("reason", "")):
+		"reentry":
+			return L10n.game("trace.reason.reentry")
+		"repeat_policy":
+			var detail: Dictionary = record.get("detail", {})
+			return L10n.game("trace.reason.repeat_policy", {"policy": str(detail.get("policy", "?"))})
+	return L10n.game("trace.reason.unknown")
 
 func _result_text(record: Dictionary) -> String:
 	if record.has("result"):
@@ -325,7 +336,7 @@ func _on_activated() -> void:
 		return
 	var record: Dictionary = item.get_metadata(0)
 	var kind := str(record.get("kind", ""))
-	if kind.begins_with("graph") and str(record.get("node_id", "")) != "":
+	if (kind.begins_with("graph") or kind == "condition") and str(record.get("node_id", "")) != "":
 		runtime.call("trace_focus_node", str(record.get("graph_id", "")), str(record.get("node_id", "")),
 			str(record.get("graph_path", "")))
 	elif str(record.get("event_id", "")) != "":

@@ -121,9 +121,9 @@ func end_event(trace_id: int, result: int, reason: String, duration_ms: int) -> 
 		"duration_ms": duration_ms,
 	})
 
-## 事件被拒绝（没有一页命中）：记录每一页的触发/条件结果。
+## 事件被拒绝（没有一页命中）：记录每一页的触发/条件结果与真实来源。
 func record_rejected(trace_id: int, definition: EventDefinition, trigger_filter: Array,
-		diagnosis: Dictionary) -> void:
+		diagnosis: Dictionary, source: Dictionary = {}) -> void:
 	if not enabled or definition == null:
 		return
 	_push({
@@ -133,7 +133,24 @@ func record_rejected(trace_id: int, definition: EventDefinition, trigger_filter:
 		"event_name": definition.display_name,
 		"event_path": definition.resource_path,
 		"trigger_filter": _plain(trigger_filter),
+		"source": _plain(source),
 		"pages": _plain(diagnosis.get("pages", [])),
+	})
+
+## 事件被忽略（不是没有命中页面）：重入丢弃 / repeat_policy 不允许等。
+func record_ignored(trace_id: int, definition: EventDefinition, reason: String,
+		detail: Dictionary = {}, source: Dictionary = {}) -> void:
+	if not enabled or definition == null:
+		return
+	_push({
+		"kind": "event_ignored",
+		"trace_id": trace_id,
+		"event_id": String(definition.event_id),
+		"event_name": definition.display_name,
+		"event_path": definition.resource_path,
+		"reason": reason,
+		"detail": _plain(detail),
+		"source": _plain(source),
 	})
 
 # ── 指令 / 条件 ──────────────────────────────────────────
@@ -165,6 +182,24 @@ func command_end(trace_id: int, serial: int, index: int, command_type: String, r
 		"duration_ms": duration_ms,
 	})
 
+## 关卡图条件：trace_id 固定为 0（不属于事件），但必须带 graph_id/node_id 供定位。
+func graph_condition(graph_id: String, node_id: String, key: String, op: String, expected: Variant,
+		actual: Variant, matched: bool, branch: String) -> void:
+	if not enabled:
+		return
+	_push({
+		"kind": "condition",
+		"trace_id": 0,
+		"graph_id": graph_id,
+		"node_id": node_id,
+		"key": key,
+		"op": op,
+		"expected": _plain(expected),
+		"actual": _plain(actual),
+		"matched": matched,
+		"branch": branch,
+	})
+
 func condition(trace_id: int, command_index: int, key: String, op: String, expected: Variant,
 		actual: Variant, matched: bool, branch: String) -> void:
 	if not enabled:
@@ -190,6 +225,13 @@ func enter_context(trace_id: int, event_id: StringName) -> void:
 		"command_index": -1,
 		"command_type": "",
 	})
+
+## 运行器空闲时清掉因引擎异常残留的上下文；不主动伪造结束记录。
+func clear_stale_contexts() -> void:
+	_contexts.clear()
+
+func context_count() -> int:
+	return _contexts.size()
 
 func exit_context(trace_id: int) -> void:
 	for index in range(_contexts.size() - 1, -1, -1):
