@@ -19,6 +19,9 @@ static func load_roster(path: String = DEFAULT_PATH) -> StoryCharacters:
 static func save_roster(roster: StoryCharacters, path: String = DEFAULT_PATH) -> bool:
 	if roster == null or path == "":
 		return false
+	var dir := path.get_base_dir()
+	if dir != "" and not DirAccess.dir_exists_absolute(dir):
+		DirAccess.make_dir_recursive_absolute(dir)
 	var result := SafeFile.write_resource(roster, path)
 	return bool(result.get("ok", false))
 
