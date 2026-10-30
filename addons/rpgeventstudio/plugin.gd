@@ -42,6 +42,10 @@ func _enter_tree() -> void:
 		_start_selftest.call_deferred()
 	if OS.get_environment("RPGEVENTSTUDIO_SHOT") == "1":
 		_capture_graph_screen.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_GVL_SELFTEST") == "1":
+		_start_gvl_selftest.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_GVL_SHOT") == "1":
+		_capture_gvl_screen.call_deferred()
 	if OS.get_environment("RPGEVENTSTUDIO_MAP_SELFTEST") == "1":
 		_start_map_selftest.call_deferred()
 	if OS.get_environment("RPGEVENTSTUDIO_MAP_SHOT") == "1":
@@ -516,3 +520,37 @@ func _start_selftest() -> void:
 	runner.name = "EditorSelfTest"
 	add_child(runner)
 	runner.call_deferred("start", _panel)
+
+## 关卡图校验 / 分组 / 布局的编辑器内自测（真实编辑器环境）。
+func _start_gvl_selftest() -> void:
+	if Engine.has_meta("rpg_eventstudio_gvl_selftest_started"):
+		return
+	Engine.set_meta("rpg_eventstudio_gvl_selftest_started", true)
+	var script := load("res://tests/graph_editor_gvl_selftest.gd")
+	if script == null:
+		push_error("[RPGEventStudio] 找不到关卡图编辑器自测脚本")
+		get_tree().quit(2)
+		return
+	var runner: Node = script.new()
+	runner.name = "GraphEditorGvlSelfTest"
+	add_child(runner)
+	runner.call_deferred("start", self, _main_screen)
+
+## 开发截图：打开关卡图主屏，展示检查结果面板与分组框。
+func _capture_gvl_screen() -> void:
+	await get_tree().create_timer(3.0).timeout
+	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	if _main_tabs != null:
+		_main_tabs.current_tab = 0
+	await get_tree().create_timer(0.5).timeout
+	if _main_screen != null and _main_screen.has_method("open_graph"):
+		var graph := load("res://addons/rpgeventstudio/samples/graphs/school_graph.tres")
+		if graph != null:
+			_main_screen.call("open_graph", graph)
+			await get_tree().create_timer(0.4).timeout
+			if _main_screen.has_method("gvl_acceptance_setup"):
+				await _main_screen.call("gvl_acceptance_setup")
+			await get_tree().create_timer(0.6).timeout
+			_capture_viewport("res://docs/images/graph_editor_validation.png")
+	await get_tree().create_timer(0.8).timeout
+	get_tree().quit()

@@ -130,11 +130,100 @@ game.hud.opened,已打开,Unlocked
 game.hud.unlocked_short,已解锁,Unlocked
 game.prompt.hint,空格 / 鼠标左键 / 手柄 A,Space / Left Click / Pad A
 graph.add_node,＋ 节点,+ Node
+graph.check,检查,Check
+graph.check.close,关闭,Close
+graph.check.column.id,节点 ID,Node ID
+graph.check.column.message,问题描述,Problem
+graph.check.column.node,节点名称,Node
+graph.check.column.severity,类型,Severity
+graph.check.column.suggestion,修复建议,Suggestion
+graph.check.cond_branch_missing,条件 {node} 的「{port}」出口没有连线,Condition {node} has nothing connected to its "{port}" output
+graph.check.cond_branch_missing_hint,条件只在对应结果出现时才会传播；不接的出口等于无事发生。,The condition only propagates on that result; an unconnected output does nothing.
+graph.check.cond_no_branch,条件 {node} 的两个出口都没连线,Condition {node} has neither output connected
+graph.check.cond_no_branch_hint,条件成立或不成立都不会有任何后续。,Nothing happens whether the condition is true or false.
+graph.check.conn_broken,连线引用了不存在的节点（{node}）,Connection references a missing node ({node})
+graph.check.conn_broken_hint,删掉这条连线，或把两端重新接上。,Delete the connection or reconnect both ends.
+graph.check.conn_duplicate,重复连线：{from} → {to},Duplicate connection: {from} → {to}
+graph.check.conn_duplicate_hint,同一条线画了两次；运行时只算一次。,The same connection appears twice; it only counts once at runtime.
+graph.check.conn_port,{node} 的「{port}」不是有效出口,"""{port}"" is not a valid output of {node}"
+graph.check.conn_port_hint,这条连线写错了端口（资源可能被手动改过），请重接。,The connection uses a wrong port (the resource may be hand-edited); reconnect it.
+graph.check.conn_to_port,{node} 的入口端口写成了「{port}」,{node} has input port "{port}" instead of in
+graph.check.conn_to_port_hint,入口端口只能是 in；请重新连线。,Input ports must be in; reconnect the connection.
+graph.check.conn_to_start,不能连到「开始」节点（{node}）,Cannot connect to the Start node ({node})
+graph.check.conn_to_start_hint,「开始」节点只有出口；删掉这条连线。,Start has no input; delete this connection.
+graph.check.cycle_gated,循环经过 AND 汇合：{nodes},Cycle passes through Wait-All: {nodes}
+graph.check.cycle_gated_hint,汇合节点的「只触发一次」机制会终止循环，一般无需处理。,The merge fires only once and ends the loop; usually harmless.
+graph.check.cycle_unguarded,存在无限传播的循环：{nodes},Unguarded cycle will propagate forever: {nodes}
+graph.check.cycle_unguarded_hint,这个环上没有任何 AND 汇合，运行时会传播到上限并中止整张图；在环上加一个汇合节点或断开一条线。,"No Wait-All on this loop; runtime hits its propagation limit and aborts the graph. Add a merge node or break the loop."
+graph.check.end_no_key,{node} 没填完成标记,{node} has no completion key
+graph.check.end_no_key_hint,不填也能结束，只是不会记录任何完成状态。,Ending without one is fine; nothing will be recorded as completed.
+graph.check.entry_invalid,入口设置指向无效节点（{node}）,Entry points to an invalid node ({node})
+graph.check.entry_invalid_hint,运行时会自动改用第一个启用的「开始」节点；请修正入口或清空。,Runtime falls back to the first enabled Start; fix the entry or clear it.
+graph.check.event_not_definition,事件资源不是事件定义：{path},Resource is not an event definition: {path}
+graph.check.event_not_definition_hint,选择一个事件定义资源（.tres）。,Pick an event definition resource (.tres).
+graph.check.event_path_empty,{node} 没选择事件,{node} has no event selected
+graph.check.event_path_empty_hint,事件节点需要指定要调用的事件资源。,Event nodes need an event resource to call.
+graph.check.event_path_missing,事件资源不存在：{path},Event resource not found: {path}
+graph.check.event_path_missing_hint,路径失效了；重新选择事件文件。,The path is broken; pick the event file again.
+graph.check.event_trigger_no_page,{node} 的事件没有「{trigger}」页,{node} has an event with no "{trigger}" page
+graph.check.event_trigger_no_page_hint,运行时匹配不到事件页就不会触发，还会一直等到超时；请改触发方式或补页。,The event never starts with this trigger and the graph stalls until timeout; change the trigger or add a matching page.
+graph.check.label,检查：{summary},Check: {summary}
+graph.check.merge_no_input,汇合节点 {node} 没有任何输入,Wait-All node {node} has no inputs
+graph.check.merge_no_input_hint,把要等待的分支连进来，或删掉这个节点。,Connect the branches to wait for or delete the node.
+graph.check.merge_over_required,{node} 需要 {required} 条输入，实际只有 {incoming} 条,{node} requires {required} inputs but has {incoming}
+graph.check.merge_over_required_hint,汇合永远达不到要求数，后面的流程不会执行；调小「需要几条输入」或补齐连线。,The merge can never fire and everything after it is dead; lower the required count or add the missing connections.
+graph.check.monitor_oscillation,监视条件可能互相触发：{nodes},Monitor conditions may re-trigger each other: {nodes}
+graph.check.monitor_oscillation_hint,一个条件成立时写入了能让下一个条件成立的值，可能反复来回触发；调整写入的值或改用非监视条件。,"One condition's branch writes a value that satisfies the next condition, which can oscillate forever; change the written values or use non-monitor conditions."
+graph.check.ok,检查：没有发现问题,Check: no problems found
+graph.check.param_missing,{node} 还没填「{field}」,{node} is missing "{field}"
+graph.check.param_missing_hint,运行时会直接跳过没填参数的节点。,Nodes with missing parameters are skipped at runtime.
+graph.check.rerun,重新检查,Re-check
+graph.check.save_anyway,仍然保存,Save Anyway
+graph.check.save_blocked,图里还有 {count} 个错误，保存后运行仍会失败。仍要保存吗？,"The graph still has {count} error(s) and will misbehave at runtime. Save anyway?"
+graph.check.saved_with_errors,已保存，但图里仍有 {count} 个错误,Saved with {count} error(s) remaining
+graph.check.severity.error,错误,Error
+graph.check.severity.info,提示,Info
+graph.check.severity.warning,警告,Warning
+graph.check.start_disabled,有 {count} 个「开始」节点被禁用,{count} Start node(s) are disabled
+graph.check.start_disabled_hint,禁用的开始节点不会作为入口；确认这是有意的。,Disabled Start nodes cannot be the entry; make sure this is intended.
+graph.check.start_duplicate,有 {count} 个启用的「开始」节点（{ids}）,{count} enabled Start nodes ({ids})
+graph.check.start_duplicate_hint,运行时只会用第一个；请禁用多余的开始节点。,Only the first one runs; disable the extra Start nodes.
+graph.check.start_missing,缺少有效的「开始」节点,Missing a valid Start node
+graph.check.start_missing_hint,添加一个「开始」节点并保持启用，否则整张图不会运行。,"Add an enabled Start node, otherwise the graph never runs."
+graph.check.state_unregistered,状态未登记：{node} 里的 {key},Unregistered state in {node}: {key}
+graph.check.state_unregistered_hint,请到「状态库」登记这个状态，或改用已有状态；未登记的状态在调试面板里也不会显示名字。,Register it in the State Library or pick an existing state; unregistered states also lose their display names in the debug panel.
+graph.check.summary,{errors} 错误 · {warnings} 警告 · {infos} 提示,{errors} error(s) · {warnings} warning(s) · {infos} hint(s)
+graph.check.title,检查结果,Check Results
+graph.check.unreachable,不可达节点：{nodes},Unreachable nodes: {nodes}
+graph.check.unreachable_hint,这些节点永远不会被执行；接上连线或删掉。,These nodes can never run; connect or delete them.
 graph.delete,删除,Delete
 graph.disabled,（已禁用）,(disabled)
 graph.enabled,启用这个节点,Enabled
+graph.group,分组,Group
+graph.group.add_to,加入「{name}」,"Add to ""{name}"""
+graph.group.color,分组颜色,Group Color
+graph.group.default_title,分组,Group
+graph.group.delete,删除分组,Delete Group
+graph.group.in_group,所在分组：{name},In group: {name}
+graph.group.members,成员节点：{count},Members: {count}
+graph.group.new,新建分组框,New Empty Group
+graph.group.new_selection,用选中节点新建分组,Group Selected Nodes
+graph.group.remove,移出所在分组,Remove from Group
+graph.group.resize_hint,拖动边框调整大小；把节点拖进 / 拖出边框即可加入或移出。,Drag the borders to resize. Drag nodes in or out of the frame to add or remove them.
+graph.group.tip,新建分组框；把节点加入或移出分组,Create group frames; add or remove nodes
+graph.group.title_label,分组名称,Group Name
 graph.highlight,运行高亮,Run Highlight
 graph.highlight.tip,从编辑器启动游戏时，实时高亮正在执行的节点与当前阶段,Highlights the running node and current stage when you launch from the editor
+graph.layout,布局,Layout
+graph.layout.auto,自动排列,Auto Arrange
+graph.layout.bottom,底部对齐,Align Bottom
+graph.layout.h_dist,水平等距分布,Distribute Horizontally
+graph.layout.left,左对齐,Align Left
+graph.layout.need_selection,先选中两个以上节点（分布需要三个）,Select at least two nodes (three for distributing)
+graph.layout.right,右对齐,Align Right
+graph.layout.tip,对齐、分布与自动排列（可撤销）,Align / distribute / auto arrange (undoable)
+graph.layout.top,顶部对齐,Align Top
+graph.layout.v_dist,垂直等距分布,Distribute Vertically
 graph.new,新建…,New…
 graph.no_graph,还没有打开关卡图。点上方「打开…」选一个 .tres 关卡图资源。,"No graph open yet. Use ""Open…"" to pick a LevelGraph resource."
 graph.node.action,动作,Action
@@ -161,14 +250,14 @@ graph.undo.add,添加图节点,Add node
 graph.undo.connect,连接节点,Connect nodes
 graph.undo.delete,删除图节点,Delete node
 graph.undo.disconnect,断开连接,Disconnect nodes
+graph.undo.frame_resize,调整分组大小,Resize group
+graph.undo.group_add,新建分组,Add group
+graph.undo.group_delete,删除分组,Delete group
+graph.undo.group_members,调整分组成员,Edit group members
+graph.undo.group_prop,修改分组属性,Edit group
+graph.undo.layout,调整布局,Rearrange layout
+graph.undo.move,移动节点,Move nodes
 graph.undo.param,修改节点参数,Edit node parameter
-graph.validate.action,动作节点没选状态（{node}）,Action has no state ({node})
-graph.validate.condition,条件节点没选状态（{node}）,Condition has no state ({node})
-graph.validate.event,事件节点没选事件（{node}）,Event node has no event ({node})
-graph.validate.issues,⚠ {count} 个节点还需要填参数：{list},⚠ {count} node(s) need parameters: {list}
-graph.validate.no_start,缺「开始」节点,Missing Start node
-graph.validate.ok,参数检查：没有发现问题,Validation: no problems found
-graph.validate.stage,阶段节点没填阶段 ID（{node}）,Stage node has no stage id ({node})
 input.action.cancel,取消 / 返回,Cancel / Back
 input.action.choice_down,选项下移,Choice Down
 input.action.choice_up,选项上移,Choice Up
