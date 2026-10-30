@@ -11,6 +11,8 @@ const DIALOGUE_THEME_PATH := "res://ui/rpgeventstudio_theme.tres"
 const INTERACT_ACTION := &"interact"
 
 var state: StateStore
+## 运行时剧情追踪（F2 面板使用；可通过 RPG_EVENT_STUDIO_TRACE=0/1 覆盖）。
+var trace: RuntimeTrace
 var bus: EventBus
 var registry: CommandRegistry
 var runner: EventRunner
@@ -44,6 +46,11 @@ func _ready() -> void:
 	registry = CommandRegistry.new()
 	state = StateStore.new()
 	state.level_prefix = level_prefix
+	trace = RuntimeTrace.new()
+	trace.configure(_trace_enabled_by_default(), _trace_capacity())
+	state.write_observer = func(key: String, old_value: Variant, new_value: Variant, existed: bool) -> void:
+		if trace != null:
+			trace.state_changed(key, old_value, new_value, existed)
 	bus = EventBus.new()
 	bus.event_rejected.connect(_on_event_rejected)
 
@@ -81,6 +88,7 @@ func _ready() -> void:
 	runner.bus = bus
 	runner.presenter = presenter
 	runner.registry = registry
+	runner.trace = trace
 
 	_sfx_player = AudioStreamPlayer.new()
 	_sfx_player.name = "SfxPlayer"
@@ -88,10 +96,11 @@ func _ready() -> void:
 
 # ── 事件 API（游戏脚本可以直接用） ───────────────────────
 
-func start_event(definition: EventDefinition, args: Dictionary = {}, trigger_filter: Array = []) -> void:
+func start_event(definition: EventDefinition, args: Dictionary = {}, trigger_filter: Array = [],
+		source: Dictionary = {}) -> void:
 	if runner == null or definition == null:
 		return
-	runner.start(definition, args, trigger_filter)
+	runner.start(definition, args, trigger_filter, source)
 
 func cancel_all(reason: String = "手动取消") -> void:
 	if runner != null:
@@ -210,9 +219,41 @@ func _sync_default_presenter_activity() -> void:
 	default_presenter.set_process(active)
 	default_presenter.set_process_input(active)
 
+func _trace_enabled_by_default() -> bool:
+	var env := OS.get_environment("RPG_EVENT_STUDIO_TRACE")
+	if env == "1":
+		return true
+	if env == "0":
+		return false
+	return OS.is_debug_build()
+
+func _trace_capacity() -> int:
+	var raw := OS.get_environment("RPG_EVENT_STUDIO_TRACE_CAPACITY")
+	return int(raw) if raw.is_valid_int() else RuntimeTrace.DEFAULT_CAPACITY
+
+func set_trace_enabled(value: bool) -> void:
+	if trace != null:
+		trace.enabled = value
+
+func clear_trace() -> void:
+	if trace != null:
+		trace.clear()
+
+func trace_json() -> String:
+	return trace.export_json() if trace != null else ""
+
+## 从 F2 面板定位：发给编辑器调试器（未从编辑器启动时无副作用）。
+func trace_focus_node(graph_id: String, node_id: String, graph_path: String = "") -> void:
+	_debug_send("trace_node", [graph_id, node_id, graph_path])
+
+func trace_focus_event(event_id: String, event_path: String = "") -> void:
+	_debug_send("trace_event", [event_id, event_path])
+
 func register_graph(graph_runner: GraphRunner) -> void:
 	if graph_runner == null:
 		return
+	if graph_runner.trace == null:
+		graph_runner.trace = trace
 	if not graphs.has(graph_runner):
 		graphs.append(graph_runner)
 		# 把执行进度发给编辑器（只在从编辑器启动时生效，导出后没有成本）

@@ -15,6 +15,9 @@ func execute(ctx: EventContext) -> int:
 
 	var op := str(ctx.get_param("op", "=="))
 	var expected := ValueParser.parse(str(ctx.get_param("value", "true")))
+	# 实际值只用于追踪展示；compare 本身不读第二遍，执行语义不变。
+	var actual: Variant = ctx.get_state(key, null)
 	var matched := ctx.compare_state(key, op, expected)
+	ctx.trace_condition(key, op, expected, actual, matched, "then" if matched else "else")
 	ctx.pending_block = command.children if matched else command.else_children
 	return CmdResult.ENTER_BLOCK

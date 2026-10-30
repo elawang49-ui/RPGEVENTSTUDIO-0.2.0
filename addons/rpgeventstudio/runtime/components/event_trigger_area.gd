@@ -33,9 +33,11 @@ func _process(_delta: float) -> void:
 		return
 	if _inside:
 		if trigger_on_enter:
-			_runtime.call("start_event", event, {}, [&"touch", &"region_enter"])
+			_runtime.call("start_event", event, {}, [&"touch", &"region_enter"],
+				{"kind": "trigger_area", "node": str(get_path()), "node_name": name})
 	elif trigger_on_exit:
-		_runtime.call("start_event", event, {}, [&"region_exit"])
+		_runtime.call("start_event", event, {}, [&"region_exit"],
+			{"kind": "trigger_area", "node": str(get_path()), "node_name": name})
 
 func _draw() -> void:
 	if show_debug_circle:

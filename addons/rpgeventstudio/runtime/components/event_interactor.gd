@@ -138,7 +138,8 @@ func trigger() -> void:
 	if not can_interact():
 		return
 	triggered.emit()
-	_runtime.call("start_event", event, {}, [&"interact"])
+	_runtime.call("start_event", event, {}, [&"interact"],
+		{"kind": "interactor", "node": str(get_path()), "node_name": name})
 
 func _draw() -> void:
 	if not _active:

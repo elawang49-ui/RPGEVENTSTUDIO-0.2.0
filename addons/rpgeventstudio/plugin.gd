@@ -62,6 +62,8 @@ func _enter_tree() -> void:
 		_start_story_test.call_deferred()
 	if OS.get_environment("RPGEVENTSTUDIO_AUDIT_SELFTEST") == "1":
 		_start_audit_selftest.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_TRACE_SELFTEST") == "1":
+		_start_trace_selftest.call_deferred()
 
 func _exit_tree() -> void:
 	if _selection != null and _selection.selection_changed.is_connected(_on_selection_changed):
@@ -292,6 +294,8 @@ func _create_debugger() -> void:
 	_debugger_plugin = StudioDebuggerPlugin.new()
 	_debugger_plugin.graph_node.connect(_on_debug_node)
 	_debugger_plugin.graph_stage.connect(_on_debug_stage)
+	_debugger_plugin.trace_node.connect(_on_trace_node)
+	_debugger_plugin.trace_event.connect(_on_trace_event)
 	add_debugger_plugin(_debugger_plugin)
 
 func _on_debug_node(graph_id: String, node_id: String, state: int) -> void:
@@ -301,6 +305,29 @@ func _on_debug_node(graph_id: String, node_id: String, state: int) -> void:
 func _on_debug_stage(graph_id: String, stage: String) -> void:
 	if _main_screen != null and _main_screen.has_method("apply_debug_stage"):
 		_main_screen.call("apply_debug_stage", graph_id, stage)
+
+## F2 追踪面板点击图节点：只定位当前打开的同 id 图，不伪造跨图定位。
+func _on_trace_node(graph_id: String, node_id: String, graph_path: String = "") -> void:
+	if _main_screen == null:
+		return
+	var graph = _main_screen.call("current_graph")
+	if graph == null or String(graph.graph_id) != graph_id:
+		if graph_path == "" or not ResourceLoader.exists(graph_path):
+			return
+		var loaded := load(graph_path)
+		if not (loaded is LevelGraph):
+			return
+		_open_graph(loaded)
+		graph = loaded
+	_main_screen.call("_locate_node", StringName(node_id))
+
+## F2 追踪面板双击事件：按事件资源路径打开；没有路径时只能显示记录详情。
+func _on_trace_event(_event_id: String, event_path: String) -> void:
+	if event_path == "" or not ResourceLoader.exists(event_path):
+		return
+	var resource := load(event_path)
+	if resource is EventDefinition:
+		_open_event(resource)
 
 # ── 主屏：关卡图 ─────────────────────────────────────────
 
@@ -644,3 +671,19 @@ func _start_audit_selftest() -> void:
 	runner.name = "StoryAuditSelfTest"
 	add_child(runner)
 	runner.call_deferred("start", self, _audit_view)
+
+
+## 运行时追踪视图的编辑器验收：RPGEVENTSTUDIO_TRACE_SELFTEST=1。
+func _start_trace_selftest() -> void:
+	if Engine.has_meta("rpg_eventstudio_trace_selftest_started"):
+		return
+	Engine.set_meta("rpg_eventstudio_trace_selftest_started", true)
+	var script := load("res://tests/trace_editor_selftest.gd")
+	if script == null:
+		push_error("[RPGEventStudio] 找不到追踪编辑器自测脚本")
+		get_tree().quit(2)
+		return
+	var runner: Node = script.new()
+	runner.name = "TraceEditorSelfTest"
+	add_child(runner)
+	runner.call_deferred("start", self)

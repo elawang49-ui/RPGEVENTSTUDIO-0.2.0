@@ -177,7 +177,7 @@ func _collect(path: String, keys: Dictionary) -> void:
 	var text := file.get_as_text()
 	file.close()
 	var prefixes := ["editor.", "cmd.", "cat.", "param.", "trigger.", "repeat.", "input.", "key.",
-		"game.", "sample.", "diag.", "state.", "graph.", "eventlist.", "picker.", "debug.", "fade.", "stage.", "audit."]
+		"game.", "sample.", "diag.", "state.", "graph.", "eventlist.", "picker.", "debug.", "fade.", "stage.", "audit.", "trace."]
 	var regex := RegEx.new()
 	regex.compile("\"([a-z][a-z0-9_]*\\.[a-z0-9_.]*)\"")
 	# 逐行扫描：状态扫描器的 KIND_* 是内部使用类型常量（如 "graph.condition"），

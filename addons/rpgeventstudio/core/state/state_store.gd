@@ -15,6 +15,8 @@ const SCOPE_LOCAL := "Local"
 var revision: int = 0
 var level_prefix: String = "School"
 var strict: bool = false
+## 运行时追踪观察者：每次真实写入（含事务批处理期间）都会回调，默认空。
+var write_observer: Callable = Callable()
 
 var _values: Dictionary = {}
 var _types: Dictionary = {}
@@ -86,6 +88,10 @@ func set_value(key: String, value: Variant) -> int:
 
 	if existed and _equal(old_value, coerced):
 		return OK
+
+	# 只观察真实变化；在批处理分支之前调用，保证旧值/新值与单次写入一致。
+	if write_observer.is_valid():
+		write_observer.call(key, old_value, coerced, existed)
 
 	if _batching:
 		if not _dirty.has(key):

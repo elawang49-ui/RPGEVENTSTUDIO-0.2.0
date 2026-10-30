@@ -7,6 +7,9 @@ var runtime: Node
 
 var _root: Control
 var _body: VBoxContainer
+var _state_scroll: ScrollContainer
+var _trace_view: TraceDebugView
+var _trace_button: Button
 var _refresh_left := 0.0
 
 func _ready() -> void:
@@ -33,7 +36,7 @@ func _build() -> void:
 	_root.add_child(center)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(760, 560)
+	panel.custom_minimum_size = Vector2(1100, 680)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.07, 0.08, 0.11, 0.99)
 	style.border_color = Color(0.55, 0.75, 1.0, 0.85)
@@ -62,6 +65,12 @@ func _build() -> void:
 	title.add_theme_font_size_override("font_size", 19)
 	header.add_child(title)
 
+	_trace_button = Button.new()
+	_trace_button.text = L10n.game("trace.title")
+	_trace_button.toggle_mode = true
+	_trace_button.toggled.connect(_show_trace)
+	header.add_child(_trace_button)
+
 	var close := Button.new()
 	close.text = L10n.game("debug.close")
 	close.pressed.connect(close_panel)
@@ -73,17 +82,24 @@ func _build() -> void:
 	hint.add_theme_color_override("font_color", Color(0.65, 0.68, 0.74))
 	column.add_child(hint)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
+	_state_scroll = ScrollContainer.new()
+	_state_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(_state_scroll)
 
 	_body = VBoxContainer.new()
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_body.add_theme_constant_override("separation", 4)
-	scroll.add_child(_body)
+	_state_scroll.add_child(_body)
+
+	_trace_view = TraceDebugView.new()
+	_trace_view.visible = false
+	_trace_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(_trace_view)
 
 func open() -> void:
 	visible = true
+	if _trace_view != null:
+		_trace_view.setup(runtime)
 	refresh()
 
 func close_panel() -> void:
@@ -100,8 +116,22 @@ func _process(delta: float) -> void:
 		_refresh_left = 0.25
 		refresh()
 
+func _show_trace(enabled: bool) -> void:
+	if _state_scroll != null:
+		_state_scroll.visible = not enabled
+	if _trace_view != null:
+		_trace_view.visible = enabled
+		if enabled:
+			_trace_view.setup(runtime)
+	if not enabled and _body != null:
+		refresh()
+
 func refresh() -> void:
-	if _body == null or runtime == null:
+	if runtime == null:
+		return
+	if _trace_view != null and _trace_view.visible:
+		_trace_view.refresh()
+	if _body == null:
 		return
 	for child in _body.get_children():
 		_body.remove_child(child)

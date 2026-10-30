@@ -757,3 +757,45 @@ audit.event.duplicate_id,事件标识重复：{id}（另见 {others}）,Duplicat
 audit.event.duplicate_id.hint,运行时按 event_id 识别事件；重复会导致调试与外部调用混淆。,Runtime identifies events by event_id; duplicates confuse debugging and external calls.
 audit.graph.duplicate_id,关卡图标识重复：{id}（另见 {others}）,Duplicate graph id: {id} (also {others})
 audit.graph.duplicate_id.hint,同一关卡挂多张图时，重复 graph_id 会让运行态消息无法区分。,"With multiple graphs per level, duplicate graph ids make runtime messages ambiguous."
+trace.title,运行追踪,Runtime Trace
+trace.enable,记录追踪,Record trace
+trace.clear,清空,Clear
+trace.export,导出 JSON,Export JSON
+trace.filter.event,事件 ID / 名称…,Event ID / name…
+trace.filter.state,状态标识…,State key…
+trace.result.all,全部结果,All results
+trace.result.completed,完成,Completed
+trace.result.cancelled,取消,Cancelled
+trace.result.failed,失败,Failed
+trace.col.time,时间,Time
+trace.col.kind,类型,Kind
+trace.col.summary,摘要,Summary
+trace.col.result,结果,Result
+trace.empty,暂无追踪记录。执行事件后这里会显示时间线。,No trace yet. Run an event to see the timeline.
+trace.status,显示 {shown}/{total} 条 · 缓冲 {capacity} · 丢弃 {dropped},Showing {shown}/{total} · capacity {capacity} · dropped {dropped}
+trace.exported,已导出：{path},Exported: {path}
+trace.export_failed,导出失败,Export failed
+trace.details_hint,选中一条记录查看完整数据；双击事件记录定位事件，双击图节点定位关卡图。,Select a record for full data; double-click an event to locate it or a graph node to highlight it.
+trace.kind.event_start,事件开始,Event start
+trace.kind.event_end,事件结束,Event end
+trace.kind.event_rejected,事件未触发,Rejected
+trace.kind.page,页面,Page
+trace.kind.command_start,指令开始,Command start
+trace.kind.command_end,指令结束,Command end
+trace.kind.condition,条件,Condition
+trace.kind.state,状态,State
+trace.kind.call,调用,Call
+trace.kind.graph_node,图节点,Graph node
+trace.kind.graph_branch,图分支,Graph branch
+trace.kind.graph_merge,图汇合,Graph merge
+trace.summary.page,第 {page} 页 · {trigger} · {state},Page {page} · {trigger} · {state}
+trace.summary.condition,{key} 实际 {actual} → {branch},{key} actual {actual} → {branch}
+trace.selected,选中,selected
+trace.not_selected,未选中,not selected
+trace.true,通过,true
+trace.false,不通过,false
+trace.fired,已触发,fired
+trace.waiting,等待中,waiting
+trace.current_event,当前事件：{event}（第 {page} 页）,Current event: {event} (page {page})
+trace.current_finished,最近结束：trace #{event},Last finished: trace #{event}
+trace.current_none,当前没有正在执行的事件,No event running

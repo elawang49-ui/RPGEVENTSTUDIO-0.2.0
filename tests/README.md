@@ -75,3 +75,19 @@ python3 tools/test_runner.py --faults    # 证明异常/中断/缺汇总都会 F
   会出现 `CASE_INCOMPLETE` 并计入失败；
 - 每个套件的检查项数量与 `tools/test_counts.json` 对照，测试注册遗漏会直接 FAIL；
 - `RPGEVENTSTUDIO_TEST_FAULT=type|null|skip|expected_error` 用于故障注入自检。
+
+## 运行时剧情追踪
+
+```bash
+# 核心：事件/页面/指令/条件/状态/公共事件/图/AND/OR/取消/失败/容量/JSON/行为一致性
+godot --headless --path . --script res://tests/runtime_trace_test.gd
+
+# F2 追踪视图：渲染、过滤、详情、JSON 导出
+godot --headless --path . --script res://tests/trace_ui_test.gd
+
+# 编辑器内同一视图 + 截图
+RPGEVENTSTUDIO_TRACE_SELFTEST=1 godot --editor --path .
+```
+
+F2 运行时面板：`RPG_EVENT_STUDIO_TRACE=0/1` 控制记录，
+`RPG_EVENT_STUDIO_TRACE_CAPACITY` 控制环形缓冲容量（默认 2000）。

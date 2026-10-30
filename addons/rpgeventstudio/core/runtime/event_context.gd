@@ -18,6 +18,17 @@ var params: Dictionary = {}
 var command: EventCommand = null
 var depth: int = 0
 
+# ── 运行时追踪（可选；为 null 时所有追踪调用都是空操作） ──
+var trace: RuntimeTrace = null
+var trace_id: int = 0
+var parent_trace_id: int = 0
+var source: Dictionary = {}
+var page_index: int = -1
+var trigger_filter: Array = []
+var command_index: int = -1
+var command_serial: int = 0
+var trace_pages: Array = []
+
 var cancelled: bool = false
 var cancel_reason: String = ""
 
@@ -51,6 +62,13 @@ func has_state(raw: String) -> bool:
 
 func compare_state(raw: String, op: String, expected: Variant) -> bool:
 	return state.compare(key(raw), op, expected)
+
+## 记录条件判断的实际值、结果与进入的分支。拿不到实际值时传 null，不编造。
+func trace_condition(raw_key: String, op: String, expected: Variant, actual: Variant,
+		matched: bool, branch: String) -> void:
+	if trace == null:
+		return
+	trace.condition(trace_id, command_index, key(raw_key), op, expected, actual, matched, branch)
 
 # ── 等待 ─────────────────────────────────────────────────
 

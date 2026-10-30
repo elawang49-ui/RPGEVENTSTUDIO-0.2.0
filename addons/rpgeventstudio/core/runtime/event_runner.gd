@@ -16,6 +16,8 @@ var state: StateStore
 var bus: EventBus
 var presenter
 var registry: CommandRegistry
+## 可选运行时追踪；为 null 时零开销。
+var trace: RuntimeTrace = null
 
 var _active: Dictionary = {}       ## event_id -> instance_id
 var _page_runs: Dictionary = {}    ## "event@page" -> {count, revision}
@@ -24,9 +26,19 @@ var _running_instances: Array = []
 
 # ── 启动 ─────────────────────────────────────────────────
 
-func start(definition: EventDefinition, p_args: Dictionary = {}, trigger_filter: Array = []) -> void:
+## 让状态写入能被追踪归因；已有观察者（StudioRuntime 设置）时不重复覆盖。
+func _ensure_trace_observer() -> void:
+	if trace == null or state == null or state.write_observer.is_valid():
+		return
+	var trace_ref: RuntimeTrace = trace
+	state.write_observer = func(key: String, old_value: Variant, new_value: Variant, existed: bool) -> void:
+		trace_ref.state_changed(key, old_value, new_value, existed)
+
+func start(definition: EventDefinition, p_args: Dictionary = {}, trigger_filter: Array = [],
+		source: Dictionary = {}) -> void:
 	if definition == null:
 		return
+	_ensure_trace_observer()
 	if _active.has(definition.event_id):
 		# 同一事件正在执行：丢弃，防止连点导致重入
 		return
@@ -34,7 +46,10 @@ func start(definition: EventDefinition, p_args: Dictionary = {}, trigger_filter:
 	var page_index := definition.get_active_page(state, trigger_filter)
 	if page_index < 0:
 		# 一页都没命中：把每一页的条件结果记下来，调试面板与「为什么没触发」用
-		bus.event_rejected.emit(definition.event_id, diagnose(definition, trigger_filter))
+		var rejection := diagnose(definition, trigger_filter)
+		if trace != null:
+			trace.record_rejected(trace.new_trace_id(), definition, trigger_filter, rejection)
+		bus.event_rejected.emit(definition.event_id, rejection)
 		return
 
 	var page: EventPage = definition.pages[page_index]
@@ -52,6 +67,16 @@ func start(definition: EventDefinition, p_args: Dictionary = {}, trigger_filter:
 	ctx.args = p_args
 	ctx.instance_id = _next_instance_id
 	_next_instance_id += 1
+	ctx.trace = trace
+	ctx.page_index = page_index
+	ctx.trigger_filter = trigger_filter
+	if trace != null:
+		var pending := trace.take_pending_source()
+		ctx.source = pending if not pending.is_empty() else source
+	else:
+		ctx.source = source
+	if trace != null:
+		ctx.trace_pages = _page_decisions(definition, trigger_filter, page_index)
 
 	_active[definition.event_id] = ctx.instance_id
 	_running_instances.append(ctx)
@@ -71,6 +96,11 @@ func cancel_all(reason: String = "场景切换") -> void:
 # ── 主循环 ───────────────────────────────────────────────
 
 func _drive(ctx: EventContext) -> void:
+	if trace != null:
+		ctx.trace_id = trace.new_trace_id()
+		trace.begin_event(ctx.trace_id, ctx.definition, ctx.instance_id, ctx.depth,
+			ctx.parent_trace_id, ctx.trigger_filter, ctx.trace_pages, ctx.source)
+		trace.enter_context(ctx.trace_id, ctx.event_id)
 	bus.event_started.emit(ctx.event_id, ctx.instance_id)
 	var started_at := Time.get_ticks_msec()
 	var result := Result.COMPLETED
@@ -96,6 +126,9 @@ func _drive(ctx: EventContext) -> void:
 		"reason": ctx.cancel_reason if result == Result.CANCELLED else fail_reason,
 		"duration_ms": Time.get_ticks_msec() - started_at,
 	}
+	if trace != null:
+		trace.end_event(ctx.trace_id, result, str(report["reason"]), int(report["duration_ms"]))
+		trace.exit_context(ctx.trace_id)
 	bus.event_finished.emit(report)
 	# 收尾时关闭「本事件实际使用的」展示层：presenter 可能在事件中途被替换，
 	# 不能拿新的展示层去关别人的 UI。
@@ -104,9 +137,10 @@ func _drive(ctx: EventContext) -> void:
 
 func _execute_list(ctx: EventContext, commands: Array) -> int:
 	var executed := 0
-	for command in commands:
+	for index in commands.size():
 		if ctx.cancelled:
 			return CmdResult.ABORT
+		var command: EventCommand = commands[index]
 		if command == null or not (command is EventCommand):
 			continue
 		if not command.enabled or command.type == &"" or command.type == &"comment":
@@ -114,12 +148,21 @@ func _execute_list(ctx: EventContext, commands: Array) -> int:
 
 		ctx.params = command.params
 		ctx.command = command
+		ctx.command_index = index
+		ctx.command_serial += 1
+		var serial := ctx.command_serial
+		var command_type := String(command.type)
 		ctx.pending_block = []
 		ctx.pending_call = {}
+		var started_ms := Time.get_ticks_msec()
+		if trace != null:
+			trace.command_start(ctx.trace_id, serial, index, command_type, ctx.depth)
+			trace.set_command(ctx.trace_id, index, command_type)
 
 		var handler := registry.handler(command.type)
 		if handler == null:
 			push_error("[RPGEventStudio] " + L10n.game("diag.unknown_command", {"type": str(command.type)}))
+			_trace_command_end(ctx, serial, index, command_type, CmdResult.ABORT, started_ms)
 			continue
 
 		var code: int = handler.execute(ctx)
@@ -129,29 +172,43 @@ func _execute_list(ctx: EventContext, commands: Array) -> int:
 			CmdResult.WAIT:
 				await _pump(ctx)
 				if ctx.cancelled:
+					_trace_command_end(ctx, serial, index, command_type, CmdResult.ABORT, started_ms)
 					return CmdResult.ABORT
 			CmdResult.ENTER_BLOCK:
 				var inner := await _execute_list(ctx, ctx.pending_block)
 				if inner == CmdResult.ABORT:
+					_trace_command_end(ctx, serial, index, command_type, CmdResult.ABORT, started_ms)
 					return CmdResult.ABORT
 				if inner == CmdResult.HALT:
+					_trace_command_end(ctx, serial, index, command_type, CmdResult.HALT, started_ms)
 					return CmdResult.HALT
 			CmdResult.CALL:
 				var inner_code := await _execute_call(ctx)
 				if inner_code == CmdResult.ABORT:
+					_trace_command_end(ctx, serial, index, command_type, CmdResult.ABORT, started_ms)
 					return CmdResult.ABORT
 			CmdResult.HALT:
+				_trace_command_end(ctx, serial, index, command_type, CmdResult.HALT, started_ms)
 				return CmdResult.HALT
 			CmdResult.ABORT:
+				_trace_command_end(ctx, serial, index, command_type, CmdResult.ABORT, started_ms)
 				return CmdResult.ABORT
 			_:
 				pass
 
+		_trace_command_end(ctx, serial, index, command_type, code, started_ms)
 		executed += 1
 		if executed % COMMANDS_PER_FRAME == 0:
 			await _next_frame()
 
 	return CmdResult.CONTINUE
+
+func _trace_command_end(ctx: EventContext, serial: int, index: int, command_type: String,
+		result: int, started_ms: int) -> void:
+	if trace == null:
+		return
+	trace.command_end(ctx.trace_id, serial, index, command_type, result,
+		Time.get_ticks_msec() - started_ms)
 
 func _pump(ctx: EventContext) -> void:
 	while not ctx.is_wait_done():
@@ -181,12 +238,16 @@ func _execute_call(ctx: EventContext) -> int:
 				push_error("[RPGEventStudio] " + L10n.game("diag.common_missing", {"ref": str(ref)}))
 				return CmdResult.ABORT
 			ctx.depth += 1
+			if trace != null:
+				trace.record_call(ctx.trace_id, ctx.parent_trace_id, "common", str(ref), ctx.depth, "enter")
 			var saved_page := ctx.page
 			var saved_params := ctx.params
 			var code := await _execute_list(ctx, common.commands)
 			ctx.page = saved_page
 			ctx.params = saved_params
 			ctx.depth -= 1
+			if trace != null:
+				trace.record_call(ctx.trace_id, ctx.parent_trace_id, "common", str(ref), ctx.depth, "exit")
 			return code
 		"event":
 			var target: EventDefinition = null
@@ -197,13 +258,22 @@ func _execute_call(ctx: EventContext) -> int:
 			if target == null:
 				push_error("[RPGEventStudio] " + L10n.game("diag.event_missing", {"ref": str(ref)}))
 				return CmdResult.ABORT
+			if trace != null:
+				trace.record_call(ctx.trace_id, ctx.parent_trace_id, "event", String(target.event_id),
+					ctx.depth + 1, "enter", String(target.event_id))
 			await _run_nested_event(ctx, target, call_args)
+			if trace != null:
+				trace.record_call(ctx.trace_id, ctx.parent_trace_id, "event", String(target.event_id),
+					ctx.depth + 1, "exit", String(target.event_id))
 			return CmdResult.CONTINUE
 	return CmdResult.CONTINUE
 
 func _run_nested_event(parent: EventContext, target: EventDefinition, call_args: Dictionary) -> void:
 	var page_index := target.get_active_page(state)
+	var child_trace_id := trace.new_trace_id() if trace != null else 0
 	if page_index < 0:
+		if trace != null:
+			trace.record_rejected(child_trace_id, target, [], diagnose(target, []))
 		return
 	var child := EventContext.new()
 	child.host = host
@@ -216,8 +286,30 @@ func _run_nested_event(parent: EventContext, target: EventDefinition, call_args:
 	child.args = call_args
 	child.depth = parent.depth + 1
 	child.instance_id = _next_instance_id
+	child.page_index = page_index
+	child.parent_trace_id = parent.trace_id
+	child.source = {"kind": "nested", "parent_event_id": String(parent.event_id)}
+	child.trace = trace
+	child.trace_id = child_trace_id
+	if trace != null:
+		child.trace_pages = _page_decisions(target, [], page_index)
+		trace.begin_event(child.trace_id, target, child.instance_id, child.depth,
+			child.parent_trace_id, [], child.trace_pages, child.source)
+		trace.enter_context(child.trace_id, child.event_id)
 	_next_instance_id += 1
-	await _execute_list(child, child.page.commands)
+	var started_ms := Time.get_ticks_msec()
+	var code := await _execute_list(child, child.page.commands)
+	if trace != null:
+		var result := Result.COMPLETED
+		var reason := ""
+		if child.cancelled:
+			result = Result.CANCELLED
+			reason = child.cancel_reason
+		elif code == CmdResult.ABORT:
+			result = Result.FAILED
+			reason = L10n.game("diag.command_failed")
+		trace.end_event(child.trace_id, result, reason, Time.get_ticks_msec() - started_ms)
+		trace.exit_context(child.trace_id)
 
 func _next_frame() -> void:
 	var tree := host.get_tree() if host != null and host.is_inside_tree() else null
@@ -225,6 +317,15 @@ func _next_frame() -> void:
 		await tree.process_frame
 	else:
 		await Engine.get_main_loop().process_frame
+
+## 把 diagnose 的结果标上本次实际选中的页；追踪开启时才调用。
+func _page_decisions(definition: EventDefinition, trigger_filter: Array, selected: int) -> Array:
+	var out: Array = []
+	for page in diagnose(definition, trigger_filter).get("pages", []):
+		var copy: Dictionary = page
+		copy["selected"] = int(copy.get("index", -1)) == selected
+		out.append(copy)
+	return out
 
 ## 给出「为什么这个事件没执行」的逐条说明。
 func diagnose(definition: EventDefinition, trigger_filter: Array = []) -> Dictionary:

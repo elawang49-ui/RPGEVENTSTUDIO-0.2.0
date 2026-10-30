@@ -52,6 +52,8 @@ SUITE_ALLOWED_ERRORS = {
 
 HEADLESS_SUITES = [
     ("run", ["--script", "res://tests/run.gd"], {}, 180),
+    ("runtime_trace_test", ["--script", "res://tests/runtime_trace_test.gd"], {}, 180),
+    ("trace_ui_test", ["--script", "res://tests/trace_ui_test.gd"], {}, 120),
     ("story_audit_test", ["--script", "res://tests/story_audit_test.gd"], {}, 120),
     ("state_bulk_register_test", ["--script", "res://tests/state_bulk_register_test.gd"], {}, 120),
     ("graph_editor_smoke", ["--script", "res://tests/graph_editor_smoke.gd"], {}, 120),
@@ -70,6 +72,7 @@ EDITOR_SUITES = [
     ("gvl", ["--editor"], {"RPGEVENTSTUDIO_GVL_SELFTEST": "1"}, 180),
     ("story", ["--editor"], {"RPGEVENTSTUDIO_STORY_SELFTEST": "1"}, 180),
     ("audit", ["--editor"], {"RPGEVENTSTUDIO_AUDIT_SELFTEST": "1"}, 180),
+    ("trace", ["--editor"], {"RPGEVENTSTUDIO_TRACE_SELFTEST": "1"}, 240),
 ]
 
 

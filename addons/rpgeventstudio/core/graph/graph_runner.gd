@@ -22,6 +22,8 @@ var host: Node
 var level_prefix: String = "School"
 ## func(definition: EventDefinition, args: Dictionary, trigger_filter: Array) -> void
 var event_starter: Callable = Callable()
+## 可选运行时追踪；只观察，不改变执行顺序。
+var trace: RuntimeTrace = null
 
 var node_states: Dictionary = {}
 var running := false
@@ -37,6 +39,10 @@ var _connected := false
 func start() -> void:
 	if graph == null or state == null:
 		return
+	if trace != null and not state.write_observer.is_valid():
+		var trace_ref: RuntimeTrace = trace
+		state.write_observer = func(key: String, old_value: Variant, new_value: Variant, existed: bool) -> void:
+			trace_ref.state_changed(key, old_value, new_value, existed)
 	_stop = false
 	running = true
 	_activations = 0
@@ -93,6 +99,9 @@ func _activate(node_id: StringName, cause: Dictionary) -> void:
 		return
 
 	_set_node_state(node_id, NodeState.RUNNING)
+	if trace != null:
+		trace.set_graph_context(_graph_id(), String(node_id), graph.resource_path if graph != null else "")
+		trace.graph_node(_graph_id(), String(node_id), node.type, "enter", NodeState.RUNNING, cause)
 	node_activated.emit(node_id, cause)
 
 	match node.type:
@@ -110,6 +119,8 @@ func _activate(node_id: StringName, cause: Dictionary) -> void:
 		"merge_and":
 			await _activate_merge_and(node, cause)
 		"merge_or":
+			if trace != null:
+				trace.graph_merge(_graph_id(), String(node.node_id), "or", 1, 1, true, "out")
 			await _propagate(node, "out", cause)
 		"event":
 			await _activate_event(node, cause)
@@ -119,11 +130,17 @@ func _activate(node_id: StringName, cause: Dictionary) -> void:
 			push_warning("[RPGEventStudio] 未知的关卡图节点类型：%s" % node.type)
 
 	_set_node_state(node_id, NodeState.DONE)
+	if trace != null:
+		trace.graph_node(_graph_id(), String(node_id), node.type, "exit", NodeState.DONE, cause)
+		trace.clear_graph_context()
 
 func _propagate(node: LevelNode, port: String, cause: Dictionary) -> void:
 	for connection in graph.outgoing(node.node_id, port):
 		if _stop:
 			return
+		if trace != null:
+			trace.graph_branch(_graph_id(), String(node.node_id), port,
+				String(connection.to_node), true, cause)
 		await _activate(connection.to_node, cause)
 
 # ── 各类节点 ─────────────────────────────────────────────
@@ -153,6 +170,9 @@ func _apply_stage(node: LevelNode) -> void:
 	var key := "%s.Stage" % level_prefix
 	var previous := str(state.get_value(key, ""))
 	state.set_value(key, stage_id)
+	if trace != null:
+		trace.graph_node(_graph_id(), String(node.node_id), "stage", "stage", NodeState.RUNNING,
+			{"stage_id": stage_id, "previous": previous})
 	stage_changed.emit(graph.level_id, stage_id)
 	bus.stage_changed.emit(graph.level_id, StringName(previous), StringName(stage_id))
 
@@ -165,6 +185,13 @@ func _apply_end(node: LevelNode) -> void:
 
 func _activate_condition_once(node: LevelNode, cause: Dictionary) -> void:
 	var result := _evaluate(node)
+	if trace != null:
+		var key := _condition_key(node)
+		var expected: Variant = node.get_param("value", true)
+		if expected is String:
+			expected = ValueParser.parse(expected)
+		trace.condition(0, -1, key, str(node.get_param("op", "==")), expected,
+			state.get_value(key, null), result, "true" if result else "false")
 	await _propagate(node, "true" if result else "false", cause)
 
 func _activate_merge_and(node: LevelNode, cause: Dictionary) -> void:
@@ -178,10 +205,16 @@ func _activate_merge_and(node: LevelNode, cause: Dictionary) -> void:
 	if required <= 0:
 		required = max(1, graph.incoming_count(node.node_id))
 	if int(info["count"]) < required:
+		if trace != null:
+			trace.graph_merge(_graph_id(), String(node.node_id), "and", int(info["count"]),
+				required, false, "wait")
 		return
 
 	info["fired"] = true
 	_merge[node.node_id] = info
+	if trace != null:
+		trace.graph_merge(_graph_id(), String(node.node_id), "and", int(info["count"]),
+			required, true, "out")
 	await _propagate(node, "out", cause)
 
 func _activate_event(node: LevelNode, cause: Dictionary) -> void:
@@ -199,8 +232,18 @@ func _activate_event(node: LevelNode, cause: Dictionary) -> void:
 
 	var trigger := str(node.get_param("trigger", "interact"))
 	var trigger_filter: Array = [StringName(trigger)] if trigger != "" else []
+	if trace != null:
+		trace.set_pending_source({
+			"kind": "graph",
+			"graph_id": _graph_id(),
+			"node_id": String(node.node_id),
+			"event_path": path,
+			"trigger": trigger,
+		})
 	if event_starter.is_valid():
 		event_starter.call(definition, {}, trigger_filter)
+	elif trace != null:
+		trace.take_pending_source()
 	if wait:
 		await _wait_event(definition.event_id)
 	await _propagate(node, "done", cause)
@@ -291,3 +334,6 @@ func monitored_keys() -> Array:
 func _set_node_state(node_id: StringName, value: int) -> void:
 	node_states[node_id] = value
 	node_state_changed.emit(node_id, value)
+
+func _graph_id() -> String:
+	return String(graph.graph_id) if graph != null else ""

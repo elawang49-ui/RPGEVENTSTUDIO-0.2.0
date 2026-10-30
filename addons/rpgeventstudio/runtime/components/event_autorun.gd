@@ -43,4 +43,5 @@ func _trigger() -> void:
 		triggers.append(&"parallel")
 	else:
 		triggers.append(&"autorun")
-	_runtime.call("start_event", event, {}, triggers)
+	_runtime.call("start_event", event, {}, triggers,
+		{"kind": "autorun", "node": str(get_path()), "node_name": name})

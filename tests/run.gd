@@ -59,6 +59,9 @@ func _run() -> void:
 	_case_begin("story_audit")
 	_test_story_audit()
 	_case_verify("story_audit")
+	_case_begin("runtime_trace")
+	await _test_runtime_trace()
+	_case_verify("runtime_trace")
 	_case_begin("story_document_mapping")
 	_test_story_document_mapping()
 	_case_verify("story_document_mapping")
@@ -1694,6 +1697,66 @@ func _report() -> void:
 		print("  ✗ ", failure)
 	print("CASES：预期 %d，完成 %d" % [_case_expected.size(), _case_done.size()])
 	print("RESULT: %s" % ("PASS" if _failures.is_empty() else "FAIL"))
+
+# ── 运行时追踪（主套件冒烟） ──────────────────────────────
+
+func _test_runtime_trace() -> void:
+	var trace := RuntimeTrace.new()
+	trace.enabled = true
+	var host := Node.new()
+	host.name = "TraceMainHost"
+	root.add_child(host)
+	var presenter := MockPresenter.new()
+	host.add_child(presenter)
+	var state := StateStore.new()
+	var bus := EventBus.new()
+	var runner := EventRunner.new()
+	runner.host = host
+	runner.state = state
+	runner.bus = bus
+	runner.presenter = presenter
+	runner.registry = CommandRegistry.new()
+	runner.trace = trace
+	state.define("Trace.Main", TYPE_BOOL, false)
+
+	var definition := EventDefinition.new()
+	definition.event_id = &"trace_main"
+	var page := EventPage.new()
+	var setter := CommandRegistry.create_command(&"set_switch")
+	setter.params["key"] = "Trace.Main"
+	setter.params["value"] = true
+	var commands: Array[EventCommand] = [setter, CommandRegistry.create_command(&"end")]
+	page.commands = commands
+	definition.pages = [page]
+	runner.start(definition)
+	for i in 120:
+		if runner.active_count() == 0:
+			break
+		await process_frame
+
+	_check(state.get_bool("Trace.Main"), "追踪开启时事件正常执行")
+	_check(_trace_has(trace, "event_start") and _trace_has(trace, "event_end"), "主套件记录事件开始/结束")
+	_check(_trace_has(trace, "state"), "主套件记录状态变化")
+	var parsed: Variant = JSON.parse_string(trace.export_json())
+	_check(parsed is Dictionary, "追踪 JSON 可解析")
+
+	trace.configure(false)
+	trace.clear()
+	state.set_value("Trace.Main", false)
+	runner.start(definition)
+	for i in 120:
+		if runner.active_count() == 0:
+			break
+		await process_frame
+	_check(trace.record_count() == 0, "关闭追踪后不产生记录")
+	host.queue_free()
+	_case_end()
+
+func _trace_has(trace: RuntimeTrace, kind: String) -> bool:
+	for record in trace.records():
+		if str(record.get("kind", "")) == kind:
+			return true
+	return false
 
 # ── 关卡图静态校验 ────────────────────────────────────────
 
