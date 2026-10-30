@@ -22,6 +22,12 @@ func _run() -> void:
 	_test_nested_serialization()
 	_test_graph_validator()
 	_test_group_persistence()
+	_test_story_document_mapping()
+	_test_story_document_edits()
+	_test_story_document_choice_ops()
+	_test_story_templates()
+	_test_story_characters()
+	_test_story_preview()
 	await _test_graph_flow()
 	await _test_graph_merge_or()
 	await _test_graph_event_node()
@@ -483,6 +489,263 @@ func _test_nested_serialization() -> void:
 	_check(old_definition != null and old_definition.pages.size() == 2, "旧事件资源应继续可用")
 
 	DirAccess.remove_absolute(path)
+
+# ── 剧情工作台：视图映射 ─────────────────────────────────
+
+func _test_story_document_mapping() -> void:
+	var definition: EventDefinition = load("res://addons/rpgeventstudio/samples/events/librarian.tres")
+	var document := StoryDocument.new(definition.pages[0])
+	var items := document.build_items()
+
+	_check(items.size() == 3, "图书管理员第 1 页应解析为 3 个条目（实际 %d）" % items.size())
+	_check(str(items[0]["kind"]) == "line", "第 1 条应是台词")
+	_check(str(items[1]["kind"]) == "choice", "第 2 条应是选项块")
+	_check(str(items[2]["kind"]) == "command", "第 3 条应是普通指令（end）")
+
+	var choice: Dictionary = items[1]
+	_check((choice["options"] as Array).size() == 2, "选项块应有两个选项")
+	_check(str(choice["pattern"]) == "nested", "旧样例（单个 if + else）应识别为嵌套式（实际 %s）" % str(choice["pattern"]))
+	_check(bool(choice["well_formed"]), "旧样例的选项块应判定为结构完整")
+	var views: Array = choice["option_views"]
+	_check((views[0] as Array).size() == 3, "选项 1 分支应有 3 个条目")
+	_check((views[1] as Array).size() == 1, "选项 2 分支（else）应有 1 个条目")
+	var first_branch_line: Dictionary = views[0][0]
+	_check(str(first_branch_line["command"].params.get("text", "")) == "这把钥匙给你，别弄丢了。", "选项 1 分支第一条台词应正确映射")
+	_check(str(views[1][0]["command"].params.get("text", "")) == "那就随便看看吧。", "选项 2 分支台词应正确映射")
+
+	# 条件分歧与状态指令的映射
+	var definition2 := EventDefinition.new()
+	var page := EventPage.new()
+	var branch := CommandRegistry.create_command(&"if")
+	branch.params["key"] = "Global.A"
+	branch.children = [CommandRegistry.create_command(&"show_text")]
+	branch.else_children = [CommandRegistry.create_command(&"set_switch")]
+	var inner := CommandRegistry.create_command(&"if")
+	inner.params["key"] = "Global.B"
+	inner.children = []
+	page.commands = [CommandRegistry.create_command(&"show_text"), branch, inner, CommandRegistry.create_command(&"variable_op")]
+	definition2.pages = [page]
+	var doc2 := StoryDocument.new(page)
+	var items2 := doc2.build_items()
+	_check(items2.size() == 4, "应解析出 4 个顶层条目")
+	_check(str(items2[1]["kind"]) == "condition" and str(items2[2]["kind"]) == "condition", "两条 if 都应是条件条目")
+	_check((items2[1]["children_view"] as Array).size() == 1, "条件的「是」分支应有 1 个条目")
+	_check((items2[1]["else_view"] as Array).size() == 1, "条件的「否」分支应有 1 个条目")
+	_check(str(items2[3]["kind"]) == "state", "variable_op 应识别为状态条目")
+
+# ── 剧情工作台：基础编辑 ─────────────────────────────────
+
+func _test_story_document_edits() -> void:
+	var definition: EventDefinition = load("res://addons/rpgeventstudio/samples/events/librarian.tres")
+	var page := definition.pages[0]
+	var document := StoryDocument.new(page)
+	var items := document.build_items()
+	var original_first: EventCommand = page.commands[0]
+
+	# 插入台词（在选中条目之后）
+	var new_line := CommandRegistry.create_command(&"show_text")
+	new_line.params["speaker"] = "测试员"
+	new_line.params["text"] = "插入的一句"
+	document.insert_command(page.commands, 1, new_line)
+	_check(page.commands.size() == 5, "插入后顶层指令应有 5 条")
+	_check(page.commands[1] == new_line, "新台词应插在第 2 位")
+	_check(page.commands[0] == original_first, "原有命令对象保持不变（零重建）")
+
+	# 修改台词参数
+	var items_now := document.build_items()
+	var line_item: Dictionary = items_now[1]
+	document.set_line_param(line_item, "text", "改过的正文")
+	document.set_line_param(line_item, "speaker", "改名角色")
+	_check(str(page.commands[1].params.get("text", "")) == "改过的正文", "正文应写进原指令")
+	_check(str(page.commands[1].params.get("speaker", "")) == "改名角色", "说话人应写进原指令")
+
+	# 复制 → 移动 → 删除
+	document.duplicate_item(items_now[1])
+	_check(page.commands.size() == 6, "复制后应有 6 条")
+	_check(page.commands[2] != page.commands[1] and str(page.commands[2].params.get("text", "")) == "改过的正文", "复制应得到深拷贝")
+	items_now = document.build_items()
+	document.move_item(items_now[2], 1)
+	_check(str(page.commands[3].params.get("text", "")) == "改过的正文" or str(page.commands[2].params.get("text", "")) == "改过的正文", "移动后台词仍在列表中")
+	items_now = document.build_items()
+	var target_item: Dictionary = items_now[1]
+	document.delete_item(target_item)
+	_check(page.commands.size() == 5, "删除后回到 5 条")
+	_check(page.commands.find(new_line) == -1, "被删除的指令不再在列表里")
+
+# ── 剧情工作台：选项块操作 ───────────────────────────────
+
+func _test_story_document_choice_ops() -> void:
+	var definition: EventDefinition = load("res://addons/rpgeventstudio/samples/events/librarian.tres")
+	var page := definition.pages[0]
+	var document := StoryDocument.new(page)
+	var choice: Dictionary = document.build_items()[1]
+
+	# 改选项文字：不动结构
+	document.choice_rename_option(choice, 0, "询问钥匙（改）")
+	_check((page.commands[1].params.get("options") as Array)[0] == "询问钥匙（改）", "选项文字应更新")
+	_check(page.commands.size() == 4, "改选项文字不应改变结构")
+
+	# 增加选项：改写成顺序式，内容原样搬移
+	var result := document.choice_add_option(choice, "再问一句")
+	_check(result, "结构完整的选项块应允许加选项")
+	_check(page.commands.size() == 6, "加选项后应有 1 个 show_choices + 3 个 if + 1 个 end")
+	_check(str(page.commands[1].type) == "show_choices" and str(page.commands[2].type) == "if" and str(page.commands[3].type) == "if" and str(page.commands[4].type) == "if", "应改写为顺序式三个分支")
+	_check((page.commands[1].params.get("options") as Array).size() == 3, "选项列表应有 3 项")
+	var branch0: Array = page.commands[2].children
+	_check(branch0.size() == 3 and str(branch0[0].params.get("text", "")) == "这把钥匙给你，别弄丢了。", "原选项 1 分支内容应原样保留")
+	var branch1: Array = page.commands[3].children
+	_check(branch1.size() == 1 and str(branch1[0].params.get("text", "")) == "那就随便看看吧。", "原选项 2 分支（else）内容应搬移到新位置")
+	var branch2: Array = page.commands[4].children
+	_check(branch2.is_empty(), "新选项分支应为空")
+	_check(str(page.commands[2].params.get("key", "")) == "@@self.choice" and str(page.commands[2].params.get("value", "")) == "0", "分支条件应指向 @@self.choice")
+
+	# 删除选项
+	choice = document.build_items()[1]
+	_check(document.choice_remove_option(choice, 2), "应能删除最后一个选项")
+	_check(page.commands.size() == 5, "删除选项后回到 5 条")
+	_check((page.commands[1].params.get("options") as Array).size() == 2, "选项列表应剩 2 项")
+
+	# 交换选项：文字与分支内容一起换
+	choice = document.build_items()[1]
+	var swap_ok := document.choice_move_option(choice, 0, 1)
+	_check(swap_ok, "应能交换选项")
+	_check((page.commands[1].params.get("options") as Array)[0] == "离开", "交换后第 1 个选项应是原第 2 个")
+	var swapped_first: EventCommand = page.commands[2].children[0]
+	_check(str(swapped_first.params.get("text", "")) == "那就随便看看吧。", "交换后第 1 分支内容应跟着选项走")
+
+	# 删除中间选项：后面的分支内容必须前移，不能越界或串位
+	var fresh := StoryDocument.new(load("res://addons/rpgeventstudio/samples/events/librarian.tres").pages[0])
+	var fresh_choice: Dictionary = fresh.build_items()[1]
+	fresh.choice_add_option(fresh_choice, "再问一句")
+	fresh_choice = fresh.build_items()[1]
+	_check(fresh.choice_remove_option(fresh_choice, 1), "应能删除中间选项")
+	var fresh_options: Array = fresh.page.commands[1].params.get("options", [])
+	_check(fresh_options.size() == 2 and str(fresh_options[1]) == "再问一句", "删除中间选项后其余选项顺序不变")
+	var fresh_branches: Array = fresh.build_items()[1]["branches"]
+	_check(fresh_branches[1] is Array and (fresh_branches[1] as Array).is_empty(), "被删选项的分支应移除，新选项分支保持为空")
+
+	# 顺序式：新插入的选项块（show_choices + 2 个空 if）
+	var new_commands: Array = []
+	var show := CommandRegistry.create_command(&"show_choices")
+	show.params["prompt"] = "怎么走？"
+	show.params["options"] = ["上楼", "下楼"]
+	new_commands.append(show)
+	for i in 2:
+		var branch := CommandRegistry.create_command(&"if")
+		branch.params["key"] = "@@self.choice"
+		branch.params["op"] = "=="
+		branch.params["value"] = str(i)
+		new_commands.append(branch)
+	document.insert_commands(page.commands, page.commands.size(), new_commands)
+	var items := document.build_items()
+	var seq_choice: Dictionary = items[items.size() - 1]
+	_check(str(seq_choice.get("kind", "")) == "choice", "新插入的选项块应作为独立条目出现")
+	_check(str(seq_choice["pattern"]) == "sequential", "顺序式选项块应被识别（实际 %s）" % str(seq_choice["pattern"]))
+	_check(bool(seq_choice["well_formed"]), "顺序式选项块应结构完整")
+
+# ── 剧情工作台：模板 ─────────────────────────────────────
+
+func _test_story_templates() -> void:
+	for id in StoryTemplates.KEYS:
+		var definition := StoryTemplates.build(id)
+		_check(definition != null, "模板 %s 应能生成事件" % id)
+		if definition == null:
+			continue
+		_check(not definition.pages.is_empty(), "模板 %s 应至少有一页" % id)
+		var has_commands := false
+		for page in definition.pages:
+			if not page.commands.is_empty():
+				has_commands = true
+		_check(has_commands, "模板 %s 应生成真实指令" % id)
+
+	# 多选项模板：show_choices + 三个顺序 if
+	var multi := StoryTemplates.build("multi_choice")
+	var commands := multi.pages[0].commands
+	_check(commands.size() == 6, "多选项模板应有 6 条指令")
+	_check(str(commands[1].type) == "show_choices", "第 2 条应是选项")
+	_check((commands[1].params.get("options") as Array).size() == 3, "多选项模板应有三个选项")
+	for i in 3:
+		_check(str(commands[2 + i].type) == "if" and str(commands[2 + i].params.get("value", "")) == str(i), "第 %d 个分支应指向 @@self.choice == %d" % [i, i])
+
+	# 首次调查 / 重复调查：用状态库真正走一遍页面选择
+	var investigate := StoryTemplates.build("investigate")
+	var store := StateStore.new()
+	_check(investigate.pages.size() == 2, "调查模板应有两页")
+	var first_index := investigate.get_active_page(store, [&"interact"])
+	_check(first_index == 1, "没调查过时应选中「首次」页（实际 %d）" % first_index)
+
+	# 模拟首次调查：把第一条 show_text 后的开关写上（等价于跑一遍）
+	store.set_value("Global.Investigate.DeskChecked", true)
+	_check(investigate.get_active_page(store, [&"interact"]) == 0, "调查过后应选中「重复」页")
+
+	# 门锁模板：两页条件互斥
+	var door := StoryTemplates.build("door_lock")
+	_check(door.get_active_page(store, [&"interact"]) == 1, "没钥匙应选中「锁着」页")
+	store.set_value("Global.Player.HasKey", true)
+	_check(door.get_active_page(store, [&"interact"]) == 0, "有钥匙应选中「开门」页")
+
+	# 自动触发模板：trigger 应为 autorun
+	var autorun := StoryTemplates.build("autorun")
+	_check(autorun.pages[0].trigger == "autorun", "自动触发模板应是 autorun 页")
+
+	# 模板资源能保存并读回
+	var path := "res://.godot/test_story_template.tres"
+	var saved := StoryTemplates.build("npc_dialogue")
+	_check(ResourceSaver.save(saved, path) == OK, "模板事件应能保存")
+	var loaded := load(path) as EventDefinition
+	_check(loaded != null and loaded.pages[0].commands.size() == 4, "模板事件读回后结构一致")
+	DirAccess.remove_absolute(path)
+
+# ── 剧情工作台：角色花名册 ───────────────────────────────
+
+func _test_story_characters() -> void:
+	var roster := StoryCharacters.new()
+	var lily := roster.add_character("lily", "莉莉")
+	lily.color = Color(0.9, 0.6, 0.7)
+	lily.avatar_path = "res://addons/rpgeventstudio/samples/audio/beep.tres"
+	roster.add_character("ache", "阿澈")
+	_check(roster.characters.size() == 2, "应有两个角色")
+	_check(roster.find_by_display_name("莉莉") == lily, "按显示名应能找到角色")
+	_check(roster.unique_id("lily") == "lily2", "重复标识应自动避开")
+
+	var path := "res://.godot/test_story_characters.tres"
+	_check(StoryCharacters.save_roster(roster, path), "花名册应能保存")
+	var loaded := StoryCharacters.load_roster(path)
+	_check(loaded.characters.size() == 2, "花名册读回后角色数一致")
+	_check(loaded.find_by_id("lily").display_name == "莉莉", "读回后显示名一致")
+	_check(loaded.find_by_id("lily").color == Color(0.9, 0.6, 0.7), "读回后颜色一致")
+	DirAccess.remove_absolute(path)
+
+	# 读取不存在的文件应返回空册而不报错
+	var missing := StoryCharacters.load_roster("res://.godot/no_such_roster.tres")
+	_check(missing != null and missing.characters.is_empty(), "缺失花名册文件应返回空册")
+
+# ── 剧情工作台：全文预览 ─────────────────────────────────
+
+func _test_story_preview() -> void:
+	var definition: EventDefinition = load("res://addons/rpgeventstudio/samples/events/librarian.tres")
+	var document := StoryDocument.new(definition.pages[0])
+	var items := document.build_items()
+	var preview := StoryPreview.build(items, null)
+	_check(preview.contains("图书管理员"), "预览应包含说话人名字")
+	_check(preview.contains("要问点什么吗？"), "预览应包含选项提示")
+	_check(preview.contains("▸ 1. 询问钥匙"), "预览应列出选项")
+
+	# 不支持的标签应被明确列出，且预览不改变原始文案
+	var line_item: Dictionary = items[0]
+	var original_text := str(line_item["command"].params.get("text", ""))
+	line_item["command"].params["text"] = "普通文字 [foo]未知[/foo] [b]未闭合"
+	var with_bbcode := StoryPreview.build(items, null)
+	_check(with_bbcode.contains("[foo]"), "预览应原样保留 BBCode（不改变原始文案）")
+	var issues := StoryPreview.collect_issues(items)
+	_check((issues.get("unsupported", []) as Array).has("foo"), "预览应汇总出不支持的标签")
+	_check((issues.get("unclosed", []) as Array).has("b"), "预览应汇总出未闭合标签")
+	var describe := Bbcode.describe(issues, true)
+	_check(describe.contains("[foo]"), "问题描述应包含标签名")
+	line_item["command"].params["text"] = original_text
+
+	# 预览渲染不影响原文
+	_check(str(definition.pages[0].commands[0].params.get("text", "")) == original_text, "预览后原始文案不变")
 
 # ── 关卡总控图 ───────────────────────────────────────────
 
