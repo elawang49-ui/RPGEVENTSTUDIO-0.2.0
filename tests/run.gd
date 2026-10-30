@@ -20,6 +20,8 @@ func _run() -> void:
 	_test_l10n()
 	_test_bbcode()
 	_test_nested_serialization()
+	_test_graph_validator()
+	_test_group_persistence()
 	await _test_graph_flow()
 	await _test_graph_merge_or()
 	await _test_graph_event_node()
@@ -1106,3 +1108,186 @@ func _report() -> void:
 	print("检查项：%d，失败：%d" % [_checks, _failures.size()])
 	for failure in _failures:
 		print("  ✗ ", failure)
+
+# ── 关卡图静态校验 ────────────────────────────────────────
+
+func _gval(graph: LevelGraph) -> Array:
+	return GraphValidator.validate(graph, "School")
+
+func _vcode(issues: Array, code: String) -> bool:
+	for issue in issues:
+		if issue.code == code:
+			return true
+	return false
+
+func _vseverity(issues: Array, code: String) -> int:
+	for issue in issues:
+		if issue.code == code:
+			return issue.severity
+	return -1
+
+func _test_graph_validator() -> void:
+	# 空图：缺开始节点（错误）
+	var empty := LevelGraph.new()
+	_check(_vseverity(_gval(empty), "start_missing") == GraphIssue.Severity.ERROR, "空图应报「缺开始节点」且为错误")
+
+	# 两个启用开始（错误）+ 一个禁用（提示）
+	var two_starts := LevelGraph.new()
+	_gnode(two_starts, "start", {})
+	_gnode(two_starts, "start", {})
+	var disabled_start := _gnode(two_starts, "start", {})
+	disabled_start.enabled = false
+	var issues := _gval(two_starts)
+	_check(_vseverity(issues, "start_duplicate") == GraphIssue.Severity.ERROR, "多个启用开始节点应为错误")
+	_check(_vseverity(issues, "start_disabled") == GraphIssue.Severity.INFO, "禁用开始节点应为提示")
+
+	# 断裂引用 / 错误端口 / 连到开始（错误）
+	var broken := LevelGraph.new()
+	var b_start := _gnode(broken, "start", {})
+	var b_action := _gnode(broken, "action", {"key": "School.BasementUnlocked", "op": "set", "value": "true"})
+	broken.connect_nodes(&"ghost", "out", b_action.node_id, "in")
+	var bad_port := LevelConnection.new()
+	bad_port.from_node = b_action.node_id
+	bad_port.from_port = "done"
+	bad_port.to_node = b_start.node_id
+	broken.connections.append(bad_port)
+	broken.connect_nodes(b_action.node_id, "out", b_start.node_id, "in")
+	issues = _gval(broken)
+	_check(_vseverity(issues, "conn_broken") == GraphIssue.Severity.ERROR, "断裂引用应为错误")
+	_check(_vseverity(issues, "conn_port") == GraphIssue.Severity.ERROR, "错误端口应为错误")
+	_check(_vseverity(issues, "conn_to_start") == GraphIssue.Severity.ERROR, "连到开始节点应为错误")
+
+	# 必填参数（错误）与未登记状态（警告）
+	var params := LevelGraph.new()
+	_gnode(params, "start", {})
+	_gnode(params, "condition", {"key": "", "op": "==", "value": "true"})
+	_gnode(params, "action", {"key": "School.NotRegistered", "op": "set", "value": "true"})
+	_gnode(params, "stage", {"stage_id": ""})
+	_gnode(params, "event", {"event_path": ""})
+	_gnode(params, "event", {"event_path": "res://nowhere.tres"})
+	var end_node := _gnode(params, "end", {"completed_key": ""})
+	_check(_vseverity(_gval(params), "param_missing") == GraphIssue.Severity.ERROR, "条件/动作/阶段/事件缺参数应为错误")
+	_check(_vseverity(_gval(params), "state_unregistered") == GraphIssue.Severity.WARNING, "未登记状态应为警告")
+	_check(_vseverity(_gval(params), "event_path_missing") == GraphIssue.Severity.ERROR, "事件路径不存在应为错误")
+	_check(_vseverity(_gval(params), "end_no_key") == GraphIssue.Severity.INFO, "完成标记未填应为提示")
+
+	# merge_and：required 超过输入（错误）；无输入（警告）
+	var merge := LevelGraph.new()
+	_gnode(merge, "start", {})
+	var m_and := _gnode(merge, "merge_and", {"required": 3})
+	_check(_vseverity(_gval(merge), "merge_over_required") == GraphIssue.Severity.ERROR, "required 超过输入应为错误")
+	m_and.params["required"] = 0
+	_check(_vseverity(_gval(merge), "merge_no_input") == GraphIssue.Severity.WARNING, "汇合无输入应为警告")
+
+	# 不可达节点（警告）；监视条件不需要入边
+	var reach := LevelGraph.new()
+	var r_start := _gnode(reach, "start", {})
+	var r_island := _gnode(reach, "action", {"key": "School.BasementUnlocked", "op": "set", "value": "true"})
+	_check(_vseverity(_gval(reach), "reach_unreachable") == GraphIssue.Severity.WARNING, "不可达节点应为警告")
+
+	# 监视条件不靠入边触发：无入边的监视条件不应判为不可达
+	var reach2 := LevelGraph.new()
+	var r2_start := _gnode(reach2, "start", {})
+	var r2_act := _gnode(reach2, "action", {"key": "School.BasementUnlocked", "op": "set", "value": "true"})
+	_gnode(reach2, "condition", {"key": "School.Office.DiaryFound", "op": "==", "value": "true", "monitor": true})
+	reach2.connect_nodes(r2_start.node_id, "out", r2_act.node_id, "in")
+	var reach2_issues := _gval(reach2)
+	_check(not _vcode(reach2_issues, "reach_unreachable"), "无入边的监视条件不应判为不可达")
+	_check(_vseverity(reach2_issues, "cond_no_branch") == GraphIssue.Severity.WARNING, "监视条件两个出口都没接应为警告")
+
+	# 条件只接了一个出口应为提示
+	var one_branch := LevelGraph.new()
+	var ob_start := _gnode(one_branch, "start", {})
+	var ob_cond := _gnode(one_branch, "condition", {"key": "School.Office.DiaryFound", "op": "==", "value": "true", "monitor": false})
+	var ob_act := _gnode(one_branch, "action", {"key": "School.BasementUnlocked", "op": "set", "value": "true"})
+	one_branch.connect_nodes(ob_start.node_id, "out", ob_cond.node_id, "in")
+	one_branch.connect_nodes(ob_cond.node_id, "true", ob_act.node_id, "in")
+	_check(_vseverity(_gval(one_branch), "cond_branch_missing") == GraphIssue.Severity.INFO, "只接 true 出口应为提示")
+
+	# 无闸门令牌环（错误）；带 AND 汇合的环（提示）
+	var loop := LevelGraph.new()
+	var l_start := _gnode(loop, "start", {})
+	var l_a := _gnode(loop, "action", {"key": "School.BasementUnlocked", "op": "set", "value": "true"})
+	var l_b := _gnode(loop, "stage", {"stage_id": "exploration"})
+	loop.connect_nodes(l_start.node_id, "out", l_a.node_id, "in")
+	loop.connect_nodes(l_a.node_id, "out", l_b.node_id, "in")
+	loop.connect_nodes(l_b.node_id, "out", l_a.node_id, "in")
+	issues = _gval(loop)
+	_check(_vseverity(issues, "cycle_unguarded") == GraphIssue.Severity.ERROR, "无闸门令牌环应为错误（运行时会传播到上限中止）")
+
+	var gated := LevelGraph.new()
+	var g_start := _gnode(gated, "start", {})
+	var g_a := _gnode(gated, "action", {"key": "School.BasementUnlocked", "op": "set", "value": "true"})
+	var g_m := _gnode(gated, "merge_and", {"required": 1})
+	gated.connect_nodes(g_start.node_id, "out", g_a.node_id, "in")
+	gated.connect_nodes(g_a.node_id, "out", g_m.node_id, "in")
+	gated.connect_nodes(g_m.node_id, "out", g_a.node_id, "in")
+	issues = _gval(gated)
+	_check(_vseverity(issues, "cycle_gated") == GraphIssue.Severity.INFO, "经过 AND 汇合的循环应为提示（fired 只放行一次）")
+	_check(not _vcode(issues, "cycle_unguarded"), "带闸门的循环不应报错误")
+
+	# 监视条件互相触发的振荡（警告）：A 写入能让 B 成立的值，B 又写回能让 A 成立的值
+	var ping := LevelGraph.new()
+	_gnode(ping, "start", {})
+	var p_a := _gnode(ping, "action", {"key": "School.BasementUnlocked", "op": "set", "value": "true"})
+	var p_b := _gnode(ping, "action", {"key": "School.Office.DiaryFound", "op": "set", "value": "true"})
+	var m1 := _gnode(ping, "condition", {"key": "School.Office.DiaryFound", "op": "==", "value": "true", "monitor": true})
+	var m2 := _gnode(ping, "condition", {"key": "School.BasementUnlocked", "op": "==", "value": "true", "monitor": true})
+	ping.connect_nodes(m1.node_id, "true", p_a.node_id, "in")
+	ping.connect_nodes(m2.node_id, "true", p_b.node_id, "in")
+	issues = _gval(ping)
+	_check(_vseverity(issues, "monitor_oscillation") == GraphIssue.Severity.WARNING,
+		"监视条件互相写入对方键且取值满足对方条件时应报振荡警告")
+
+	# 单个监视条件写自己的键是合法的阶段推进（不应报振荡）
+	var solo := LevelGraph.new()
+	_gnode(solo, "start", {})
+	var s_stage := _gnode(solo, "stage", {"stage_id": "exploration"})
+	var s_m := _gnode(solo, "condition", {"key": "School.Stage", "op": "==", "value": "exploration", "monitor": true})
+	var s_act := _gnode(solo, "action", {"key": "School.Stage", "op": "set", "value": "basement"})
+	solo.connect_nodes(s_m.node_id, "true", s_act.node_id, "in")
+	solo.connect_nodes(s_m.node_id, "false", s_stage.node_id, "in")
+	_check(not _vcode(_gval(solo), "monitor_oscillation"), "监视条件写自身键的合法模式不应报振荡")
+
+	# 示例图整体无错误
+	var sample: LevelGraph = load("res://addons/rpgeventstudio/samples/graphs/school_graph.tres")
+	_check(sample != null and not GraphValidator.has_errors(_gval(sample)), "示例关卡图不应有错误")
+
+func _test_group_persistence() -> void:
+	var graph := LevelGraph.new()
+	var n1 := _gnode(graph, "start", {})
+	var n2 := _gnode(graph, "stage", {"stage_id": "exploration"})
+	var n3 := _gnode(graph, "action", {"key": "School.BasementUnlocked", "op": "set", "value": "true"})
+
+	var group := LevelGroup.new()
+	group.group_id = graph.next_group_id()
+	group.title = "探索区"
+	group.color = Color(0.4, 0.6, 0.9, 0.2)
+	group.position = Vector2(10, 20)
+	group.size = Vector2(300, 200)
+	group.add_member(n1.node_id)
+	group.add_member(n2.node_id)
+	graph.add_group(group)
+	_check(graph.group_of(n1.node_id) == group, "group_of 应找到所在分组")
+
+	var path := "res://.godot/group_roundtrip.tres"
+	_check(ResourceSaver.save(graph, path) == OK, "带分组的关卡图应能保存")
+	var reloaded := load(path) as LevelGraph
+	_check(reloaded != null and reloaded.groups.size() == 1, "重新读取后分组应保留")
+	if reloaded != null and reloaded.groups.size() == 1:
+		var saved := reloaded.groups[0]
+		_check(saved.title == "探索区", "分组名保留")
+		_check(saved.member_ids.size() == 2 and saved.member_ids[0] == n1.node_id, "分组成员保留")
+		_check(saved.position == Vector2(10, 20) and saved.size == Vector2(300, 200), "分组位置与大小保留")
+		_check(saved.color.is_equal_approx(Color(0.4, 0.6, 0.9, 0.2)), "分组颜色保留")
+
+	# 删除节点应自动清理分组成员；删除分组不删节点
+	var target_group := reloaded.groups[0]
+	reloaded.remove_node(n2.node_id)
+	_check(target_group.member_ids.size() == 1, "删除节点应从分组移除成员")
+	var kept := reloaded.remove_group(target_group.group_id)
+	_check(kept == target_group and reloaded.groups.is_empty(), "删除分组应只移除分组本身")
+	_check(reloaded.nodes.size() == 2, "删除分组不应删除节点")
+	_check(reloaded.next_group_id() == StringName("group_1"), "分组 id 生成应避开节点 id")
+
+	DirAccess.remove_absolute(path)
