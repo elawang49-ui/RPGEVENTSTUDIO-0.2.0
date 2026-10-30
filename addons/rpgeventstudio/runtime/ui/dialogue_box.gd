@@ -17,6 +17,7 @@ var _theme_root: Theme
 var _margin: MarginContainer
 var _column: VBoxContainer
 var _choice_margin: MarginContainer
+var _choices_scroll: ScrollContainer
 var _fade_rect: ColorRect
 var _fade_tween: Tween
 var _panel: PanelContainer
@@ -107,18 +108,21 @@ func _build_ui() -> void:
 
 	_choices_panel = PanelContainer.new()
 	_choices_panel.name = "ChoicePanel"
-	_choices_panel.anchor_left = 0.60
-	_choices_panel.anchor_right = 0.94
-	_choices_panel.anchor_top = 0.26
-	_choices_panel.anchor_bottom = 0.58
+	# 锚点在 _apply_style 里设置：顶边固定、高度随选项数量自适应。
 	_choices_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	_root.add_child(_choices_panel)
 
 	_choice_margin = MarginContainer.new()
 	_choices_panel.add_child(_choice_margin)
 
+	# 选项过多且窗口过矮时才出现滚动条，平时高度贴合并选项数量。
+	_choices_scroll = ScrollContainer.new()
+	_choices_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_choices_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_choice_margin.add_child(_choices_scroll)
+
 	_choices_box = VBoxContainer.new()
-	_choice_margin.add_child(_choices_box)
+	_choices_scroll.add_child(_choices_box)
 
 func _make_panel_style() -> StyleBoxFlat:
 	if style == null:
@@ -132,6 +136,7 @@ func set_dialogue_theme(theme: RpgEventStudioTheme) -> void:
 		_apply_style()
 		if _choices_panel.visible:
 			_update_choice_highlight()
+		_schedule_height_update()
 
 func _apply_style() -> void:
 	if _root == null or style == null:
@@ -143,8 +148,15 @@ func _apply_style() -> void:
 
 	_panel.anchor_left = style.panel_left
 	_panel.anchor_right = style.panel_right
-	_panel.anchor_top = style.panel_top
+	# 底边固定在 panel_bottom，顶边随内容（正文长度）自适应上移；
+	# text_min_height 保证短文本也有稳定的面板高度，不跳动。
+	_panel.anchor_top = style.panel_bottom
 	_panel.anchor_bottom = style.panel_bottom
+	_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_panel.offset_left = 0
+	_panel.offset_right = 0
+	_panel.offset_top = 0
+	_panel.offset_bottom = 0
 	_panel.add_theme_stylebox_override("panel", style.make_panel_style())
 	_margin.add_theme_constant_override("margin_left", style.content_margin_left)
 	_margin.add_theme_constant_override("margin_right", style.content_margin_right)
@@ -163,9 +175,18 @@ func _apply_style() -> void:
 
 	_choices_panel.anchor_left = style.choice_left
 	_choices_panel.anchor_right = style.choice_right
+	# 顶边固定在 choice_top，底边随选项数量自适应下移。
 	_choices_panel.anchor_top = style.choice_top
-	_choices_panel.anchor_bottom = style.choice_bottom
-	_choices_panel.add_theme_stylebox_override("panel", style.make_panel_style())
+	_choices_panel.anchor_bottom = style.choice_top
+	_choices_panel.grow_vertical = Control.GROW_DIRECTION_END
+	_choices_panel.offset_left = 0
+	_choices_panel.offset_right = 0
+	_choices_panel.offset_top = 0
+	_choices_panel.offset_bottom = 0
+	# 选项面板背景不透明：地图元素不允许透过面板影响选项文字。
+	var choice_bg := style.make_panel_style()
+	choice_bg.bg_color.a = 1.0
+	_choices_panel.add_theme_stylebox_override("panel", choice_bg)
 	_choice_margin.add_theme_constant_override("margin_left", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_right", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_top", style.choice_margin)
@@ -205,6 +226,7 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	_clear_choices()
 
 	_show_panel_with_animation()
+	_schedule_height_update()
 	if not _typing:
 		_finish_typing()
 	elif auto_advance > 0.0:
@@ -252,7 +274,7 @@ func show_choices(prompt: String, options: Array) -> void:
 	for index in options.size():
 		var button := Button.new()
 		button.text = str(options[index])
-		button.custom_minimum_size = Vector2(0, 40)
+		button.custom_minimum_size = Vector2(0, style.choice_min_height if style != null else 40.0)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		# 自己管理选中项：不依赖 ui_up/ui_down，这样改键后依然有效
 		button.focus_mode = Control.FOCUS_NONE
@@ -262,6 +284,7 @@ func show_choices(prompt: String, options: Array) -> void:
 		_choice_buttons.append(button)
 
 	_show_choices_panel_with_animation()
+	_schedule_height_update()
 	_hint_label.visible = true
 	_hint_label.text = L10n.game("game.choice_hint")
 	_choice_index = 0
@@ -299,6 +322,40 @@ func _apply_choice_button_style(button: Button, selected: bool) -> void:
 	button.add_theme_color_override("font_hover_color", style.choice_selected_color)
 	button.add_theme_color_override("font_pressed_color", style.choice_selected_color)
 	button.add_theme_color_override("font_focus_color", style.choice_selected_color)
+
+# ── 高度自适应 ───────────────────────────────────────────
+
+var _height_retries := 0
+
+## 正文 / 选项内容变化后延迟一帧测量，面板高度再贴合内容。
+func _schedule_height_update() -> void:
+	_height_retries = 0
+	call_deferred("_update_heights")
+
+func _update_heights() -> void:
+	if _root == null or style == null:
+		return
+	var viewport_size := _root.get_viewport_rect().size
+	if viewport_size.y <= 0.0:
+		return
+	# 布局还没给出宽度时再等一帧，最多重试 3 次。
+	if _text_label.size.x <= 1.0 and _height_retries < 3:
+		_height_retries += 1
+		call_deferred("_update_heights")
+		return
+	# 对话框：正文高度夹在 [text_min_height, 可用高度] 之间；
+	# 超长正文在这里截断为滚动，不会把面板顶出屏幕。
+	var text_content := float(_text_label.get_content_height())
+	var reserved := float(_margin.get_theme_constant("margin_top")) + float(_margin.get_theme_constant("margin_bottom")) \
+		+ _name_label.get_combined_minimum_size().y + _hint_label.get_combined_minimum_size().y \
+		+ 2.0 * float(_column.get_theme_constant("separation"))
+	var panel_max := maxf(style.text_min_height, viewport_size.y * (style.panel_bottom - style.panel_top) - reserved)
+	_text_label.custom_minimum_size = Vector2(0, clampf(text_content, style.text_min_height, panel_max))
+	# 选项面板：高度贴合选项数量；窗口过矮且选项过多时出现滚动。
+	var choice_content := _choices_box.get_combined_minimum_size().y
+	var choice_reserved := 2.0 * float(style.choice_margin)
+	var choice_max := maxf(0.0, viewport_size.y * (style.choice_bottom - style.choice_top) - choice_reserved)
+	_choices_scroll.custom_minimum_size = Vector2(0, clampf(choice_content, 0.0, choice_max))
 
 # ── 关闭 ─────────────────────────────────────────────────
 
@@ -447,6 +504,8 @@ func _clear_choices() -> void:
 	_kill_choices_tween()
 	_choices_panel.modulate.a = 1.0
 	_choices_panel.hide()
+	if _choices_scroll != null:
+		_choices_scroll.custom_minimum_size = Vector2(0, 0)
 	_clear_choice_buttons()
 	_choice_result = -1
 	_choice_index = -1

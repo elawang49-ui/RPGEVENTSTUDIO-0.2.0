@@ -797,7 +797,7 @@ trace.false,不通过,false
 trace.fired,已触发,fired
 trace.waiting,等待中,waiting
 trace.current_event,当前事件：{event}（第 {page} 页）,Current event: {event} (page {page})
-trace.current_finished,最近结束：trace #{event},Last finished: trace #{event}
+trace.current_finished,最近结束：{event},Last finished: {event}
 trace.current_none,当前没有正在执行的事件,No event running
 trace.kind.event_ignored,事件被忽略,Event ignored
 trace.reason.reentry,同一事件正在执行,Same event already running
@@ -806,16 +806,16 @@ trace.reason.unknown,未知原因,Unknown reason
 trace.detail.natural,自然语言,Natural language
 trace.detail.raw,原始 JSON,Raw JSON
 trace.summary.event_start,剧情开始：{name},Story start: {name}
-trace.summary.event_end,剧情结束：trace #{name} · {result},Story end: trace #{name} · {result}
+trace.summary.event_end,剧情结束：{event} · {result},Story end: {event} · {result}
 trace.summary.event_rejected,剧情未触发：{name},Story not triggered: {name}
 trace.summary.event_ignored,剧情被忽略：{name}（{reason}）,Story ignored: {name} ({reason})
 trace.summary.command_start,开始执行指令：{command},Command start: {command}
 trace.summary.command_end,指令结束：{command},Command end: {command}
 trace.summary.state,游戏状态变化：{name}：{old} → {new},State change: {name}: {old} → {new}
 trace.summary.call,调用{phase}：{target},Call {phase}: {target}
-trace.summary.graph_node,关卡图 {graph} · 节点 {node} · {phase},Graph {graph} · node {node} · {phase}
+trace.summary.graph_node,关卡图 {graph}：{node} · {phase},Graph {graph}: {node} · {phase}
 trace.summary.graph_branch,关卡图分支：{node} 的「{port}」→ {to},"Graph branch: {node} ""{port}"" → {to}"
-trace.summary.graph_merge,剧情线汇合：{node} {mode} {count}/{required},Merge: {node} {mode} {count}/{required}
+trace.summary.graph_merge,剧情线汇合：{node}（{mode}）{count}/{required},Merge: {node} ({mode}) {count}/{required}
 trace.call.enter,进入,enter
 trace.call.exit,返回,exit
 trace.graph.enter,进入,enter
@@ -842,3 +842,21 @@ trace.source.trigger_area,触发区域：{node},Trigger area: {node}
 trace.source.autorun,自动事件：{node},Autorun: {node}
 trace.source.graph,关卡图节点：{graph} · {node},Graph node: {graph} · {node}
 trace.source.nested,嵌套调用（父事件 {parent}）,Nested call (parent {parent})
+display.state.unregistered,（未登记）,(unregistered)
+display.event.unnamed,（未命名事件）,(unnamed event)
+display.port.out,出口,exit
+display.port.true,是,then
+display.port.false,否,else
+trace.control.continue,继续,continue
+trace.control.wait,等待,wait
+trace.control.enter_block,进入分支,enter block
+trace.control.call,调用,call
+trace.control.halt,暂停,halt
+trace.control.abort,中断,abort
+trace.control.unknown,未知,unknown
+trace.merge.and,全部满足,all
+trace.merge.or,任一满足,any
+trace.event.id,事件 #{id},Event #{id}
+trace.detail.duration,耗时 {ms} ms,Took {ms} ms
+trace.result.fallback,未收录的结果（{value}）,Unmapped result ({value})
+trace.detail.state_key,状态标识：{key},Key: {key}
