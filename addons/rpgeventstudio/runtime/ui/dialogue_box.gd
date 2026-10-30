@@ -350,7 +350,7 @@ func _process(delta: float) -> void:
 	elif _waiting_confirm:
 		if _auto_deadline > 0 and now >= _auto_deadline:
 			_dismiss_text()
-		elif now >= _input_cooldown and (_pressed(InputService.ACTION_CONFIRM) or _mouse_click):
+		elif now >= _input_cooldown and (_pressed(InputService.ACTION_DIALOGUE_ADVANCE) or _mouse_click):
 			_dismiss_text()
 
 	_mouse_click = false

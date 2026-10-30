@@ -172,7 +172,8 @@ graph.validate.stage,阶段节点没填阶段 ID（{node}）,Stage node has no s
 input.action.cancel,取消 / 返回,Cancel / Back
 input.action.choice_down,选项下移,Choice Down
 input.action.choice_up,选项上移,Choice Up
-input.action.confirm,确认 / 对话推进,Confirm / Advance
+input.action.confirm,菜单确认,Menu Confirm
+input.action.dialogue_advance,对话推进,Advance Dialogue
 input.action.interact,交互,Interact
 input.action.move_down,向下移动,Move Down
 input.action.move_left,向左移动,Move Left

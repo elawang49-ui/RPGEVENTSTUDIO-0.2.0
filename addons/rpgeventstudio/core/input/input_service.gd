@@ -3,6 +3,14 @@ class_name InputService
 extends RefCounted
 ## 统一输入服务：所有游戏内操作只用「动作名」，不直接写按键。
 ## 键鼠手柄共用一套动作；用户改键保存在 user:// 下，不进事件资源。
+##
+## 动作拆分原则：交互、对话推进、菜单确认、移动、选项选择是不同的逻辑动作，
+## 即使默认共用同一批物理按键也不合并成同一个动作，宿主游戏可以只改其中之一。
+##
+## 宿主游戏扩展方式（插件核心不包含任何游戏专用键位）：
+##   - register_action()            注册游戏自己的动作（进同一套设置面板）
+##   - extend_action_defaults()     给已有动作补充默认键（如把 E 加进对话推进）
+## 两者都只影响默认值；用户改过的键永远不被覆盖。
 
 signal bindings_changed
 
@@ -13,6 +21,7 @@ const ACTION_MOVE_DOWN := &"move_down"
 const ACTION_MOVE_LEFT := &"move_left"
 const ACTION_MOVE_RIGHT := &"move_right"
 const ACTION_INTERACT := &"interact"
+const ACTION_DIALOGUE_ADVANCE := &"dialogue_advance"
 const ACTION_CONFIRM := &"confirm"
 const ACTION_CANCEL := &"cancel"
 const ACTION_CHOICE_UP := &"choice_up"
@@ -47,12 +56,21 @@ const ACTIONS := [
 		{"type": "joy_button", "button": JOY_BUTTON_DPAD_RIGHT},
 		{"type": "joy_axis", "axis": JOY_AXIS_LEFT_X, "value": 1.0},
 	]},
+	# interact：站在交互对象前按下，触发事件（NPC 对话、道具拾取）。
 	{"id": "interact", "label": "input.action.interact", "defaults": [
 		{"type": "key", "keycode": KEY_SPACE},
 		{"type": "key", "keycode": KEY_ENTER},
 		{"type": "mouse", "button": MOUSE_BUTTON_LEFT},
 		{"type": "joy_button", "button": JOY_BUTTON_A},
 	]},
+	# dialogue_advance：把对话文本推进到下一句。与菜单确认是不同动作。
+	{"id": "dialogue_advance", "label": "input.action.dialogue_advance", "defaults": [
+		{"type": "key", "keycode": KEY_SPACE},
+		{"type": "key", "keycode": KEY_ENTER},
+		{"type": "mouse", "button": MOUSE_BUTTON_LEFT},
+		{"type": "joy_button", "button": JOY_BUTTON_A},
+	]},
+	# confirm：菜单与选项界面的确认键。
 	{"id": "confirm", "label": "input.action.confirm", "defaults": [
 		{"type": "key", "keycode": KEY_SPACE},
 		{"type": "key", "keycode": KEY_ENTER},
@@ -69,6 +87,11 @@ const ACTIONS := [
 		{"type": "key", "keycode": KEY_W},
 		{"type": "joy_button", "button": JOY_BUTTON_DPAD_UP},
 	]},
+	{"id": "choice_down", "label": "input.action.choice_down", "defaults": [
+		{"type": "key", "keycode": KEY_DOWN},
+		{"type": "key", "keycode": KEY_S},
+		{"type": "joy_button", "button": JOY_BUTTON_DPAD_DOWN},
+	]},
 	{"id": "toggle_settings", "label": "input.action.toggle_settings", "defaults": [
 		{"type": "key", "keycode": KEY_F1},
 		{"type": "joy_button", "button": JOY_BUTTON_BACK},
@@ -77,29 +100,36 @@ const ACTIONS := [
 		{"type": "key", "keycode": KEY_F2},
 		{"type": "joy_button", "button": JOY_BUTTON_Y},
 	]},
-	{"id": "choice_down", "label": "input.action.choice_down", "defaults": [
-		{"type": "key", "keycode": KEY_DOWN},
-		{"type": "key", "keycode": KEY_S},
-		{"type": "joy_button", "button": JOY_BUTTON_DPAD_DOWN},
-	]},
 ]
 
-var _events: Dictionary = {}   ## 动作名(String) -> Array[InputEvent]
+var _events: Dictionary = {}      ## 动作名(String) -> Array[InputEvent]
+var _customized: Dictionary = {}  ## 动作名(String) -> true（用户明确改过键）
 var save_path := SAVE_PATH
+
+## 宿主游戏注册的自定义动作与默认键补充（工程级共享，设置面板可见）。
+static var _registered_actions: Array = []
+static var _default_extensions: Dictionary = {}  ## 动作名 -> Array[事件dict]
 
 func _init() -> void:
 	load_bindings()
 
 # ── 查询 ─────────────────────────────────────────────────
 
+## 内置动作 + 已注册的自定义动作，逐项返回 {id, label, defaults}。
+static func all_action_entries() -> Array:
+	var out: Array = []
+	out.append_array(ACTIONS)
+	out.append_array(_registered_actions)
+	return out
+
 static func action_ids() -> Array:
 	var out: Array = []
-	for entry in ACTIONS:
+	for entry in all_action_entries():
 		out.append(String(entry["id"]))
 	return out
 
 static func action_label_key(action: String) -> String:
-	for entry in ACTIONS:
+	for entry in all_action_entries():
 		if String(entry["id"]) == action:
 			return String(entry["label"])
 	return action
@@ -207,6 +237,60 @@ static func _axis_label(event: InputEventJoypadMotion) -> String:
 		JOY_AXIS_RIGHT_Y: return L10n.game("key.stick_right_down" if positive else "key.stick_right_up")
 	return L10n.game("key.axis", {"index": axis})
 
+# ── 宿主动作注册 ─────────────────────────────────────────
+
+## 注册游戏自己的动作（如 toggle_journal）。entry 结构与内置动作一致：
+##   {"id": "toggle_journal", "label": "input.action.toggle_journal",
+##    "defaults": [{"type": "key", "keycode": KEY_TAB}]}
+## 注册后立即进入改键面板、冲突检测与持久化；重复注册同一 id 无副作用。
+## 界面文字用 label 里的翻译键，宿主游戏负责提供词条（L10n.add_runtime_message）。
+func register_action(entry: Dictionary) -> void:
+	var action := String(entry.get("id", ""))
+	if action.is_empty():
+		push_error("[InputService] register_action 缺少 id：%s" % str(entry))
+		return
+	for existing in _registered_actions:
+		if String(existing["id"]) == action:
+			return   # 已注册：保持首次注册的定义
+	_registered_actions.append(entry.duplicate(true))
+	_events[action] = _resolve_saved_or_defaults(action)
+	_apply()
+	save_bindings()
+	bindings_changed.emit()
+
+## 给已有动作补充默认键（宿主游戏把项目惯用键并进统一动作层）。
+## 只补默认值：用户改过键的动作保持原样，绝不覆盖。
+func extend_action_defaults(action: String, extra_defaults: Array) -> void:
+	if _default_extensions.has(action):
+		var known: Array = _default_extensions[action]
+		for spec in extra_defaults:
+			if not known.has(spec):
+				known.append(spec)
+	else:
+		_default_extensions[action] = extra_defaults.duplicate(true)
+	_apply_default_extension(action)
+	_apply()
+	save_bindings()
+	bindings_changed.emit()
+
+## 取消注册（测试与卸载场景用）。只影响后续查询，不删除用户存档。
+static func unregister_action(action: String) -> void:
+	for i in _registered_actions.size():
+		if String(_registered_actions[i]["id"]) == action:
+			_registered_actions.remove_at(i)
+			break
+	_default_extensions.erase(action)
+
+## 清空全部宿主默认键补充（卸载 / 测试隔离用）。
+static func clear_default_extensions() -> void:
+	_default_extensions.clear()
+
+static func registered_action_ids() -> Array:
+	var out: Array = []
+	for entry in _registered_actions:
+		out.append(String(entry["id"]))
+	return out
+
 # ── 绑定编辑 ─────────────────────────────────────────────
 
 ## 把事件绑到动作上。同一设备类型的旧绑定会被替换。
@@ -223,6 +307,7 @@ func rebind(action: String, event: InputEvent, allow_share: bool = false) -> Dic
 			current.erase(existing)
 	current.append(event.duplicate())
 	_events[action] = current
+	_mark_customized(action)
 	_apply()
 	save_bindings()
 	bindings_changed.emit()
@@ -244,6 +329,7 @@ func clear_device(action: String, device: String) -> void:
 		if device_of(existing) != device:
 			current.append(existing)
 	_events[action] = current
+	_mark_customized(action)
 	_apply()
 	save_bindings()
 	bindings_changed.emit()
@@ -255,24 +341,52 @@ func remove_event(action: String, event: InputEvent) -> void:
 			current.erase(existing)
 			break
 	_events[action] = current
+	_mark_customized(action)
 	_apply()
 	save_bindings()
 	bindings_changed.emit()
 
 func restore_defaults() -> void:
 	_events = _default_events()
+	_customized.clear()
 	_apply()
 	save_bindings()
 	bindings_changed.emit()
 
+func is_customized(action: String) -> bool:
+	return _customized.has(action)
+
+func _mark_customized(action: String) -> void:
+	_customized[action] = true
+
 # ── 持久化 ───────────────────────────────────────────────
+#
+# 存档约定：
+#   [actions] 动作名 -> 绑定事件数组（全量，含未改键的动作）
+#   [meta]    customized -> 用户明确改过键的动作名数组
+# 加载规则：改过键的动作用存档绑定；没改过的动作跟随当前代码默认值，
+# 这样默认键位（含宿主补充）演进后，只有用户主动改过的键保持不变。
+# 旧格式存档没有 [meta]：保存过的绑定一律视为用户改过（不覆盖）；
+# 宿主补充默认键时对「绑定与插件基础默认完全一致」的动作例外补键。
 
 func load_bindings() -> void:
-	var loaded := _read_save_file()
-	if loaded.is_empty():
+	if not FileAccess.file_exists(save_path):
 		_events = _default_events()
-	else:
-		_events = loaded
+		_customized = {}
+		_apply()
+		return
+	var saved := _read_save_file()
+	var customized := _customized_in_save()
+	var has_meta := _save_has_meta()
+	_events = {}
+	_customized = {}
+	for entry in all_action_entries():
+		var action := String(entry["id"])
+		if saved.has(action) and (customized.has(action) or not has_meta):
+			_events[action] = saved[action]
+			_customized[action] = true
+		else:
+			_events[action] = _defaults_of(action)
 	_apply()
 
 func save_bindings() -> void:
@@ -284,6 +398,7 @@ func save_bindings() -> void:
 		for event in _events[action]:
 			serialized.append(event_to_dict(event))
 		config.set_value("actions", String(action), serialized)
+	config.set_value("meta", "customized", _customized.keys())
 	config.save(save_path)
 
 func _read_save_file() -> Dictionary:
@@ -293,7 +408,7 @@ func _read_save_file() -> Dictionary:
 	if config.load(save_path) != OK:
 		return {}
 	var out := {}
-	for entry in ACTIONS:
+	for entry in all_action_entries():
 		var action := String(entry["id"])
 		if not config.has_section_key("actions", action):
 			continue
@@ -308,21 +423,63 @@ func _read_save_file() -> Dictionary:
 		if not events.is_empty():
 			out[action] = events
 	# 保存文件里缺的动作回落到默认值，避免升级后动作消失
-	for entry in ACTIONS:
+	for entry in all_action_entries():
 		var action := String(entry["id"])
 		if not out.has(action):
 			out[action] = _defaults_of(action)
 	return out
 
+func _customized_in_save() -> Dictionary:
+	var out := {}
+	var config := _open_save_config()
+	if config == null:
+		return out
+	if not config.has_section_key("meta", "customized"):
+		return out
+	var raw: Variant = config.get_value("meta", "customized")
+	if raw is Array:
+		for action in raw:
+			out[String(action)] = true
+	return out
+
+func _save_has_meta() -> bool:
+	var config := _open_save_config()
+	return config != null and config.has_section("meta")
+
+func _open_save_config() -> ConfigFile:
+	if not FileAccess.file_exists(save_path):
+		return null
+	var config := ConfigFile.new()
+	if config.load(save_path) != OK:
+		return null
+	return config
+
 # ── 内部 ─────────────────────────────────────────────────
 
 func _default_events() -> Dictionary:
 	var out := {}
-	for entry in ACTIONS:
+	for entry in all_action_entries():
 		out[String(entry["id"])] = _defaults_of(String(entry["id"]))
 	return out
 
+## 动作的完整默认绑定：插件基础默认 + 宿主补充默认。
 func _defaults_of(action: String) -> Array:
+	var out: Array = []
+	for entry in all_action_entries():
+		if String(entry["id"]) != action:
+			continue
+		for spec in entry["defaults"]:
+			var event := dict_to_event(spec)
+			if event != null:
+				out.append(event)
+	for spec in _extension_specs_of(action):
+		var event := dict_to_event(spec)
+		if event != null and not _contains_event(out, event):
+			out.append(event)
+	return out
+
+## 插件自身的基础默认（不含宿主补充），用于判断用户是否动过键。
+func _base_defaults_of(action: String) -> Array:
 	var out: Array = []
 	for entry in ACTIONS:
 		if String(entry["id"]) != action:
@@ -333,8 +490,60 @@ func _defaults_of(action: String) -> Array:
 				out.append(event)
 	return out
 
+func _extension_specs_of(action: String) -> Array:
+	if _default_extensions.has(action):
+		return _default_extensions[action]
+	return []
+
+## 把宿主补充的默认键并进动作当前绑定。只在动作未被用户改过时生效；
+## 旧格式存档无法区分时，退而求其次：当前绑定与插件基础默认完全一致
+## 才视为未改过。用户主动改过的键永远不被覆盖。
+func _apply_default_extension(action: String) -> void:
+	if not _events.has(action):
+		return   # 动作不存在：register_action 负责，这里跳过
+	var untouched := not _customized.has(action) \
+		or _events_equal(events_of(action), _base_defaults_of(action))
+	if not untouched:
+		return
+	var current: Array = events_of(action).duplicate()
+	for spec in _extension_specs_of(action):
+		var event := dict_to_event(spec)
+		if event != null and not _contains_event(current, event):
+			current.append(event)
+	_events[action] = current
+
+func _resolve_saved_or_defaults(action: String) -> Array:
+	# 新注册的动作：存档里已有绑定且被标记为用户改过 → 沿用；否则用默认值。
+	var config := _open_save_config()
+	if config != null and config.has_section_key("actions", action):
+		if _customized_in_save().has(action):
+			var events: Array = []
+			var raw: Variant = config.get_value("actions", action)
+			if raw is Array:
+				for item in raw:
+					var event := dict_to_event(item)
+					if event != null:
+						events.append(event)
+			if not events.is_empty():
+				return events
+	return _defaults_of(action)
+
+func _events_equal(a: Array, b: Array) -> bool:
+	if a.size() != b.size():
+		return false
+	for event in a:
+		if not _contains_event(b, event):
+			return false
+	return true
+
+func _contains_event(events: Array, event: InputEvent) -> bool:
+	for existing in events:
+		if same_event(existing, event):
+			return true
+	return false
+
 func _apply() -> void:
-	for entry in ACTIONS:
+	for entry in all_action_entries():
 		var action := String(entry["id"])
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
