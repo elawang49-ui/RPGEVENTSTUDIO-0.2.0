@@ -243,13 +243,13 @@ python3 tools/test_runner.py --all        # headless + 编辑器 + 故障注入
 python3 tools/test_runner.py --faults     # 证明异常/中断/缺汇总不会假绿
 ```
 
-headless 套件（14 个，合计 734 项检查）：
+headless 套件（14 个，合计 737 项检查）：
 
 ```bash
 python3 tools/test_runner.py --headless
 ```
 
-编辑器自测（6 个，合计 169 项检查）：
+编辑器自测（6 个，合计 170 项检查）：
 
 ```bash
 python3 tools/test_runner.py --editor
