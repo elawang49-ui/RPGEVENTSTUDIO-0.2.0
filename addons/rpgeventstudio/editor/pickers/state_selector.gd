@@ -37,7 +37,7 @@ func _build() -> void:
 	row.add_child(_new_button)
 
 	_key_label = Label.new()
-	_key_label.add_theme_font_size_override("font_size", 10)
+	_key_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_key_label.add_theme_color_override("font_color", Color(0.55, 0.7, 0.9))
 	_key_label.visible = show_internal
 	add_child(_key_label)

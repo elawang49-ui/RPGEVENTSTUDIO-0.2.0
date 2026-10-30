@@ -104,7 +104,7 @@ func _build_ui() -> void:
 
 	_hint = Label.new()
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_hint.add_theme_font_size_override("font_size", 12)
+	_hint.add_theme_font_size_override("font_size", RuntimeFonts.NOTE)
 	_hint.add_theme_color_override("font_color", Color(0.78, 0.80, 0.86))
 	column.add_child(_hint)
 
@@ -146,7 +146,7 @@ func _build_ui() -> void:
 
 	_status = Label.new()
 	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_status.add_theme_font_size_override("font_size", 12)
+	_status.add_theme_font_size_override("font_size", RuntimeFonts.NOTE)
 	_status.add_theme_color_override("font_color", Color(0.65, 0.85, 0.65))
 	footer.add_child(_status)
 
@@ -235,14 +235,14 @@ func _make_device_row(action: String, device: String) -> HBoxContainer:
 	var device_label := Label.new()
 	device_label.text = L10n.game("input.device." + device)
 	device_label.custom_minimum_size = Vector2(48, 0)
-	device_label.add_theme_font_size_override("font_size", 12)
+	device_label.add_theme_font_size_override("font_size", RuntimeFonts.NOTE)
 	device_label.add_theme_color_override("font_color", Color(0.72, 0.74, 0.8))
 	row.add_child(device_label)
 
 	var value_label := Label.new()
 	value_label.text = _describe(action, device)
 	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	value_label.add_theme_font_size_override("font_size", 13)
+	value_label.add_theme_font_size_override("font_size", RuntimeFonts.BODY)
 	row.add_child(value_label)
 
 	var change := Button.new()

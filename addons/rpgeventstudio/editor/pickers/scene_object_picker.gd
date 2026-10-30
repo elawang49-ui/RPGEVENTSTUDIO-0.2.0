@@ -37,7 +37,7 @@ func _ready() -> void:
 	root.add_child(_tree)
 
 	_status = Label.new()
-	_status.add_theme_font_size_override("font_size", 11)
+	_status.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
 	root.add_child(_status)
 

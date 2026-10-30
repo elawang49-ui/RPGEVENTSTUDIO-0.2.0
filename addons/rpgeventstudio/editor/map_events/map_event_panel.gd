@@ -52,7 +52,7 @@ func _build() -> void:
 	_details = Label.new()
 	_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_details.custom_minimum_size = Vector2(0, 64)
-	_details.add_theme_font_size_override("font_size", 11)
+	_details.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_details.add_theme_color_override("font_color", Color(0.80, 0.84, 0.90))
 	_details.text = L10n.ui("map.details.hint")
 	add_child(_details)
@@ -74,7 +74,7 @@ func _build() -> void:
 
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status.add_theme_font_size_override("font_size", 10)
+	_status.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status.add_theme_color_override("font_color", Color(0.65, 0.68, 0.74))
 	add_child(_status)
 
@@ -83,7 +83,7 @@ func _build() -> void:
 	_tree.columns = 1
 	_tree.column_titles_visible = false
 	_tree.set_column_expand(0, true)
-	_tree.add_theme_font_size_override("font_size", 11)
+	_tree.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_tree.custom_minimum_size = Vector2(0, 120)
 	_tree.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_tree.item_selected.connect(_on_item_selected)

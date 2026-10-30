@@ -102,7 +102,7 @@ func _build() -> void:
 	root.add_child(right)
 
 	_key_value = Label.new()
-	_key_value.add_theme_font_size_override("font_size", 11)
+	_key_value.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_key_value.add_theme_color_override("font_color", Color(0.6, 0.75, 0.95))
 	right.add_child(_key_value)
 
@@ -167,7 +167,7 @@ func _build() -> void:
 	_hint = Label.new()
 	_hint.text = L10n.ui("state.library.hint")
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_hint.add_theme_font_size_override("font_size", 11)
+	_hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_hint.add_theme_color_override("font_color", Color(0.65, 0.68, 0.74))
 	right.add_child(_hint)
 
@@ -208,7 +208,7 @@ func _on_bulk_registered(_keys: PackedStringArray) -> void:
 func _label_for(key: String) -> Label:
 	var label := Label.new()
 	label.text = L10n.ui(key)
-	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	label.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
 	return label
 

@@ -107,7 +107,7 @@ func _build() -> void:
 	_path_label = Label.new()
 	_path_label.text = L10n.ui("theme.path", {"path": theme_path})
 	_path_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_path_label.add_theme_font_size_override("font_size", 11)
+	_path_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_path_label.add_theme_color_override("font_color", Color(0.62, 0.68, 0.76))
 	header.add_child(_path_label)
 
@@ -131,7 +131,7 @@ func _build() -> void:
 	footer.add_child(restore)
 	_status = Label.new()
 	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_status.add_theme_font_size_override("font_size", 11)
+	_status.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status.add_theme_color_override("font_color", Color(0.65, 0.82, 0.65))
 	footer.add_child(_status)
 
@@ -244,7 +244,7 @@ func _build_custom_mode() -> void:
 	var not_applied := Label.new()
 	not_applied.text = L10n.ui("theme.custom.plugin_only")
 	not_applied.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	not_applied.add_theme_font_size_override("font_size", 11)
+	not_applied.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	not_applied.add_theme_color_override("font_color", Color(0.75, 0.62, 0.50))
 	box.add_child(not_applied)
 
@@ -292,7 +292,7 @@ func _make_field(field: Dictionary) -> Control:
 	var label := Label.new()
 	label.text = L10n.ui(str(field.get("label", "")))
 	label.custom_minimum_size = Vector2(190, 0)
-	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	row.add_child(label)
 
 	match kind:

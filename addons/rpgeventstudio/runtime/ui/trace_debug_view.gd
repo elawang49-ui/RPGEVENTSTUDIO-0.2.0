@@ -76,7 +76,7 @@ func _build() -> void:
 	toolbar.add_child(export_button)
 
 	_current = Label.new()
-	_current.add_theme_font_size_override("font_size", 11)
+	_current.add_theme_font_size_override("font_size", RuntimeFonts.NOTE)
 	_current.add_theme_color_override("font_color", Color(0.72, 0.82, 0.94))
 	add_child(_current)
 
@@ -103,12 +103,12 @@ func _build() -> void:
 	_details = RichTextLabel.new()
 	_details.custom_minimum_size = Vector2(0, 130)
 	_details.scroll_active = true
-	_details.add_theme_font_size_override("normal_font_size", 11)
+	_details.add_theme_font_size_override("normal_font_size", RuntimeFonts.NOTE)
 	_details.text = L10n.game("trace.details_hint")
 	add_child(_details)
 
 	_status = Label.new()
-	_status.add_theme_font_size_override("font_size", 10)
+	_status.add_theme_font_size_override("font_size", RuntimeFonts.NOTE)
 	_status.add_theme_color_override("font_color", Color(0.62, 0.68, 0.76))
 	add_child(_status)
 

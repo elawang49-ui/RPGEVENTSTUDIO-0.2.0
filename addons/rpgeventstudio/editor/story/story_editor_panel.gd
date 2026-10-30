@@ -172,7 +172,7 @@ func _build_ui() -> void:
 	_insert_label = Label.new()
 	_insert_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_insert_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_insert_label.add_theme_font_size_override("font_size", 10)
+	_insert_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_insert_label.add_theme_color_override("font_color", Color(0.62, 0.78, 0.95))
 	insert_row.add_child(_insert_label)
 
@@ -203,7 +203,7 @@ func _build_ui() -> void:
 	body.add_child(_build_preview_section())
 
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", 11)
+	_status_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_status_label)
 
@@ -247,7 +247,7 @@ func _build_roster_section() -> Control:
 	var hint := Label.new()
 	hint.text = L10n.ui("story.roster.hint")
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_font_size_override("font_size", 10)
+	hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	hint.add_theme_color_override("font_color", Color(0.55, 0.60, 0.68))
 	panel.add_child(hint)
 	return panel
@@ -279,13 +279,13 @@ func _build_preview_section() -> Control:
 
 	var issues_title := Label.new()
 	issues_title.text = L10n.ui("story.preview.issues_title")
-	issues_title.add_theme_font_size_override("font_size", 11)
+	issues_title.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	issues_title.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
 	panel.add_child(issues_title)
 
 	_preview_issues = Label.new()
 	_preview_issues.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_preview_issues.add_theme_font_size_override("font_size", 10)
+	_preview_issues.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_preview_issues.add_theme_color_override("font_color", Color(0.98, 0.68, 0.42))
 	panel.add_child(_preview_issues)
 	return panel
@@ -413,7 +413,7 @@ func _render_branch(branch_depth: int, item: Dictionary, view_key: String) -> vo
 	if view.is_empty():
 		var empty := Label.new()
 		empty.text = _indent(branch_depth) + L10n.ui("editor.branch.empty")
-		empty.add_theme_font_size_override("font_size", 11)
+		empty.add_theme_font_size_override("font_size", UiFonts.NOTE)
 		empty.add_theme_color_override("font_color", Color(0.55, 0.57, 0.62))
 		_script_list.add_child(empty)
 		return
@@ -445,7 +445,7 @@ func _render_choice_options(item: Dictionary) -> void:
 		else:
 			var missing := Label.new()
 			missing.text = L10n.ui("story.option.no_branch")
-			missing.add_theme_font_size_override("font_size", 10)
+			missing.add_theme_font_size_override("font_size", UiFonts.NOTE)
 			missing.add_theme_color_override("font_color", Color(0.72, 0.6, 0.45))
 			header.add_child(missing)
 		_script_list.add_child(header)
@@ -653,7 +653,7 @@ func _rebuild_editor() -> void:
 func _field_label(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	label.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
 	return label
 
@@ -713,7 +713,7 @@ func _build_line_editor(item: Dictionary) -> void:
 
 	var warning := Label.new()
 	warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	warning.add_theme_font_size_override("font_size", 10)
+	warning.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	warning.add_theme_color_override("font_color", Color(0.98, 0.68, 0.42))
 	warning.visible = false
 	_editor_box.add_child(warning)
@@ -731,7 +731,7 @@ func _build_line_editor(item: Dictionary) -> void:
 	var hint := Label.new()
 	hint.text = L10n.ui("editor.bbcode.hint")
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_font_size_override("font_size", 9)
+	hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	hint.add_theme_color_override("font_color", Color(0.55, 0.60, 0.68))
 	_editor_box.add_child(hint)
 
@@ -766,7 +766,7 @@ func _build_choice_editor(item: Dictionary) -> void:
 		var note := Label.new()
 		note.text = L10n.ui("story.editor.choice_not_well_formed")
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		note.add_theme_font_size_override("font_size", 10)
+		note.add_theme_font_size_override("font_size", UiFonts.NOTE)
 		note.add_theme_color_override("font_color", Color(0.98, 0.68, 0.42))
 		_editor_box.add_child(note)
 	elif (item["ifs"] as Array).is_empty():
@@ -869,7 +869,7 @@ func _build_condition_editor(item: Dictionary) -> void:
 	var note := Label.new()
 	note.text = L10n.ui("editor.params.block_note")
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.add_theme_font_size_override("font_size", 10)
+	note.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	note.add_theme_color_override("font_color", Color(0.62, 0.64, 0.68))
 	_editor_box.add_child(note)
 
@@ -935,7 +935,7 @@ func _build_command_editor(item: Dictionary) -> void:
 	var hint := Label.new()
 	hint.text = L10n.ui("story.editor.command_hint")
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_font_size_override("font_size", 10)
+	hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	hint.add_theme_color_override("font_color", Color(0.62, 0.66, 0.74))
 	_editor_box.add_child(hint)
 
@@ -1171,7 +1171,7 @@ func _rebuild_roster_list() -> void:
 	if _roster.characters.is_empty():
 		var hint := Label.new()
 		hint.text = L10n.ui("story.roster.empty")
-		hint.add_theme_font_size_override("font_size", 11)
+		hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
 		hint.add_theme_color_override("font_color", Color(0.6, 0.62, 0.66))
 		_roster_list.add_child(hint)
 	_rebuild_roster_fields()

@@ -222,12 +222,12 @@ func _build_ui() -> void:
 	_build_check_panel()
 
 	_check_label = Label.new()
-	_check_label.add_theme_font_size_override("font_size", 11)
+	_check_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_check_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_check_label)
 
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", 11)
+	_status_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_status_label)
 
@@ -255,7 +255,7 @@ func _build_check_panel() -> void:
 	header.add_child(title)
 
 	_check_summary = Label.new()
-	_check_summary.add_theme_font_size_override("font_size", 11)
+	_check_summary.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_check_summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_check_summary)
 
@@ -371,7 +371,7 @@ func _make_node_view(node: LevelNode) -> GraphNode:
 
 	var summary := Label.new()
 	summary.text = _summary_of(node)
-	summary.add_theme_font_size_override("font_size", 11)
+	summary.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	summary.add_theme_color_override("font_color", Color(0.78, 0.80, 0.86))
 	view.add_child(summary)
 
@@ -381,7 +381,7 @@ func _make_node_view(node: LevelNode) -> GraphNode:
 	if node.type == "condition":
 		var else_label := Label.new()
 		else_label.text = L10n.ui("graph.port.else")
-		else_label.add_theme_font_size_override("font_size", 11)
+		else_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 		else_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.55))
 		view.add_child(else_label)
 		view.set_slot(1, false, 0, Color(), true, 0, Color(0.9, 0.55, 0.5))
@@ -1270,7 +1270,7 @@ func _rebuild_params() -> void:
 	if group != null:
 		var group_label := Label.new()
 		group_label.text = L10n.ui("graph.group.in_group", {"name": group.title})
-		group_label.add_theme_font_size_override("font_size", 11)
+		group_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 		group_label.add_theme_color_override("font_color", Color(0.62, 0.72, 0.9))
 		_params_box.add_child(group_label)
 
@@ -1280,7 +1280,7 @@ func _rebuild_params() -> void:
 		row.add_theme_constant_override("separation", 2)
 		var label := Label.new()
 		label.text = L10n.ui(str(field.get("label", "")))
-		label.add_theme_font_size_override("font_size", 11)
+		label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 		row.add_child(label)
 		row.add_child(_make_control(_selected, name, str(field.get("type", "text")), field))
 		var hint_key := str(field.get("hint", ""))
@@ -1288,7 +1288,7 @@ func _rebuild_params() -> void:
 			var hint := Label.new()
 			hint.text = L10n.ui(hint_key)
 			hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			hint.add_theme_font_size_override("font_size", 10)
+			hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
 			hint.add_theme_color_override("font_color", Color(0.62, 0.66, 0.74))
 			row.add_child(hint)
 		_params_box.add_child(row)
@@ -1313,7 +1313,7 @@ func _build_group_params() -> void:
 
 	var name_label := Label.new()
 	name_label.text = L10n.ui("graph.group.title_label")
-	name_label.add_theme_font_size_override("font_size", 11)
+	name_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_params_box.add_child(name_label)
 
 	var name_edit := LineEdit.new()
@@ -1325,7 +1325,7 @@ func _build_group_params() -> void:
 
 	var color_label := Label.new()
 	color_label.text = L10n.ui("graph.group.color")
-	color_label.add_theme_font_size_override("font_size", 11)
+	color_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_params_box.add_child(color_label)
 
 	var color_picker := ColorPickerButton.new()
@@ -1338,14 +1338,14 @@ func _build_group_params() -> void:
 
 	var member_label := Label.new()
 	member_label.text = L10n.ui("graph.group.members", {"count": group.member_ids.size()})
-	member_label.add_theme_font_size_override("font_size", 11)
+	member_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	member_label.add_theme_color_override("font_color", Color(0.62, 0.66, 0.74))
 	_params_box.add_child(member_label)
 
 	var resize_hint := Label.new()
 	resize_hint.text = L10n.ui("graph.group.resize_hint")
 	resize_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	resize_hint.add_theme_font_size_override("font_size", 10)
+	resize_hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	resize_hint.add_theme_color_override("font_color", Color(0.62, 0.66, 0.74))
 	_params_box.add_child(resize_hint)
 

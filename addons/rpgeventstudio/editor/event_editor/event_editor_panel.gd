@@ -289,13 +289,13 @@ func _build_ui() -> void:
 	params_scroll.add_child(_params_box)
 
 	_target_label = Label.new()
-	_target_label.add_theme_font_size_override("font_size", 11)
+	_target_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_target_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_target_label.add_theme_color_override("font_color", Color(0.62, 0.78, 0.95))
 	add_child(_target_label)
 
 	_status_label = Label.new()
-	_status_label.add_theme_font_size_override("font_size", 11)
+	_status_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_status_label)
 
@@ -484,7 +484,7 @@ func _add_command_list(list: Array, depth: int, path: Array, parent_if: EventCom
 	if list.is_empty() and depth > 0:
 		var empty := Label.new()
 		empty.text = _indent(depth) + L10n.ui("editor.branch.empty")
-		empty.add_theme_font_size_override("font_size", 11)
+		empty.add_theme_font_size_override("font_size", UiFonts.NOTE)
 		empty.add_theme_color_override("font_color", Color(0.55, 0.57, 0.62))
 		_commands_box.add_child(empty)
 
@@ -642,7 +642,7 @@ func _rebuild_params() -> void:
 		row.add_theme_constant_override("separation", 2)
 		var label := Label.new()
 		label.text = CommandRegistry.param_label(param)
-		label.add_theme_font_size_override("font_size", 11)
+		label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 		row.add_child(label)
 
 		row.add_child(_make_param_control(_selected, name, type, param))
@@ -651,7 +651,7 @@ func _rebuild_params() -> void:
 			var hint := Label.new()
 			hint.text = L10n.ui(hint_key)
 			hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			hint.add_theme_font_size_override("font_size", 10)
+			hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
 			hint.add_theme_color_override("font_color", Color(0.62, 0.66, 0.74))
 			row.add_child(hint)
 		_params_box.add_child(row)
@@ -660,7 +660,7 @@ func _rebuild_params() -> void:
 		var note := Label.new()
 		note.text = L10n.ui("editor.params.block_note")
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		note.add_theme_font_size_override("font_size", 10)
+		note.add_theme_font_size_override("font_size", UiFonts.NOTE)
 		note.add_theme_color_override("font_color", Color(0.62, 0.64, 0.68))
 		_params_box.add_child(note)
 
@@ -748,7 +748,7 @@ func _make_param_control(command: EventCommand, name: String, type: String, para
 			if type == "multiline":
 				var preview_title := Label.new()
 				preview_title.text = L10n.ui("editor.bbcode.preview")
-				preview_title.add_theme_font_size_override("font_size", 10)
+				preview_title.add_theme_font_size_override("font_size", UiFonts.NOTE)
 				preview_title.add_theme_color_override("font_color", Color(0.64, 0.72, 0.86))
 				editor_box.add_child(preview_title)
 
@@ -784,14 +784,14 @@ func _make_param_control(command: EventCommand, name: String, type: String, para
 				var bbcode_hint := Label.new()
 				bbcode_hint.text = L10n.ui("editor.bbcode.hint")
 				bbcode_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				bbcode_hint.add_theme_font_size_override("font_size", 9)
+				bbcode_hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
 				bbcode_hint.add_theme_color_override("font_color", Color(0.55, 0.60, 0.68))
 				editor_box.add_child(bbcode_hint)
 
 				warning = Label.new()
 				warning.name = "BBCodeWarning"
 				warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				warning.add_theme_font_size_override("font_size", 10)
+				warning.add_theme_font_size_override("font_size", UiFonts.NOTE)
 				warning.add_theme_color_override("font_color", Color(0.98, 0.68, 0.42))
 				warning.visible = false
 				editor_box.add_child(warning)
@@ -836,7 +836,7 @@ func _make_param_control(command: EventCommand, name: String, type: String, para
 				var status := Label.new()
 				status.text = status_text
 				status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				status.add_theme_font_size_override("font_size", 10)
+				status.add_theme_font_size_override("font_size", UiFonts.NOTE)
 				status.add_theme_color_override("font_color", Color(0.95, 0.65, 0.5))
 				wrap.add_child(status)
 			return wrap

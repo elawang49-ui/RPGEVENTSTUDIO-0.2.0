@@ -64,12 +64,12 @@ func _build() -> void:
 	_details.fit_content = false
 	_details.scroll_active = true
 	_details.custom_minimum_size = Vector2(0, 110)
-	_details.add_theme_font_size_override("normal_font_size", 11)
+	_details.add_theme_font_size_override("normal_font_size", UiFonts.NOTE)
 	_details.text = L10n.ui("eventlist.details.hint")
 	add_child(_details)
 
 	_status = Label.new()
-	_status.add_theme_font_size_override("font_size", 11)
+	_status.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status.add_theme_color_override("font_color", Color(0.65, 0.68, 0.74))
 	add_child(_status)
 

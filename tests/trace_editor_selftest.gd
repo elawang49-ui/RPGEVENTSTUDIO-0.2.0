@@ -110,8 +110,8 @@ func start(_plugin: EditorPlugin) -> void:
 	if DisplayServer.get_name() != "headless":
 		image = base.get_viewport().get_texture().get_image()
 	if image != null:
-		image.save_png("res://docs/images/runtime_trace_editor.png")
-		print("[TRACE] 已保存 docs/images/runtime_trace_editor.png")
+		image.save_png("res://docs/images/hardening/runtime_trace_editor.png")
+		print("[TRACE] 已保存 docs/images/hardening/runtime_trace_editor.png")
 	else:
 		print("[TRACE] headless 无渲染，跳过截图（真实窗口验收会生成）")
 

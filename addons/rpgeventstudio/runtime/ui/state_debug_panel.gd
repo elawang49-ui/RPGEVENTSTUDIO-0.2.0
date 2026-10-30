@@ -78,7 +78,7 @@ func _build() -> void:
 
 	var hint := Label.new()
 	hint.text = L10n.game("debug.hint")
-	hint.add_theme_font_size_override("font_size", 11)
+	hint.add_theme_font_size_override("font_size", RuntimeFonts.NOTE)
 	hint.add_theme_color_override("font_color", Color(0.65, 0.68, 0.74))
 	column.add_child(hint)
 

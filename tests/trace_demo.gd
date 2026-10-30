@@ -68,6 +68,6 @@ func _run() -> void:
 		sample.close()
 	var image := get_viewport().get_texture().get_image()
 	if image != null:
-		image.save_png("res://docs/images/runtime_trace.png")
-		print("[TRACE_SHOT] saved res://docs/images/runtime_trace.png")
+		image.save_png("res://docs/images/hardening/runtime_trace.png")
+		print("[TRACE_SHOT] saved res://docs/images/hardening/runtime_trace.png")
 	get_tree().quit()

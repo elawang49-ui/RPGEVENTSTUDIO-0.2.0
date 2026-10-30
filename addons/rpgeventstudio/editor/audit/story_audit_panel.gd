@@ -63,7 +63,7 @@ func _build() -> void:
 	var hint := Label.new()
 	hint.text = L10n.ui("audit.hint")
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_font_size_override("font_size", 11)
+	hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	hint.add_theme_color_override("font_color", Color(0.66, 0.70, 0.78))
 	add_child(hint)
 
@@ -94,12 +94,12 @@ func _build() -> void:
 	_details.bbcode_enabled = true
 	_details.scroll_active = true
 	_details.custom_minimum_size = Vector2(0, 96)
-	_details.add_theme_font_size_override("normal_font_size", 11)
+	_details.add_theme_font_size_override("normal_font_size", UiFonts.NOTE)
 	_details.text = L10n.ui("audit.details.hint")
 	add_child(_details)
 
 	_status = Label.new()
-	_status.add_theme_font_size_override("font_size", 11)
+	_status.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status.add_theme_color_override("font_color", Color(0.65, 0.68, 0.74))
 	add_child(_status)
 
