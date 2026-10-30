@@ -17,6 +17,7 @@ func _run() -> void:
 	_test_event_diagnosis()
 	_test_input_service()
 	_test_input_registry()
+	await _test_gamepad_input()
 	_test_input_settings_panel()
 	_test_l10n()
 	_test_bbcode()
@@ -322,6 +323,62 @@ func _key(code: Key) -> InputEventKey:
 	event.keycode = code
 	event.pressed = true
 	return event
+
+# ── 手柄真实事件通道 ─────────────────────────────────────
+
+func _test_gamepad_input() -> void:
+	var save_path := "res://.godot/test_gamepad.cfg"
+	if FileAccess.file_exists(save_path):
+		DirAccess.remove_absolute(save_path)
+	var service := InputService.new()
+	service.save_path = save_path
+	service.restore_defaults()
+
+	# 按键：手柄 A 按下/松开应真实驱动 interact 动作
+	_pad_button(JOY_BUTTON_A, true)
+	await process_frame
+	await process_frame
+	_check(Input.is_action_pressed("interact"), "手柄 A 按下应触发交互动作")
+	_pad_button(JOY_BUTTON_A, false)
+	await process_frame
+	await process_frame
+	_check(not Input.is_action_pressed("interact"), "手柄 A 松开应释放交互动作")
+
+	# 摇杆：左摇杆左推/回中
+	_pad_axis(JOY_AXIS_LEFT_X, -1.0)
+	await process_frame
+	await process_frame
+	_check(Input.is_action_pressed("move_left"), "左摇杆左推应触发左移")
+	_pad_axis(JOY_AXIS_LEFT_X, 0.0)
+	await process_frame
+	await process_frame
+	_check(not Input.is_action_pressed("move_left"), "摇杆回中应释放左移")
+
+	# 改键到手柄 X（B 被「取消」占用，正好验证冲突模型不误报），并确认持久化
+	var x := InputEventJoypadButton.new()
+	x.button_index = JOY_BUTTON_X
+	var result: Dictionary = service.rebind(InputService.ACTION_INTERACT, x)
+	_check(bool(result.get("ok", false)), "交互应可改绑到手柄 X")
+	var reloaded := InputService.new()
+	reloaded.save_path = save_path
+	reloaded.load_bindings()
+	_check(_has_event(reloaded.events_of(InputService.ACTION_INTERACT), x), "手柄改键应保存并重载")
+
+	service.restore_defaults()
+	if FileAccess.file_exists(save_path):
+		DirAccess.remove_absolute(save_path)
+
+func _pad_button(button: JoyButton, pressed: bool) -> void:
+	var event := InputEventJoypadButton.new()
+	event.button_index = button
+	event.pressed = pressed
+	Input.parse_input_event(event)
+
+func _pad_axis(axis: JoyAxis, value: float) -> void:
+	var event := InputEventJoypadMotion.new()
+	event.axis = axis
+	event.axis_value = value
+	Input.parse_input_event(event)
 
 # ── 按键设置面板（改键 / 取消 / 冲突） ───────────────────
 
