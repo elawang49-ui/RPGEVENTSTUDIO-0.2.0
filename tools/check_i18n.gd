@@ -7,7 +7,13 @@ extends SceneTree
 
 const CSV_PATH := "res://addons/rpgeventstudio/i18n/ui.csv"
 ## 状态扫描器内部「使用类型」常量：形似本地化键，实际由 state.bulk.kind.* 映射文案。
-const NON_I18N_KEYS := ["cmd.custom", "graph.condition", "graph.action", "graph.end"]
+const NON_I18N_KEYS := [
+	"cmd.custom", "graph.condition", "graph.action", "graph.end",
+	# StoryAudit 的问题码（机器标识，不直接当文案键；文案走 audit.*）
+	"event.empty", "event.no_commands", "event.duplicate_id", "event.unreferenced", "event.no_name",
+	"state.unregistered", "common.missing", "sfx.missing", "ref.broken", "ref.not_event",
+	"graph.duplicate_id", "graph.unreferenced", "graph.start_missing", "graph.event_path_missing",
+]
 
 func _init() -> void:
 	var failures := 0
@@ -132,7 +138,7 @@ func _collect(path: String, keys: Dictionary) -> void:
 	var text := file.get_as_text()
 	file.close()
 	var prefixes := ["editor.", "cmd.", "cat.", "param.", "trigger.", "repeat.", "input.", "key.",
-		"game.", "sample.", "diag.", "state.", "graph.", "eventlist.", "picker.", "debug.", "fade.", "stage."]
+		"game.", "sample.", "diag.", "state.", "graph.", "eventlist.", "picker.", "debug.", "fade.", "stage.", "audit."]
 	var regex := RegEx.new()
 	regex.compile("\"([a-z][a-z0-9_]*\\.[a-z0-9_.]*)\"")
 	# 逐行扫描：状态扫描器的 KIND_* 是内部使用类型常量（如 "graph.condition"），

@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_llc5k"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_l2pss"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_condition.gd" id="3_12lho"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="4_mdqac"]
+
+[sub_resource type="Resource" id="Resource_pwlxk"]
+script = ExtResource("2_l2pss")
+type = &"call_common"
+params = {
+"common_path": "res://tests/fixtures/audit/no_such_common.tres"
+}
+
+[sub_resource type="Resource" id="Resource_ubrxr"]
+script = ExtResource("2_l2pss")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_4yikp"]
+script = ExtResource("1_llc5k")
+commands = Array[ExtResource("2_l2pss")]([SubResource("Resource_pwlxk"), SubResource("Resource_ubrxr")])
+
+[resource]
+script = ExtResource("4_mdqac")
+event_id = &"missing_common"
+display_name = "Audit Missing Common"
+pages = Array[ExtResource("1_llc5k")]([SubResource("Resource_4yikp")])

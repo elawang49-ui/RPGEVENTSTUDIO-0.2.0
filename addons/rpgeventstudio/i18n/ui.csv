@@ -701,3 +701,55 @@ story.template.door_open,你用钥匙打开了办公室的门。,You unlock the 
 story.template.door_locked,门锁着，门牌上写着「主任室」。,"The door is locked; the plate reads ""Director's Office""."
 story.template.autorun_line1,（走廊尽头的广播忽然响了。）,(The speaker at the end of the corridor crackles to life.)
 story.template.autorun_line2,全体同学请到操场集合。,"All students, gather at the field."
+audit.title,剧情资源审计,Story Audit
+audit.scan,扫描工程,Scan Project
+audit.scan_tip,只读扫描，不会修改任何资源,Read-only scan; no resource is modified
+audit.hint,审计基于磁盘上的资源文件；先保存再扫描，未保存的修改不会计入。,"Audit reads resources on disk; save first, unsaved changes are not included."
+audit.scanning,正在扫描工程…,Scanning project…
+audit.empty_hint,点「扫描工程」检查空事件、重复标识、断裂引用、未登记状态与关卡图错误。,"Click Scan Project to check empty events, duplicate ids, broken references, unregistered states and graph errors."
+audit.summary,错误 {errors} · 警告 {warnings} · 提示 {infos} · 当前显示 {shown},Errors {errors} · Warnings {warnings} · Hints {infos} · Showing {shown}
+audit.status,事件 {events} · 关卡图 {graphs} · 被引用资源 {refs},Events {events} · Graphs {graphs} · Referenced resources {refs}
+audit.filter.all,全部,All
+audit.filter.error,只看错误,Errors
+audit.filter.warning,只看警告,Warnings
+audit.filter.info,只看提示,Hints
+audit.col.severity,级别,Level
+audit.col.category,类别,Category
+audit.col.message,问题,Issue
+audit.col.location,位置,Location
+audit.severity.error,错误,Error
+audit.severity.warning,警告,Warning
+audit.severity.info,提示,Hint
+audit.category.event,事件,Event
+audit.category.graph,关卡图,Graph
+audit.category.reference,引用,Reference
+audit.category.state,状态,State
+audit.details.hint,选中一行查看详情；双击定位到事件 / 关卡图 / 场景。,"Select a row for details; double-click to open the event, graph or scene."
+audit.detail.category,类别,Category
+audit.detail.path,文件,File
+audit.detail.node,节点,Node
+audit.detail.double_click,双击可定位,Double-click to locate
+audit.event.unreferenced,没有任何场景 / 关卡图引用此事件,No scene or graph references this event
+audit.event.unreferenced.hint,如果它是公共事件，请确认有事件通过「调用公共事件」指向它；纯测试资源可以忽略。,"If this is a common event, make sure some event calls it; test-only resources can be ignored."
+audit.graph.unreferenced,没有任何场景引用此关卡图,No scene references this graph
+audit.graph.unreferenced.hint,关卡图需要在场景里由 LevelGraphRunner2D 挂载；纯模板/备份可以忽略。,A graph must be mounted by LevelGraphRunner2D in a scene; templates/backups can be ignored.
+audit.event.no_name,显示名为空,Display name is empty
+audit.event.no_name.hint,显示名只影响编辑器与调试面板，不影响运行。,"The display name only affects the editor and debug panel, not runtime."
+audit.event.empty,事件没有任何页面,Event has no pages
+audit.event.empty.hint,运行时不会触发没有任何页面的事件；补一页或删除资源。,An event without pages never triggers; add a page or delete the resource.
+audit.event.no_commands,事件的所有页面都没有指令,All pages of this event are empty
+audit.event.no_commands.hint,空页通常表示还没写完；确认不是误删。,Empty pages usually mean work in progress; make sure they were not deleted by accident.
+audit.state.unregistered,状态未登记：{key},Unregistered state: {key}
+audit.state.unregistered.hint,在「状态库」登记后会显示可读名字；未登记不影响运行，但调试面板看不出来。,Register it in the State Library for readable names; runtime still works without it.
+audit.common.missing,找不到公共事件：{path},Common event not found: {path}
+audit.common.missing.hint,检查路径是否被移动/删除，或重新选择公共事件。,"Check whether the file was moved or deleted, then pick it again."
+audit.sfx.missing,找不到音频：{path},Sound not found: {path}
+audit.sfx.missing.hint,运行时播放会跳过缺失的音频；请修正路径或移除指令。,Runtime skips missing audio; fix the path or remove the command.
+audit.ref.broken,引用目标不存在：{target},Reference target missing: {target}
+audit.ref.broken.hint,场景/关卡图里写下的路径已失效；重新挂接或删除该引用。,The path written in the scene/graph is gone; re-link or remove it.
+audit.ref.not_event,引用目标不是事件或关卡图：{target},Reference target is not an event or graph: {target}
+audit.ref.not_event.hint,event_path / graph_path 指向了错误类型的资源。,event_path / graph_path points to the wrong resource type.
+audit.event.duplicate_id,事件标识重复：{id}（另见 {others}）,Duplicate event id: {id} (also {others})
+audit.event.duplicate_id.hint,运行时按 event_id 识别事件；重复会导致调试与外部调用混淆。,Runtime identifies events by event_id; duplicates confuse debugging and external calls.
+audit.graph.duplicate_id,关卡图标识重复：{id}（另见 {others}）,Duplicate graph id: {id} (also {others})
+audit.graph.duplicate_id.hint,同一关卡挂多张图时，重复 graph_id 会让运行态消息无法区分。,"With multiple graphs per level, duplicate graph ids make runtime messages ambiguous."

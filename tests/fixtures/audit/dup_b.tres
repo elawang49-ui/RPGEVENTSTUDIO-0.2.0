@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_x1ww5"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_72jb6"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_condition.gd" id="3_3qrod"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="4_fla0m"]
+
+[sub_resource type="Resource" id="Resource_f6wwh"]
+script = ExtResource("2_72jb6")
+type = &"end"
+
+[sub_resource type="Resource" id="Resource_blta7"]
+script = ExtResource("1_x1ww5")
+commands = Array[ExtResource("2_72jb6")]([SubResource("Resource_f6wwh")])
+
+[resource]
+script = ExtResource("4_fla0m")
+event_id = &"dup_a"
+display_name = "Audit Dup B"
+pages = Array[ExtResource("1_x1ww5")]([SubResource("Resource_blta7")])
