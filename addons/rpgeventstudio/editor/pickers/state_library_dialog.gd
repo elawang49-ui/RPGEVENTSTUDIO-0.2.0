@@ -9,6 +9,7 @@ signal state_saved(key: String)
 const TYPES := ["bool", "int", "float", "string"]
 
 var _catalog: StateCatalog
+var _bulk_dialog: StateBulkRegisterDialog
 var _search: LineEdit
 var _list: ItemList
 var _key_value: Label
@@ -184,6 +185,25 @@ func _build() -> void:
 	remove.text = L10n.ui("state.library.delete")
 	remove.pressed.connect(_on_delete)
 	buttons.add_child(remove)
+
+	var bulk := Button.new()
+	bulk.text = L10n.ui("state.library.bulk")
+	bulk.tooltip_text = L10n.ui("state.library.bulk_tip")
+	bulk.pressed.connect(_on_bulk_pressed)
+	buttons.add_child(bulk)
+
+## 打开批量登记：扫描全工程未登记的状态，勾选后一次性写入总表。
+func _on_bulk_pressed() -> void:
+	if _bulk_dialog == null:
+		_bulk_dialog = StateBulkRegisterDialog.new()
+		add_child(_bulk_dialog)
+		_bulk_dialog.registered.connect(_on_bulk_registered)
+	_bulk_dialog.open_dialog()
+
+func _on_bulk_registered(_keys: PackedStringArray) -> void:
+	StateCatalogStore.reset_cache()
+	_catalog = StateCatalogStore.catalog()
+	_rebuild()
 
 func _label_for(key: String) -> Label:
 	var label := Label.new()

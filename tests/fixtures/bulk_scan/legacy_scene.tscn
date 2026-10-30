@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/runtime/components/map_event.gd" id="1_map"]
+[ext_resource type="Resource" path="res://tests/fixtures/bulk_scan/legacy_event.tres" id="2_evt"]
+
+[node name="BulkFixtureScene" type="Node2D"]
+
+[node name="MapEvent" type="Node2D" parent="."]
+script = ExtResource("1_map")
+event = ExtResource("2_evt")

@@ -300,6 +300,75 @@ state.type.bool,开关（是/否）,Switch (yes/no)
 state.type.float,小数,Decimal
 state.type.int,整数,Integer
 state.type.string,文本,Text
+state.library.bulk,批量登记…,Bulk Register…
+state.library.bulk_tip,扫描全工程里用到但还没登记的状态，勾选后一次性登记,Scan the project for used-but-unregistered states and register them in bulk
+state.bulk.title,状态库批量登记,Bulk Register States
+state.bulk.scan,扫描工程,Scan Project
+state.bulk.scanning,正在扫描工程…,Scanning project…
+state.bulk.hint,点「扫描工程」查找未登记的状态。扫描只读，不会修改任何文件。,Click Scan to find unregistered states. Scanning is read-only and never modifies files.
+state.bulk.search,搜索标识 / 显示名 / 分类…,Search key / display name / category…
+state.bulk.filter.all,筛选：全部,Filter: All
+state.bulk.filter.event,筛选：事件引用,Filter: Event refs
+state.bulk.filter.graph,筛选：关卡图引用,Filter: Graph refs
+state.bulk.filter.script,筛选：脚本引用,Filter: Script refs
+state.bulk.filter.conflict,筛选：类型冲突,Filter: Type conflicts
+state.bulk.filter.unknown,筛选：未定类型,Filter: Unresolved type
+state.bulk.filter.abnormal,筛选：非常规/动态作用域,Filter: Unusual / scoped keys
+state.bulk.select_all,全选,Select All
+state.bulk.select_none,全不选,Select None
+state.bulk.select_invert,反选,Invert
+state.bulk.bulk_ops,批量操作（作用于勾选项）：,Bulk (checked rows):
+state.bulk.category_placeholder,批量设置分类…,Bulk category…
+state.bulk.apply_category,应用分类,Apply Category
+state.bulk.apply_type,应用类型,Apply Type
+state.bulk.category_empty,请先填写要应用的分类。,Enter a category first.
+state.bulk.type_not_picked,请先选择要应用的类型。,Pick a type first.
+state.bulk.col.key,内部标识,Internal Key
+state.bulk.col.display,显示名,Display Name
+state.bulk.col.type,类型,Type
+state.bulk.col.default,默认值,Default
+state.bulk.col.category,分类,Category
+state.bulk.col.uses,次数,Uses
+state.bulk.col.kinds,使用类型,Usage Kinds
+state.bulk.col.status,状态,Status
+state.bulk.type_unknown,未确定,Undecided
+state.bulk.status.conflict,类型冲突,Type conflict
+state.bulk.status.conflict_tip,不同位置的用法指向不同类型（如开关 vs 整数），需要人工判断后再登记。,Usages disagree on the type (e.g. switch vs integer). Decide manually before registering.
+state.bulk.status.unknown_type,未定类型,Type unknown
+state.bulk.status.unknown_tip,扫描未能推断出类型。请人工选择一种类型后再登记。,The scanner could not infer a type. Choose one manually before registering.
+state.bulk.status.nonstandard,非常规标识,Unusual key
+state.bulk.status.nonstandard_tip,标识不符合 Scope.Sub.Name 的常规形态（如缺少层级）。事件/图字段里的值仍可作为状态登记。,Key does not follow the Scope.Sub.Name pattern (e.g. missing scope). Values in model fields can still be registered.
+state.bulk.status.scoped,动态作用域,Scoped (@@level)
+state.bulk.status.scoped_tip,@@level 前缀会在运行时展开成「关卡前缀.名字」，实际键取决于运行所在的关卡，登记前请确认。,"@@level keys expand to ""<level prefix>.name"" at runtime; the real key depends on the level. Confirm before registering."
+state.bulk.summary,候选 {total} · 勾选 {selected} · 其中未定类型 {unresolved},Candidates {total} · Checked {selected} · Unresolved type {unresolved}
+state.bulk.no_candidates,扫描完成：未发现未登记的状态。,Scan finished: no unregistered states found.
+state.bulk.scan_done,已扫描 {files} 个文件，候选 {total} 项，动态引用 {dynamic} 条（见报告）。,"Scanned {files} files, {total} candidates, {dynamic} dynamic refs (see report)."
+state.bulk.register,登记所选…,Register Selected…
+state.bulk.preview_title,登记预览,Register Preview
+state.bulk.preview_header,将向 {path} 登记以下 {count} 个状态（原文件先备份，已登记的状态不会被覆盖）：,Registering {count} states into {path} (original file is backed up; existing states are never overwritten):
+state.bulk.preview_line,{key} · {type} · 默认 {default} · 分类 {category} · 显示「{display}」,"{key} · {type} · default {default} · category {category} · display ""{display}"""
+state.bulk.preview_cancel,取消,Cancel
+state.bulk.registered,已登记 {added} 个状态，跳过 {skipped} 个（已存在）。,"Registered {added} states, skipped {skipped} (already existed)."
+state.bulk.blocked,有 {count} 个勾选状态未设置类型，不能登记：{keys},{count} checked states have no type set and cannot be registered: {keys}
+state.bulk.nothing_selected,请先勾选要登记的状态。,Check at least one state to register.
+state.bulk.failed,登记失败，总表保持原样：{error},"Register failed, catalog unchanged: {error}"
+state.bulk.dynamic_button,动态引用报告（{count}）,Dynamic Refs ({count})
+state.bulk.dynamic_title,动态 / 无法静态确认的引用,Dynamic / Unconfirmed References
+state.bulk.dynamic_header,以下引用使用变量、拼接或格式化，扫描器无法静态确认其状态标识，未计入候选列表：,"These references use variables, concatenation or formatting; the scanner cannot confirm them statically and they are NOT counted as candidates:"
+state.bulk.dynamic.concat,拼接/格式化,concat/format
+state.bulk.dynamic.expression,参数是变量,expression arg
+state.bulk.dynamic_none,（没有发现动态引用）,(no dynamic references found)
+state.bulk.kind.event_condition,事件条件,Event condition
+state.bulk.kind.cmd_if,条件分歧,If branch
+state.bulk.kind.cmd_set_switch,设置开关,Set switch
+state.bulk.kind.cmd_set_variable,设置变量,Set variable
+state.bulk.kind.cmd_variable_op,变量运算,Variable op
+state.bulk.kind.cmd_custom,其他指令,Other command
+state.bulk.kind.graph_condition,图条件,Graph condition
+state.bulk.kind.graph_action,图赋值,Graph action
+state.bulk.kind.graph_end,完成标识,Completion flag
+state.bulk.kind.script,脚本读写,Script access
+state.bulk.kind.script_const,脚本常量,Script constant
 trigger.autorun,自动执行,Autorun
 trigger.call,被调用,Called
 trigger.interact,玩家交互,Player Interact

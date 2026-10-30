@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="EventDefinition" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_page.gd" id="1_page"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="2_cmd"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_condition.gd" id="3_cond"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_definition.gd" id="4_def"]
+
+[sub_resource type="Resource" id="Resource_c1"]
+script = ExtResource("3_cond")
+key = "Global.Mixed"
+value = true
+
+[sub_resource type="Resource" id="Resource_c2"]
+script = ExtResource("3_cond")
+key = "@@level.DoorOpen"
+value = true
+
+[sub_resource type="Resource" id="Resource_c3"]
+script = ExtResource("3_cond")
+key = "Global.Player.HasKey"
+value = false
+
+[sub_resource type="Resource" id="Resource_k1"]
+script = ExtResource("2_cmd")
+type = &"set_variable"
+params = {
+"key": "Global.Mixed",
+"value": "5"
+}
+
+[sub_resource type="Resource" id="Resource_k2"]
+script = ExtResource("2_cmd")
+type = &"set_switch"
+params = {
+"key": "Global.Quest.RingFound",
+"value": true
+}
+
+[sub_resource type="Resource" id="Resource_k3"]
+script = ExtResource("2_cmd")
+type = &"set_variable"
+params = {
+"key": "School.PlayerTitle",
+"value": "新生代表"
+}
+
+[sub_resource type="Resource" id="Resource_k4"]
+script = ExtResource("2_cmd")
+type = &"set_variable"
+params = {
+"key": "School.Fame",
+"value": "3"
+}
+
+[sub_resource type="Resource" id="Resource_p1"]
+script = ExtResource("1_page")
+conditions = Array[ExtResource("3_cond")]([SubResource("Resource_c1"), SubResource("Resource_c2"), SubResource("Resource_c3")])
+commands = Array[ExtResource("2_cmd")]([SubResource("Resource_k1"), SubResource("Resource_k2"), SubResource("Resource_k3"), SubResource("Resource_k4")])
+
+[resource]
+script = ExtResource("4_def")
+event_id = &"legacy_bulk_fixture"
+display_name = "批量登记夹具事件"
+pages = Array[ExtResource("1_page")]([SubResource("Resource_p1")])

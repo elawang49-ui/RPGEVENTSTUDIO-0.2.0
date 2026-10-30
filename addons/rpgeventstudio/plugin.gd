@@ -48,6 +48,8 @@ func _enter_tree() -> void:
 		_capture_map_screen.call_deferred()
 	if OS.get_environment("RPGEVENTSTUDIO_THEME_SHOT") == "1":
 		_capture_theme_screen.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_BULK_SHOT") == "1":
+		_capture_bulk_screen.call_deferred()
 
 func _exit_tree() -> void:
 	if _selection != null and _selection.selection_changed.is_connected(_on_selection_changed):
@@ -471,6 +473,33 @@ func _capture_map_screen() -> void:
 		if image != null:
 			image.save_png("res://docs/images/map_events_editor.png")
 			print("[SHOT] 已保存 docs/images/map_events_editor.png")
+	get_tree().quit()
+
+## 状态库批量登记：RPGEVENTSTUDIO_BULK_SHOT=1 打开批量登记对话框并保存一张图。
+func _capture_bulk_screen() -> void:
+	await get_tree().create_timer(3.0).timeout
+	var bulk := StateBulkRegisterDialog.new()
+	var base := EditorInterface.get_base_control()
+	if base == null:
+		get_tree().quit(2)
+		return
+	base.add_child(bulk)
+	bulk.open_dialog()
+	await get_tree().create_timer(0.8).timeout
+	await bulk.call("_on_scan_pressed")
+	await get_tree().create_timer(1.0).timeout
+	var image := base.get_viewport().get_texture().get_image()
+	if image != null:
+		image.save_png("res://docs/images/state_bulk_register.png")
+		print("[SHOT] 已保存 docs/images/state_bulk_register.png")
+	# 第二张：预览确认界面
+	if bulk.get("_preview") != null:
+		bulk.call("_on_register_pressed")
+		await get_tree().create_timer(0.6).timeout
+		image = base.get_viewport().get_texture().get_image()
+		if image != null:
+			image.save_png("res://docs/images/state_bulk_register_preview.png")
+			print("[SHOT] 已保存 docs/images/state_bulk_register_preview.png")
 	get_tree().quit()
 
 func _start_selftest() -> void:
