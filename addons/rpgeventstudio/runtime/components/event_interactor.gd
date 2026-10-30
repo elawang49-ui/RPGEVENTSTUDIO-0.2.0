@@ -26,6 +26,14 @@ func _ready() -> void:
 		_runtime.connect("language_changed", _on_language_changed)
 	if _runtime != null and _runtime.has_signal("dialogue_theme_changed"):
 		_runtime.connect("dialogue_theme_changed", _on_dialogue_theme_changed)
+	if _runtime != null:
+		var input = _runtime.get("input")
+		if input != null and input.has_signal("bindings_changed"):
+			input.bindings_changed.connect(_on_bindings_changed)
+
+func _on_bindings_changed() -> void:
+	if _prompt != null:
+		_prompt.text = _prompt_text()
 
 func _build_prompt() -> void:
 	_prompt = Label.new()
@@ -76,10 +84,25 @@ func _prompt_text() -> String:
 	if prompt_text.strip_edges() != "":
 		return prompt_text
 	var title := display_name()
-	var hint := L10n.game("game.prompt.hint")
-	if hint.begins_with("game."):
-		hint = ""
+	var hint := _interact_hint()
 	return "%s\n%s" % [title, hint] if hint != "" else title
+
+## 提示跟随当前交互绑定；F1 改键后样例场景里的“空格 / 鼠标左键 / 手柄 A”会同步变化。
+func _interact_hint() -> String:
+	if _runtime != null:
+		var input = _runtime.get("input")
+		if input != null and input.has_method("describe"):
+			var described: Dictionary = input.describe(InputService.ACTION_INTERACT)
+			var parts: PackedStringArray = []
+			for device in ["keyboard", "mouse", "gamepad"]:
+				for label in described.get(device, []):
+					var text_value := str(label)
+					if text_value != "" and not parts.has(text_value):
+						parts.append(text_value)
+			if not parts.is_empty():
+				return " / ".join(parts)
+	var hint := L10n.game("game.prompt.hint")
+	return "" if hint.begins_with("game.") else hint
 
 func display_name() -> String:
 	if event != null and event.display_name.strip_edges() != "":

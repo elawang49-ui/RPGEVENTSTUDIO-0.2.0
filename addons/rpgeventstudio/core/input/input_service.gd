@@ -300,11 +300,13 @@ func rebind(action: String, event: InputEvent, allow_share: bool = false) -> Dic
 	if conflict != "" and not allow_share:
 		return {"ok": false, "conflict": conflict}
 
-	var current: Array = events_of(action).duplicate()
+	# 过滤重建，不能在遍历 current 时 erase：erase 会让循环跳过紧随其后的
+	# 同设备绑定，导致“改到 Q 后回车仍然生效”的旧键残留。
+	var current: Array = []
 	var device := device_of(event)
-	for existing in current:
-		if device_of(existing) == device:
-			current.erase(existing)
+	for existing in events_of(action):
+		if device_of(existing) != device:
+			current.append(existing)
 	current.append(event.duplicate())
 	_events[action] = current
 	_mark_customized(action)

@@ -128,7 +128,7 @@ game.hud.locked_short,未解锁,Locked
 game.hud.none,无,None
 game.hud.opened,已打开,Unlocked
 game.hud.unlocked_short,已解锁,Unlocked
-game.prompt.hint,空格 / 鼠标左键 / 手柄 A,Space / Left Click / Pad A
+game.prompt.hint,空格 / 回车 / 鼠标左键 / 手柄 A,Space / Enter / Left Click / Pad A
 graph.add_node,＋ 节点,+ Node
 graph.delete,删除,Delete
 graph.disabled,（已禁用）,(disabled)
@@ -186,6 +186,9 @@ input.cancel,取消,Cancel
 input.close,关闭,Close
 input.conflict,「{action}」已经使用了这个输入。,"""{action}"" already uses this input."
 input.language,语言,Language
+input.device.gamepad,手柄,Gamepad
+input.device.keyboard,键盘,Keyboard
+input.device.mouse,鼠标,Mouse
 input.press_hint,请按下新的按键、鼠标按键或手柄按键（Esc 取消）,"Press a key, mouse button or pad button (Esc to cancel)"
 input.rebind,修改,Change
 input.remove_binding,解除,Remove
@@ -279,7 +282,7 @@ picker.title,选择场景对象,Select Scene Object
 repeat.every_time,每次都执行,Every Time
 repeat.on_change,状态变化时执行,On State Change
 repeat.once,只执行一次,Once
-sample.hint,移动：WASD / 方向键 / 左摇杆　　交互：空格 / 鼠标左键 / 手柄 A　　F1 按键设置,Move: WASD / arrows / stick   Interact: Space / Click / Pad A   F1 Input Settings
+sample.hint,移动：WASD / 方向键 / 左摇杆　　交互：空格 / 回车 / 鼠标左键 / 手柄 A　　F1 按键设置,Move: WASD / arrows / stick   Interact: Space / Enter / Click / Pad A   F1 Input Settings
 stage.basement,地下室调查,Basement
 stage.exploration,探索,Exploration
 state.library.category,分类,Category

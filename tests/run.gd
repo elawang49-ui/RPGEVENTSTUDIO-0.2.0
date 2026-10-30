@@ -189,7 +189,9 @@ func _test_input_service() -> void:
 	var result: Dictionary = service.rebind(InputService.ACTION_INTERACT, new_key)
 	_check(bool(result.get("ok", false)), "重新绑定应成功")
 	_check(InputMap.event_is_action(new_key, "interact"), "改键后 K 应触发交互动作")
-	_check(service.describe(InputService.ACTION_INTERACT)["keyboard"].has("K"), "设置界面应显示新的键盘绑定")
+	var rebound_keyboard: Array = service.describe(InputService.ACTION_INTERACT)["keyboard"]
+	_check(rebound_keyboard.size() == 1 and str(rebound_keyboard[0]) == "K",
+		"改键应替换同设备的全部旧绑定（不能残留回车/空格）")
 
 	var reloaded := InputService.new()
 	reloaded.save_path = save_path
