@@ -56,3 +56,22 @@ godot --headless --path . --script res://tests/story_audit_test.gd
 # 真实编辑器里的审计面板：扫描、筛选、双击定位、只读性
 RPGEVENTSTUDIO_AUDIT_SELFTEST=1 godot --headless --editor --path .
 ```
+
+## 加固后的测试入口（推荐）
+
+```bash
+python3 tools/test_runner.py --all       # headless + 编辑器 + 故障注入
+python3 tools/test_runner.py --headless  # 11 个 headless 套件
+python3 tools/test_runner.py --editor    # 5 个编辑器自测
+python3 tools/test_runner.py --faults    # 证明异常/中断/缺汇总都会 FAIL
+```
+
+与直接跑 `godot --script` 的区别：
+
+- 必须有最终汇总（`检查项：N，失败：M` / `RESULT:`），否则 FAIL；
+- `SCRIPT ERROR`（含 Parse Error）和 `ERROR:` 默认 FAIL，只有
+  `EXPECTED_ERROR_BEGIN/END` 区间或 `tools/test_runner.py` 中逐条列出的已知引擎诊断放行；
+- `tests/run.gd` 的每个测试函数都有 `CASE_BEGIN/CASE_END`；运行时异常导致函数中断时
+  会出现 `CASE_INCOMPLETE` 并计入失败；
+- 每个套件的检查项数量与 `tools/test_counts.json` 对照，测试注册遗漏会直接 FAIL；
+- `RPGEVENTSTUDIO_TEST_FAULT=type|null|skip|expected_error` 用于故障注入自检。

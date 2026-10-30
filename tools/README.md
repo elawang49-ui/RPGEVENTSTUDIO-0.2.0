@@ -9,6 +9,7 @@
 | `import_json.gd` | JSON → `.tres`，**必须先过 SchemaValidator + ReferenceValidator**，失败不落盘 |
 | `validate_all.gd` | 全工程校验：指令注册、引用、图 lint、状态使用；输出可点击的问题列表 |
 | `package.sh` | 打 zip（`addons/rpgeventstudio/` + 版本号 + 校验解析） |
+| `test_runner.py` | 测试总入口：汇总完整性、CASE 完成度、检查数对照、`SCRIPT ERROR`/`ERROR` 拦截、故障注入自检 |
 
 ## 原则
 

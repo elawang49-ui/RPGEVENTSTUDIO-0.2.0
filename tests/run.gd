@@ -5,42 +5,113 @@ extends SceneTree
 
 var _checks := 0
 var _failures: PackedStringArray = []
+var _case_name := ""
+var _case_start_checks := 0
+var _case_expected: Array[String] = []
+var _case_done: Dictionary = {}
 
 func _init() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
+	_case_begin("state_store")
 	_test_state_store()
+	_case_verify("state_store")
+	_case_begin("page_selection")
 	_test_page_selection()
+	_case_verify("page_selection")
+	_case_begin("condition_defaults")
 	_test_condition_defaults()
+	_case_verify("condition_defaults")
+	_case_begin("state_catalog")
 	_test_state_catalog()
+	_case_verify("state_catalog")
+	_case_begin("event_diagnosis")
 	_test_event_diagnosis()
+	_case_verify("event_diagnosis")
+	_case_begin("input_service")
 	_test_input_service()
+	_case_verify("input_service")
+	_case_begin("input_registry")
 	_test_input_registry()
+	_case_verify("input_registry")
+	_case_begin("gamepad_input")
 	await _test_gamepad_input()
+	_case_verify("gamepad_input")
+	_case_begin("input_settings_panel")
 	_test_input_settings_panel()
+	_case_verify("input_settings_panel")
+	_case_begin("l10n")
 	_test_l10n()
+	_case_verify("l10n")
+	_case_begin("bbcode")
 	_test_bbcode()
+	_case_verify("bbcode")
+	_case_begin("nested_serialization")
 	_test_nested_serialization()
+	_case_verify("nested_serialization")
+	_case_begin("graph_validator")
 	_test_graph_validator()
+	_case_verify("graph_validator")
+	_case_begin("group_persistence")
 	_test_group_persistence()
+	_case_verify("group_persistence")
+	_case_begin("story_audit")
 	_test_story_audit()
+	_case_verify("story_audit")
+	_case_begin("story_document_mapping")
 	_test_story_document_mapping()
+	_case_verify("story_document_mapping")
+	_case_begin("story_document_edits")
 	_test_story_document_edits()
+	_case_verify("story_document_edits")
+	_case_begin("story_document_choice_ops")
 	_test_story_document_choice_ops()
+	_case_verify("story_document_choice_ops")
+	_case_begin("story_templates")
 	_test_story_templates()
+	_case_verify("story_templates")
+	_case_begin("story_characters")
 	_test_story_characters()
+	_case_verify("story_characters")
+	_case_begin("story_preview")
 	_test_story_preview()
+	_case_verify("story_preview")
+	_case_begin("graph_flow")
 	await _test_graph_flow()
+	_case_verify("graph_flow")
+	_case_begin("graph_merge_or")
 	await _test_graph_merge_or()
+	_case_verify("graph_merge_or")
+	_case_begin("graph_event_node")
 	await _test_graph_event_node()
+	_case_verify("graph_event_node")
+	_case_begin("give_key_flow")
 	await _test_give_key_flow()
+	_case_verify("give_key_flow")
+	_case_begin("choice_branch")
 	await _test_choice_branch()
+	_case_verify("choice_branch")
+	_case_begin("cancel")
 	await _test_cancel()
+	_case_verify("cancel")
+	_case_begin("presenter_injection")
 	await _test_presenter_injection()
+	_case_verify("presenter_injection")
+	_case_begin("bbcode_presenter")
 	await _test_bbcode_presenter()
+	_case_verify("bbcode_presenter")
+	_case_begin("map_event")
 	await _test_map_event()
+	_case_verify("map_event")
+	_case_begin("dialogue_theme")
 	await _test_dialogue_theme()
+	_case_verify("dialogue_theme")
+	var fault := OS.get_environment("RPGEVENTSTUDIO_TEST_FAULT")
+	if fault != "":
+		_case_begin("__injected_fault__")
+		_inject_fault(fault)
+		_case_verify("__injected_fault__")
 	_report()
 	quit(0 if _failures.is_empty() else 1)
 
@@ -65,6 +136,7 @@ func _test_state_store() -> void:
 	var restored := StateStore.new()
 	restored.restore(snapshot)
 	_check(restored.get_value("School.ClassroomUnlocked") == true, "快照恢复后状态应保留")
+	_case_end()
 
 # ── 状态库 ───────────────────────────────────────────────
 
@@ -96,6 +168,7 @@ func _test_state_catalog() -> void:
 
 	if FileAccess.file_exists(test_path):
 		DirAccess.remove_absolute(test_path)
+	_case_end()
 
 # ── 事件未执行诊断 ───────────────────────────────────────
 
@@ -146,6 +219,7 @@ func _test_event_diagnosis() -> void:
 		_check(pages2.size() == 1 and not bool(pages2[0].get("trigger_ok", true)), "触发方式不匹配应被诊断出来")
 
 	host.queue_free()
+	_case_end()
 
 # ── 条件默认值 ───────────────────────────────────────────
 
@@ -164,6 +238,7 @@ func _test_condition_defaults() -> void:
 
 	condition.op = "!="
 	_check(page.is_active(store), "!= true 在未定义时也应成立")
+	_case_end()
 
 # ── 事件页 ───────────────────────────────────────────────
 
@@ -180,6 +255,7 @@ func _test_page_selection() -> void:
 
 	var index_other := definition.get_active_page(store, [&"autorun"])
 	_check(index_other == -1, "自动事件过滤时不应选中交互页")
+	_case_end()
 
 # ── 输入服务 ─────────────────────────────────────────────
 
@@ -223,6 +299,7 @@ func _test_input_service() -> void:
 
 	if FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(save_path)
+	_case_end()
 
 func _has_event(events: Array, target: InputEvent) -> bool:
 	for event in events:
@@ -319,6 +396,7 @@ func _test_input_registry() -> void:
 	service.restore_defaults()
 	if FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(save_path)
+	_case_end()
 
 func _key(code: Key) -> InputEventKey:
 	var event := InputEventKey.new()
@@ -369,6 +447,7 @@ func _test_gamepad_input() -> void:
 	service.restore_defaults()
 	if FileAccess.file_exists(save_path):
 		DirAccess.remove_absolute(save_path)
+	_case_end()
 
 func _pad_button(button: JoyButton, pressed: bool) -> void:
 	var event := InputEventJoypadButton.new()
@@ -445,6 +524,7 @@ func _test_input_settings_panel() -> void:
 	service.restore_defaults()
 	if FileAccess.file_exists("res://.godot/test_settings.cfg"):
 		DirAccess.remove_absolute("res://.godot/test_settings.cfg")
+	_case_end()
 
 # ── 本地化 ───────────────────────────────────────────────
 
@@ -483,6 +563,7 @@ func _test_l10n() -> void:
 	var file := FileAccess.open("res://addons/rpgeventstudio/i18n/ui.csv", FileAccess.READ)
 	_check(file != null, "应能读取翻译源文件 ui.csv")
 	if file == null:
+		_case_end()
 		return
 	file.get_csv_line()   # 表头
 	var total := 0
@@ -505,6 +586,7 @@ func _test_l10n() -> void:
 	_check(total >= 150, "翻译条目应覆盖全部界面（实际 %d 条）" % total)
 	_check(missing_zh.is_empty(), "中文翻译不应缺条目：%s" % str(missing_zh.slice(0, 5)))
 	_check(missing_en.is_empty(), "英文翻译不应缺条目：%s" % str(missing_en.slice(0, 5)))
+	_case_end()
 
 # ── BBCode 检查器 ────────────────────────────────────────
 
@@ -531,6 +613,7 @@ func _test_bbcode() -> void:
 	var code_text := Bbcode.analyze("[code][b]不是标签[/b][/code]")
 	_check(not Bbcode.has_issues(code_text), "[code] 里的标签不应被误判")
 	_check(not Bbcode.has_issues(Bbcode.analyze("普通文字 [1] 和 [提示]")), "普通方括号不应被误判")
+	_case_end()
 
 # ── BBCode 打字机 ────────────────────────────────────────
 
@@ -563,6 +646,7 @@ func _test_bbcode_presenter() -> void:
 	# 保存为事件资源再读回，用默认 UI 真正跑一遍
 	var runtime: Node = root.get_node_or_null("RPGEventStudio")
 	if runtime == null:
+		_case_end()
 		return
 	runtime.call("restore_default_presenter")
 	var path := "res://.godot/test_bbcode_default_ui.tres"
@@ -579,6 +663,7 @@ func _test_bbcode_presenter() -> void:
 	_check(str(default_presenter.get("last_parsed_text")) == parsed, "默认 UI 运行时渲染 BBCode")
 	_check(default_presenter.shown_texts.size() > 0 and default_presenter.shown_texts[default_presenter.shown_texts.size() - 1] == raw, "默认 UI 保留原始 BBCode")
 	DirAccess.remove_absolute(path)
+	_case_end()
 
 # ── 嵌套结构：保存 / 读取 / 兼容 ─────────────────────────
 
@@ -632,6 +717,7 @@ func _test_nested_serialization() -> void:
 	var loaded: EventDefinition = load(path)
 	_check(loaded != null, "嵌套事件应能重新读取")
 	if loaded == null:
+		_case_end()
 		return
 
 	var loaded_page: EventPage = loaded.pages[0]
@@ -657,6 +743,7 @@ func _test_nested_serialization() -> void:
 	_check(old_definition != null and old_definition.pages.size() == 2, "旧事件资源应继续可用")
 
 	DirAccess.remove_absolute(path)
+	_case_end()
 
 # ── 剧情工作台：视图映射 ─────────────────────────────────
 
@@ -700,6 +787,7 @@ func _test_story_document_mapping() -> void:
 	_check((items2[1]["children_view"] as Array).size() == 1, "条件的「是」分支应有 1 个条目")
 	_check((items2[1]["else_view"] as Array).size() == 1, "条件的「否」分支应有 1 个条目")
 	_check(str(items2[3]["kind"]) == "state", "variable_op 应识别为状态条目")
+	_case_end()
 
 # ── 剧情工作台：基础编辑 ─────────────────────────────────
 
@@ -739,6 +827,7 @@ func _test_story_document_edits() -> void:
 	document.delete_item(target_item)
 	_check(page.commands.size() == 5, "删除后回到 5 条")
 	_check(page.commands.find(new_line) == -1, "被删除的指令不再在列表里")
+	_case_end()
 
 # ── 剧情工作台：选项块操作 ───────────────────────────────
 
@@ -810,6 +899,7 @@ func _test_story_document_choice_ops() -> void:
 	_check(str(seq_choice.get("kind", "")) == "choice", "新插入的选项块应作为独立条目出现")
 	_check(str(seq_choice["pattern"]) == "sequential", "顺序式选项块应被识别（实际 %s）" % str(seq_choice["pattern"]))
 	_check(bool(seq_choice["well_formed"]), "顺序式选项块应结构完整")
+	_case_end()
 
 # ── 剧情工作台：模板 ─────────────────────────────────────
 
@@ -863,6 +953,7 @@ func _test_story_templates() -> void:
 	var loaded := load(path) as EventDefinition
 	_check(loaded != null and loaded.pages[0].commands.size() == 4, "模板事件读回后结构一致")
 	DirAccess.remove_absolute(path)
+	_case_end()
 
 # ── 剧情工作台：角色花名册 ───────────────────────────────
 
@@ -887,6 +978,7 @@ func _test_story_characters() -> void:
 	# 读取不存在的文件应返回空册而不报错
 	var missing := StoryCharacters.load_roster("res://.godot/no_such_roster.tres")
 	_check(missing != null and missing.characters.is_empty(), "缺失花名册文件应返回空册")
+	_case_end()
 
 # ── 剧情工作台：全文预览 ─────────────────────────────────
 
@@ -914,6 +1006,7 @@ func _test_story_preview() -> void:
 
 	# 预览渲染不影响原文
 	_check(str(definition.pages[0].commands[0].params.get("text", "")) == original_text, "预览后原始文案不变")
+	_case_end()
 
 # ── 关卡总控图 ───────────────────────────────────────────
 
@@ -961,6 +1054,7 @@ func _test_graph_flow() -> void:
 
 	runner.stop()
 	host.queue_free()
+	_case_end()
 
 func _test_graph_merge_or() -> void:
 	var host := Node.new()
@@ -994,6 +1088,7 @@ func _test_graph_merge_or() -> void:
 
 	runner.stop()
 	host.queue_free()
+	_case_end()
 
 func _test_graph_event_node() -> void:
 	var host := Node.new()
@@ -1027,6 +1122,7 @@ func _test_graph_event_node() -> void:
 	runner.bus = bus
 	runner.event_starter = func(definition: EventDefinition, _args: Dictionary, filter: Array) -> void:
 		if definition.get_active_page(state, filter) < 0:
+			_case_end()
 			return
 		started.append(definition.event_id)
 		_finish_event_later.call_deferred(bus, definition.event_id)
@@ -1041,6 +1137,7 @@ func _test_graph_event_node() -> void:
 	host.queue_free()
 	if FileAccess.file_exists(auto_path):
 		DirAccess.remove_absolute(auto_path)
+	_case_end()
 
 func _finish_event_later(bus: EventBus, event_id: StringName) -> void:
 	await process_frame
@@ -1077,6 +1174,7 @@ func _test_give_key_flow() -> void:
 	presenter.reset()
 	await _run_event(runner, harness["bus"], definition, [&"interact"], 60)
 	_check(presenter.last_text == "钥匙要收好，教室门就在右边。", "第二次对话内容应不同（实际：%s）" % presenter.last_text)
+	_case_end()
 
 func _test_choice_branch() -> void:
 	var harness := _make_harness()
@@ -1090,6 +1188,7 @@ func _test_choice_branch() -> void:
 
 	_check(not state.get_bool("Global.Player.HasKey"), "选择「离开」不应获得钥匙")
 	_check(_contains(presenter.shown_texts, "那就随便看看吧。"), "应走「离开」分支")
+	_case_end()
 
 func _test_cancel() -> void:
 	var harness := _make_harness()
@@ -1117,6 +1216,7 @@ func _test_cancel() -> void:
 
 	_check(result["received"], "取消后应收到事件结束通知")
 	_check(int(result["result"]) == EventRunner.Result.CANCELLED, "结果应为 CANCELLED（实际 %d）" % int(result["result"]))
+	_case_end()
 
 # ── UI 主题 ──────────────────────────────────────────────
 
@@ -1190,6 +1290,7 @@ func _test_dialogue_theme() -> void:
 		interactor.queue_free()
 		runtime.call("apply_dialogue_theme", RpgEventStudioTheme.new())
 	await process_frame
+	_case_end()
 
 # ── 地图事件对象 ────────────────────────────────────────# ── 地图事件对象 ────────────────────────────────────────
 
@@ -1197,6 +1298,7 @@ func _test_map_event() -> void:
 	var librarian: EventDefinition = load("res://addons/rpgeventstudio/samples/events/librarian.tres")
 	_check(librarian != null, "地图事件测试需要示例事件资源")
 	if librarian == null:
+		_case_end()
 		return
 
 	# 事件关联 / 状态
@@ -1338,6 +1440,7 @@ func _test_map_event() -> void:
 	await process_frame
 	node.queue_free()
 	await process_frame
+	_case_end()
 
 func _make_switch_event(id: StringName, trigger: String, key: String) -> EventDefinition:
 	var definition := EventDefinition.new()
@@ -1364,6 +1467,7 @@ func _test_presenter_injection() -> void:
 	var runtime: Node = root.get_node_or_null("RPGEventStudio")
 	_check(runtime != null, "运行时 Autoload 可用于展示层注入测试")
 	if runtime == null:
+		_case_end()
 		return
 
 	runtime.call("restore_default_presenter")
@@ -1389,7 +1493,9 @@ func _test_presenter_injection() -> void:
 
 	# 不满足协议的对象必须被拒绝，且不能破坏当前展示层
 	var broken := Object.new()
+	_expect_error_begin("presenter-protocol")
 	_check(not bool(runtime.call("set_presenter", broken)), "缺少协议方法的对象应被拒绝")
+	_expect_error_end("presenter-protocol")
 	_check(runtime.get("presenter") == custom, "拒绝非法对象后展示层应保持不变")
 
 	# 运行中替换展示层：旧事件应被取消、旧 UI 应收到 close_all
@@ -1432,6 +1538,7 @@ func _test_presenter_injection() -> void:
 	cleanup.queue_free()
 	custom.queue_free()
 	replacement.queue_free()
+	_case_end()
 
 func _make_text_event(id: StringName, text: String) -> EventDefinition:
 	var definition := EventDefinition.new()
@@ -1525,6 +1632,52 @@ func _contains(list: PackedStringArray, needle: String) -> bool:
 			return true
 	return false
 
+func _case_begin(name: String) -> void:
+	_case_name = name
+	_case_start_checks = _checks
+	_case_expected.append(name)
+	print("CASE_BEGIN ", name)
+
+func _case_end() -> void:
+	if _case_name == "":
+		return
+	_case_done[_case_name] = true
+	print("CASE_END %s checks=%d" % [_case_name, _checks - _case_start_checks])
+
+func _case_verify(name: String) -> void:
+	if not _case_done.has(name):
+		_checks += 1
+		_failures.append("测试函数未正常完成：" + name)
+		print("CASE_INCOMPLETE ", name)
+		print("  ✗ 测试函数未正常完成：", name)
+	_case_name = ""
+
+func _expect_error_begin(label: String) -> void:
+	printerr("EXPECTED_ERROR_BEGIN ", label)
+
+func _expect_error_end(label: String) -> void:
+	printerr("EXPECTED_ERROR_END ", label)
+
+## 故障注入：只在 RPGEVENTSTUDIO_TEST_FAULT 设置时由 _run 调用。
+func _inject_fault(kind: String) -> void:
+	match kind:
+		"type":
+			# JSON.parse_string 返回 Variant，运行时才会暴露 Dictionary 类型不匹配。
+			var bad: Dictionary = JSON.parse_string("[]")
+			print("unreachable ", bad)
+		"null":
+			var missing: Node = null
+			missing.name = "fault"
+		"skip":
+			pass
+		"expected_error":
+			_expect_error_begin("injected")
+			push_error("injected expected error")
+			_expect_error_end("injected")
+			_case_end()
+		_:
+			_case_end()
+
 func _check(condition: bool, message: String) -> void:
 	_checks += 1
 	if condition:
@@ -1539,6 +1692,8 @@ func _report() -> void:
 	print("检查项：%d，失败：%d" % [_checks, _failures.size()])
 	for failure in _failures:
 		print("  ✗ ", failure)
+	print("CASES：预期 %d，完成 %d" % [_case_expected.size(), _case_done.size()])
+	print("RESULT: %s" % ("PASS" if _failures.is_empty() else "FAIL"))
 
 # ── 关卡图静态校验 ────────────────────────────────────────
 
@@ -1683,6 +1838,7 @@ func _test_graph_validator() -> void:
 	# 示例图整体无错误
 	var sample: LevelGraph = load("res://addons/rpgeventstudio/samples/graphs/school_graph.tres")
 	_check(sample != null and not GraphValidator.has_errors(_gval(sample)), "示例关卡图不应有错误")
+	_case_end()
 
 func _test_group_persistence() -> void:
 	var graph := LevelGraph.new()
@@ -1722,6 +1878,7 @@ func _test_group_persistence() -> void:
 	_check(reloaded.next_group_id() == StringName("group_1"), "分组 id 生成应避开节点 id")
 
 	DirAccess.remove_absolute(path)
+	_case_end()
 
 # ── 剧情资源审计 ──────────────────────────────────────────
 
@@ -1743,6 +1900,7 @@ func _test_story_audit() -> void:
 		"catalog": StateCatalogStore.catalog(),
 	})
 	_check(not StoryAudit.has_errors(sample["issues"]), "样例资源不应有审计错误")
+	_case_end()
 
 func _audit_has(issues: Array, code: String) -> bool:
 	for issue in issues:

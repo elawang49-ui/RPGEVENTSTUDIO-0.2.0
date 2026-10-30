@@ -1,0 +1,22 @@
+{
+  "headless": {
+    "run": 348,
+    "story_audit_test": 24,
+    "state_bulk_register_test": 96,
+    "graph_editor_smoke": 19,
+    "ui_smoke": 56,
+    "integration_demo": 37,
+    "safe_write_test": 17,
+    "event_list_smoke": 13,
+    "tutorial_flow": 14,
+    "interaction_test": 19,
+    "node_ref_test": 12
+  },
+  "editor": {
+    "editor": 19,
+    "map": 50,
+    "gvl": 59,
+    "story": 20,
+    "audit": 14
+  }
+}
