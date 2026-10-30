@@ -192,10 +192,14 @@ static func _choice_if_index(command: Variant, expected: int) -> int:
 
 # ── 撤销 ─────────────────────────────────────────────────
 
-func _undo() -> EditorUndoRedoManager:
-	if not Engine.is_editor_hint():
+## 撤销管理器由编辑器层注入（依赖注入）：core 不引用 EditorInterface/EditorUndoRedoManager。
+## 未注入或非编辑器环境时为 null，此时所有编辑操作直接生效。
+var undo_provider: Callable = Callable()
+
+func _undo() -> Object:
+	if not undo_provider.is_valid() or not Engine.is_editor_hint():
 		return null
-	return EditorInterface.get_editor_undo_redo()
+	return undo_provider.call()
 
 # ── 通用结构操作 ─────────────────────────────────────────
 

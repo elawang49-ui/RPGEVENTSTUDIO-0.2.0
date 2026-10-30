@@ -310,6 +310,7 @@ func _refresh_all() -> void:
 	_building = true
 	_title_label.text = "%s　[%s]" % [_definition.display_name, String(_definition.event_id)]
 	_document = StoryDocument.new(_current_page())
+	_document.undo_provider = _editor_undo
 	_document.changed.connect(_on_document_changed)
 	_rebuild_pages()
 	_rebuild_roster_list()
@@ -1002,6 +1003,9 @@ func _after_insert(command: EventCommand) -> void:
 	_locate_item(_items)
 	_sync_row_selection()
 	_rebuild_editor()
+
+func _editor_undo() -> Object:
+	return EditorInterface.get_editor_undo_redo()
 
 func _default_speaker() -> String:
 	if not _selected_item.is_empty() and str(_selected_item.get("kind", "")) == "line":
