@@ -1,0 +1,82 @@
+[gd_resource type="Resource" script_class="LevelGraph" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/level_node.gd" id="1_node"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/level_graph.gd" id="2_graph"]
+
+[sub_resource type="Resource" id="Resource_n1"]
+script = ExtResource("1_node")
+node_id = &"start_1"
+type = "start"
+position = Vector2(40, 60)
+
+[sub_resource type="Resource" id="Resource_n2"]
+script = ExtResource("1_node")
+node_id = &"cond_1"
+type = "condition"
+params = {
+"key": "Global.Quest.RingFound",
+"monitor": true,
+"op": "==",
+"value": "true"
+}
+position = Vector2(40, 220)
+
+[sub_resource type="Resource" id="Resource_n3"]
+script = ExtResource("1_node")
+node_id = &"cond_2"
+type = "condition"
+params = {
+"key": "School.Fame",
+"monitor": true,
+"op": ">=",
+"value": "10"
+}
+position = Vector2(40, 360)
+
+[sub_resource type="Resource" id="Resource_n4"]
+script = ExtResource("1_node")
+node_id = &"action_1"
+type = "action"
+params = {
+"key": "School.Fame",
+"op": "add",
+"value": "5"
+}
+position = Vector2(300, 220)
+
+[sub_resource type="Resource" id="Resource_n5"]
+script = ExtResource("1_node")
+node_id = &"action_2"
+type = "action"
+params = {
+"key": "School.Mood",
+"op": "set",
+"value": "1.5"
+}
+position = Vector2(300, 360)
+
+[sub_resource type="Resource" id="Resource_n6"]
+script = ExtResource("1_node")
+node_id = &"action_3"
+type = "action"
+params = {
+"key": "Global.Quest.GraphOnly",
+"op": "set",
+"value": "true"
+}
+position = Vector2(560, 220)
+
+[sub_resource type="Resource" id="Resource_n7"]
+script = ExtResource("1_node")
+node_id = &"end_1"
+type = "end"
+params = {
+"completed_key": "Global.Quest.Completed"
+}
+position = Vector2(820, 220)
+
+[resource]
+script = ExtResource("2_graph")
+graph_id = &"bulk_fixture"
+level_id = &"school"
+nodes = Array[ExtResource("1_node")]([SubResource("Resource_n1"), SubResource("Resource_n2"), SubResource("Resource_n3"), SubResource("Resource_n4"), SubResource("Resource_n5"), SubResource("Resource_n6"), SubResource("Resource_n7")])

@@ -75,6 +75,10 @@ static func write_resource(resource: Resource, path: String, expected_script: Sc
 		return result
 	var extension := path.get_extension()
 	var temp_path := path.get_basename() + ".tmp." + extension
+	# 临时路径被同名目录占住时直接判失败：既避免覆盖写坏目录，也避免 ResourceSaver 抛出难读的引擎错误。
+	if DirAccess.dir_exists_absolute(temp_path):
+		result["error"] = "save_failed:temp_path_blocked"
+		return result
 	var error := ResourceSaver.save(resource, temp_path)
 	if error != OK:
 		result["error"] = "save_failed:%d" % error

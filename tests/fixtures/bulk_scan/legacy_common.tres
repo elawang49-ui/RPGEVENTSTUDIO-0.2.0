@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CommonEvent" format=3]
+
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/event_command.gd" id="1_cmd"]
+[ext_resource type="Script" path="res://addons/rpgeventstudio/core/model/common_event.gd" id="2_ce"]
+
+[sub_resource type="Resource" id="Resource_k1"]
+script = ExtResource("1_cmd")
+type = &"set_switch"
+params = {
+"key": "Local.TempFlag",
+"value": true
+}
+
+[resource]
+script = ExtResource("2_ce")
+common_id = &"bulk_common_fixture"
+display_name = "批量登记夹具公共事件"
+commands = Array[ExtResource("1_cmd")]([SubResource("Resource_k1")])
