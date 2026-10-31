@@ -669,12 +669,13 @@ func _select_dock_tab(title: String) -> void:
 func _capture_main_tab_screen() -> void:
 	_apply_shot_window_size()
 	await get_tree().create_timer(6.0).timeout
-	EditorInterface.open_scene_from_path("res://addons/rpgeventstudio/samples/scenes/school_demo.tscn")
+	var tab := clampi(int(OS.get_environment("MAIN_TAB_INDEX")), 0, 4)
+	var scene_path := "res://addons/rpgeventstudio/samples/scenes/map_events_demo.tscn" if tab == 4 else "res://addons/rpgeventstudio/samples/scenes/school_demo.tscn"
+	EditorInterface.open_scene_from_path(scene_path)
 	await get_tree().create_timer(1.5).timeout
 	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
 	await _focus_main_screen()
 	await get_tree().create_timer(0.8).timeout
-	var tab := clampi(int(OS.get_environment("MAIN_TAB_INDEX")), 0, 4)
 	if _main_tabs != null:
 		_main_tabs.current_tab = tab
 	match tab:
@@ -690,6 +691,11 @@ func _capture_main_tab_screen() -> void:
 		4:
 			if _map_view != null:
 				_map_view.call("refresh")
+	if tab == 1 and OS.get_environment("MAIN_TAB_PREVIEW") == "1" and _theme_view != null:
+		var toggle = _theme_view.get("_preview_toggle")
+		if toggle is Button:
+			(toggle as Button).button_pressed = true
+			(toggle as Button).toggled.emit(true)
 	await get_tree().create_timer(1.8).timeout
 	await _enforce_shot_size()
 	var base := EditorInterface.get_base_control()

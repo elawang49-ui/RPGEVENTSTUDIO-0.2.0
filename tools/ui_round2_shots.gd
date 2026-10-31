@@ -5,7 +5,8 @@ extends SceneTree
 ## 说明：关卡图/主题/地图事件页使用真实编辑器控件实例，不依赖编辑器停靠布局；
 ##       地图事件通过 scene_root_override 注入示例场景，保证在非编辑器环境也能截到真实数据。
 
-const OUT_DIR := "res://docs/images/ui-polish-round2/after"
+const DEFAULT_OUT_DIR := "res://docs/images/ui-polish-round2/after"
+var _out_dir := DEFAULT_OUT_DIR
 
 var _w := 1152
 var _h := 648
@@ -22,7 +23,10 @@ func _run() -> void:
 		_h = int(args[1])
 	root.size = Vector2i(_w, _h)
 	DisplayServer.window_set_size(Vector2i(_w, _h))
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
+	var env_dir := OS.get_environment("ROUND2_SHOT_DIR").strip_edges()
+	if env_dir != "":
+		_out_dir = env_dir
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out_dir))
 	await create_timer(0.4).timeout
 
 	var scene: Node = load("res://addons/rpgeventstudio/samples/scenes/school_demo.tscn").instantiate()
@@ -35,6 +39,10 @@ func _run() -> void:
 
 	await _shot_trace(runtime)
 	await _shot_dialogue(runtime)
+	if OS.get_environment("ROUND2_SHOT_ONLY") == "game":
+		await _shot_input(runtime)
+		quit()
+		return
 	# 后面是编辑器页截图：隐藏游戏场景，避免 2D 世界/CanvasLayer 盖住编辑器控件。
 	scene.visible = false
 	await create_timer(0.2).timeout
@@ -45,7 +53,7 @@ func _run() -> void:
 	quit()
 
 func _shot_name(name: String) -> String:
-	return "%s/%s_%dx%d.png" % [OUT_DIR, name, _w, _h]
+	return "%s/%s_%dx%d.png" % [_out_dir, name, _w, _h]
 
 func _shot(path: String) -> void:
 	await RenderingServer.frame_post_draw
