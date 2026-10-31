@@ -25,6 +25,7 @@ var _main_screen: Control
 var _theme_view: Control
 var _list_panel: Control
 var _map_panel: Control
+var _map_view: Control
 var _story_view: Control
 var _audit_view: Control
 var _debugger_plugin: StudioDebuggerPlugin
@@ -82,6 +83,7 @@ func _exit_tree() -> void:
 	_theme_view = null
 	_story_view = null
 	_audit_view = null
+	_map_view = null
 
 	if _filesystem != null and _filesystem.filesystem_changed.is_connected(_on_filesystem_changed):
 		_filesystem.filesystem_changed.disconnect(_on_filesystem_changed)
@@ -151,6 +153,8 @@ func _create_map_dock() -> void:
 func refresh_map_events() -> void:
 	if _map_panel != null:
 		_map_panel.call("refresh")
+	if _map_view != null:
+		_map_view.call("refresh")
 
 func _on_place_map_event(kind: int) -> void:
 	place_map_event(kind)
@@ -331,6 +335,20 @@ func _on_trace_event(_event_id: String, event_path: String) -> void:
 
 # ── 主屏：关卡图 ─────────────────────────────────────────
 
+## 剧情工作台/审计页内容很高（最小尺寸可达 1400×1900），直接放进 TabContainer
+## 会把整个主屏撑出窗口。外包一层滚动容器，页面按自身尺寸渲染，主屏不越界。
+func _wrap_page_in_scroll(page: Control) -> ScrollContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = page.name + "Scroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.add_child(page)
+	return scroll
+
 func _create_main_screen() -> void:
 	var script := load(GRAPH_SCRIPT)
 	if script == null:
@@ -363,7 +381,7 @@ func _create_main_screen() -> void:
 		_story_view = story_script.new()
 		_story_view.name = "StoryWorkbench"
 		_story_view.call("bind_plugin", self)
-		_main_tabs.add_child(_story_view)
+		_main_tabs.add_child(_wrap_page_in_scroll(_story_view))
 		_main_tabs.set_tab_title(2, L10n.ui("story.title"))
 	else:
 		push_error("[RPGEventStudio] 找不到剧情工作台脚本")
@@ -373,10 +391,23 @@ func _create_main_screen() -> void:
 		_audit_view = audit_script.new()
 		_audit_view.name = "StoryAudit"
 		_audit_view.issue_activated.connect(_on_audit_issue)
-		_main_tabs.add_child(_audit_view)
+		_main_tabs.add_child(_wrap_page_in_scroll(_audit_view))
 		_main_tabs.set_tab_title(3, L10n.ui("audit.title"))
 	else:
 		push_error("[RPGEventStudio] 找不到剧情审计面板脚本")
+
+	# 地图事件也需要一个全宽入口：小窗口下右侧 dock 会被挤到屏幕外，
+	# 主屏标签页保证 1152×648 仍能查看/打开地图事件。
+	var map_script := load(MAP_SCRIPT)
+	if map_script != null:
+		_map_view = map_script.new()
+		_map_view.name = "MapEventsView"
+		_map_view.event_activated.connect(_open_event)
+		_map_view.place_requested.connect(_on_place_map_event)
+		_main_tabs.add_child(_map_view)
+		_main_tabs.set_tab_title(4, L10n.ui("map.title"))
+	else:
+		push_error("[RPGEventStudio] 找不到地图事件面板脚本")
 	_make_visible(false)
 
 func _has_main_screen() -> bool:
@@ -419,6 +450,8 @@ func _on_selection_changed() -> void:
 		_main_screen.call("open_from_selection", nodes)
 	if _map_panel != null:
 		_map_panel.call("on_selection_changed", nodes)
+	if _map_view != null:
+		_map_view.call("on_selection_changed", nodes)
 	if _story_view != null and _main_tabs != null and _main_tabs.current_tab == 2:
 		_story_view.call("open_from_selection", nodes)
 
@@ -460,17 +493,46 @@ func _release_autoload() -> void:
 
 # ── 测试钩子（仅 RPGEVENTSTUDIO_SELFTEST=1 时启用） ─────
 
-## 仅用于开发截图：RPGEVENTSTUDIO_SHOT=1 打开关卡图主屏并保存一张图。
+## 仅开发截图：用 RPGEVENTSTUDIO_SHOT_SIZE=1152x648 固定窗口内容尺寸；
+## 截图后缩放到该尺寸，保证双分辨率验收图是真实布局而不是事后裁切。
+func _shot_target_size() -> Vector2i:
+	var raw := OS.get_environment("RPGEVENTSTUDIO_SHOT_SIZE").strip_edges()
+	if raw == "":
+		return Vector2i.ZERO
+	var parts := raw.split("x")
+	if parts.size() != 2:
+		return Vector2i.ZERO
+	return Vector2i(int(parts[0]), int(parts[1]))
+
+func _apply_shot_window_size() -> void:
+	var target := _shot_target_size()
+	if target.x <= 0 or target.y <= 0:
+		return
+	var mode := DisplayServer.window_get_mode()
+	if mode == DisplayServer.WINDOW_MODE_MAXIMIZED or mode == DisplayServer.WINDOW_MODE_FULLSCREEN:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	DisplayServer.window_set_position(Vector2i(0, 0))
+	DisplayServer.window_set_size(target)
+
+func _save_shot(path: String, image: Image) -> void:
+	if image == null:
+		return
+	var target := _shot_target_size()
+	if target.x > 0 and target.y > 0 and (image.get_width() != target.x or image.get_height() != target.y):
+		image.resize(target.x, target.y, Image.INTERPOLATE_LANCZOS)
+	image.save_png(path)
+	print("[SHOT] 已保存 ", path, " ", image.get_size())
+
 func _capture_viewport(path: String) -> void:
 	var base := EditorInterface.get_base_control()
 	if base == null:
 		return
 	var image := base.get_viewport().get_texture().get_image()
 	if image != null:
-		image.save_png(path)
-		print("[SHOT] 已保存 ", path)
+		_save_shot(path, image)
 
 func _capture_graph_screen() -> void:
+	_apply_shot_window_size()
 	await get_tree().create_timer(3.0).timeout
 	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
 	if _main_tabs != null:
@@ -498,8 +560,10 @@ func _capture_graph_screen() -> void:
 	if base != null:
 		var image := base.get_viewport().get_texture().get_image()
 		if image != null:
-			image.save_png("res://docs/images/graph_editor.png")
-			print("[SHOT] 已保存 docs/images/graph_editor.png")
+			var path := OS.get_environment("GRAPH_SHOT_PATH").strip_edges()
+			if path == "":
+				path = "res://docs/images/graph_editor.png"
+			_save_shot(path, image)
 	get_tree().quit()
 
 func _start_map_selftest() -> void:
@@ -517,6 +581,7 @@ func _start_map_selftest() -> void:
 	runner.call_deferred("start", self)
 
 func _capture_theme_screen() -> void:
+	_apply_shot_window_size()
 	await get_tree().create_timer(4.0).timeout
 	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
 	await get_tree().create_timer(0.8).timeout
@@ -538,11 +603,11 @@ func _capture_theme_screen() -> void:
 			var path := OS.get_environment("THEME_SHOT_PATH")
 			if path.strip_edges() == "":
 				path = "user://theme_editor.png"
-			image.save_png(path)
-			print("[SHOT] 已保存 ", path)
+			_save_shot(path, image)
 	get_tree().quit()
 
 func _capture_map_screen() -> void:
+	_apply_shot_window_size()
 	await get_tree().create_timer(2.0).timeout
 	EditorInterface.open_scene_from_path("res://addons/rpgeventstudio/samples/scenes/map_events_demo.tscn")
 	await get_tree().create_timer(1.2).timeout
@@ -557,13 +622,21 @@ func _capture_map_screen() -> void:
 			selection.add_node(node)
 	if _map_panel != null:
 		_map_panel.call("refresh")
+	if _map_view != null:
+		_map_view.call("refresh")
+	if OS.get_environment("MAP_SHOT_TAB") == "1":
+		EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+		if _main_tabs != null:
+			_main_tabs.current_tab = 4
 	await get_tree().create_timer(0.5).timeout
 	var base := EditorInterface.get_base_control()
 	if base != null:
 		var image := base.get_viewport().get_texture().get_image()
 		if image != null:
-			image.save_png("res://docs/images/map_events_editor.png")
-			print("[SHOT] 已保存 docs/images/map_events_editor.png")
+			var path := OS.get_environment("MAP_SHOT_PATH").strip_edges()
+			if path == "":
+				path = "res://docs/images/map_events_editor.png"
+			_save_shot(path, image)
 	get_tree().quit()
 
 ## 状态库批量登记：RPGEVENTSTUDIO_BULK_SHOT=1 打开批量登记对话框并保存一张图。
@@ -625,6 +698,7 @@ func _start_gvl_selftest() -> void:
 
 ## 开发截图：打开关卡图主屏，展示检查结果面板与分组框。
 func _capture_gvl_screen() -> void:
+	_apply_shot_window_size()
 	await get_tree().create_timer(3.0).timeout
 	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
 	if _main_tabs != null:

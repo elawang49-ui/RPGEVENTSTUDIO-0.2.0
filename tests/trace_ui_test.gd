@@ -104,6 +104,44 @@ func _run() -> void:
 	view.call("_on_selected")
 	_check(details != null and details.text.contains("\"kind\""), "原始 JSON 详情保留专业字段")
 
+	# 专业视图的时间线也要保留原始 ID/枚举，而不是只把详情换成 JSON。
+	var raw_condition := {
+		"kind": "condition", "key": "Trace.UI.Stage",
+		"actual": "exploration", "branch": "false", "matched": false,
+	}
+	var raw_condition_summary := str(view.call("_summary", raw_condition))
+	_check(raw_condition_summary.contains("Trace.UI.Stage") and raw_condition_summary.contains("false")
+		and not raw_condition_summary.contains("否"), "专业视图条件摘要保留原始键与分支枚举")
+	_check(str(view.call("_result_text", raw_condition)) == "false", "专业视图条件结果保留 false")
+
+	var raw_state := {"kind": "state", "key": "Trace.UI.Stage", "old": null, "new": "exploration"}
+	var raw_state_summary := str(view.call("_summary", raw_state))
+	_check(raw_state_summary.contains("exploration") and raw_state_summary.contains("null")
+		and not raw_state_summary.contains("探索"), "专业视图状态值不翻译阶段词条")
+
+	var raw_branch := {
+		"kind": "graph_branch", "graph_id": "school", "graph_path": "",
+		"node_id": "node_a", "port": "true", "to_node": "node_b",
+	}
+	var raw_branch_summary := str(view.call("_summary", raw_branch))
+	_check(raw_branch_summary.contains("node_a") and raw_branch_summary.contains("true")
+		and raw_branch_summary.contains("node_b") and not raw_branch_summary.contains("是"),
+		"专业视图图分支保留原始端口与节点 ID")
+
+	var raw_merge := {
+		"kind": "graph_merge", "graph_id": "school", "graph_path": "",
+		"node_id": "merge", "mode": "and", "count": 1, "required": 2, "fired": false,
+	}
+	_check(str(view.call("_result_text", raw_merge)) == "false", "专业视图汇合结果保留 false")
+	var raw_page := {"kind": "page", "page_index": 0, "trigger": "interact", "selected": true}
+	_check(str(view.call("_result_text", raw_page)) == "true", "专业视图页面结果保留 true")
+
+	# 切回自然视图后，同一批记录应恢复显示名/中文枚举。
+	mode.select(0)
+	var natural_branch_summary := str(view.call("_summary", raw_branch))
+	_check(natural_branch_summary.contains("是") and not natural_branch_summary.contains("true"),
+		"自然视图仍把 true 端口翻译为中文")
+
 	view.queue_free()
 	_report()
 	quit(0 if _failures.is_empty() else 1)

@@ -11,6 +11,7 @@ var input: InputService
 var presenter
 
 var _root: Control
+var _panel: PanelContainer
 var _title: Label
 var _hint: Label
 var _status: Label
@@ -68,6 +69,8 @@ func _build_ui() -> void:
 	panel.custom_minimum_size = Vector2(680, 560)
 	panel.add_theme_stylebox_override("panel", _make_panel_style())
 	center.add_child(panel)
+	_panel = panel
+	_apply_bounds()
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 18)
@@ -152,7 +155,20 @@ func _build_ui() -> void:
 
 # ── 开关 ─────────────────────────────────────────────────
 
+## 按窗口收缩：1152×648 下 680×560 能放下；更小的窗口不把面板顶出屏幕。
+func _apply_bounds() -> void:
+	if _panel == null:
+		return
+	var viewport_size := get_viewport().get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return
+	_panel.custom_minimum_size = Vector2(
+		minf(680.0, viewport_size.x - 32.0),
+		minf(560.0, viewport_size.y - 32.0),
+	)
+
 func open() -> void:
+	_apply_bounds()
 	visible = true
 	_listening = false
 	_hint.text = L10n.game("input.press_hint")

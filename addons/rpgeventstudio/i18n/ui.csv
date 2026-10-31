@@ -860,3 +860,8 @@ trace.event.id,事件 #{id},Event #{id}
 trace.detail.duration,耗时 {ms} ms,Took {ms} ms
 trace.result.fallback,未收录的结果（{value}）,Unmapped result ({value})
 trace.detail.state_key,状态标识：{key},Key: {key}
+graph.fit,适配,Fit
+graph.fit.tip,缩放到能看见全部节点与分组框,Fit all nodes and groups in view
+map.col.event,地图事件,Map event
+map.col.trigger,触发,Trigger
+theme.settings,参数,Settings

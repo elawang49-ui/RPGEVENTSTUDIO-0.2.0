@@ -49,15 +49,19 @@ func start(plugin: EditorPlugin) -> void:
 		return
 
 	var trigger_row := _tree_item_for(tree, _root.get_node("Trigger_Region"))
-	_check(trigger_row != null and trigger_row.get_text(0).contains("(650, 390)"), "总览显示触发区位置")
-	_check(trigger_row != null and trigger_row.get_text(0).contains(L10n.ui("map.trigger.region_enter")), "总览显示触发方式")
-	_check(trigger_row != null and trigger_row.get_text(0).contains("区域触发示例"), "总览显示关联事件")
+	_check(trigger_row != null and trigger_row.get_tooltip_text(0).contains("(650, 390)"), "总览 tooltip 显示触发区位置")
+	var trigger_ok := trigger_row != null and trigger_row.get_tooltip_text(0).contains(L10n.ui("map.trigger.region_enter"))
+	if trigger_row != null and tree.columns > 1:
+		trigger_ok = trigger_ok or trigger_row.get_text(1) == L10n.ui("map.trigger.region_enter")
+	_check(trigger_ok, "总览显示触发方式")
+	_check(trigger_row != null and trigger_row.get_tooltip_text(0).contains("区域触发示例"), "总览 tooltip 显示关联事件")
 
 	var unlinked := _tree_item_for(tree, _root.get_node("Inspect_Unlinked"))
 	_check(unlinked != null, "总览能找到未关联对象")
 	if unlinked != null:
-		_check(unlinked.get_text(0).contains("(820, 270)"), "总览显示场景位置（实际：%s）" % unlinked.get_text(0))
-		_check(unlinked.get_text(0).contains(L10n.ui("map.status.missing")), "未关联对象显示「未关联」（实际：%s）" % unlinked.get_text(0))
+		_check(unlinked.get_tooltip_text(0).contains("(820, 270)"), "总览 tooltip 显示场景位置")
+		_check(unlinked.get_text(0).contains("⚠") and unlinked.get_tooltip_text(0).contains(L10n.ui("map.status.missing")),
+			"未关联对象用警示标记并显示「未关联」")
 
 	# 选中对象 → 面板同步；打开事件 → 事件编辑器
 	var trigger: MapEvent2D = _root.get_node("Trigger_Region")
@@ -68,7 +72,7 @@ func start(plugin: EditorPlugin) -> void:
 	await get_tree().process_frame
 	_check(_panel.get("_selected_node") == trigger, "选中地图事件后面板同步")
 	var details: Label = _panel.get("_details")
-	_check(details != null and details.text.contains(L10n.ui("map.layer.same")), "详情显示显示层级")
+	_check(details != null and details.tooltip_text.contains(L10n.ui("map.layer.same")), "详情 tooltip 显示层级")
 
 	var opened: Array = [null]
 	_panel.event_activated.connect(func(definition: EventDefinition) -> void:
@@ -132,7 +136,8 @@ func start(plugin: EditorPlugin) -> void:
 	await get_tree().process_frame
 	tree = _panel.get("_tree")
 	var invalid_item := _tree_item_for(tree, invalid)
-	_check(invalid_item != null and invalid_item.get_text(0).contains(L10n.ui("map.status.invalid")), "总览识别失效引用")
+	_check(invalid_item != null and invalid_item.get_text(0).contains("⚠")
+		and invalid_item.get_tooltip_text(0).contains(L10n.ui("map.status.invalid")), "总览识别失效引用")
 	_root.remove_child(invalid)
 	invalid.queue_free()
 
@@ -154,10 +159,15 @@ func start(plugin: EditorPlugin) -> void:
 	if theme_view != null:
 		var preview: Node = theme_view.get("_preview")
 		var sample: OptionButton = theme_view.get("_sample")
-		var controls: VBoxContainer = theme_view.get("_controls_box")
 		_check(preview != null and preview is DialoguePresenter, "主题页有真实 DialoguePresenter 预览")
 		_check(sample != null and sample.item_count == 4, "主题预览支持普通/BBCode/多行/选项")
-		_check(controls != null and controls.get_child_count() > 20, "主题页控件完整")
+		var sections: Array = theme_view.get("_section_anchors")
+		var themed_fields := 0
+		for section in sections:
+			themed_fields += (section as Control).get_child_count()
+		_check(sections.size() == 5 and themed_fields > 40, "主题页控件完整")
+		var jump: OptionButton = theme_view.get("_section_jump")
+		_check(jump != null and jump.item_count == sections.size(), "主题页有 5 个分区跳转")
 
 		var temp_path := "res://.godot/test_theme_editor.tres"
 		theme_view.set("theme_path", temp_path)

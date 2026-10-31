@@ -82,6 +82,14 @@ var theme_path := THEME_PATH
 var _theme: RpgEventStudioTheme
 var _preview: DialoguePresenter
 var _preview_viewport: SubViewport
+var _preview_container: SubViewportContainer
+var _preview_side: VBoxContainer
+var _body: BoxContainer
+var _settings_scroll: ScrollContainer
+var _settings_box: VBoxContainer
+var _section_jump: OptionButton
+var _section_anchors: Array[Control] = []
+var _last_preview_size := Vector2i.ZERO
 var _sample: OptionButton
 var _controls_box: VBoxContainer
 var _status: Label
@@ -95,6 +103,12 @@ func _ready() -> void:
 	_custom_mode = str(ProjectSettings.get_setting(UI_MODE_SETTING, "default")) == "custom"
 	_theme = _load_theme()
 	_build()
+	set_process(true)
+
+func _process(_delta: float) -> void:
+	if not is_visible_in_tree():
+		return
+	_sync_preview_size()
 
 func _build() -> void:
 	add_theme_constant_override("separation", 8)
@@ -106,6 +120,9 @@ func _build() -> void:
 	header.add_child(title)
 	_path_label = Label.new()
 	_path_label.text = L10n.ui("theme.path", {"path": theme_path})
+	_path_label.custom_minimum_size = Vector2(0, 0)
+	_path_label.clip_text = true
+	_path_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_path_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_path_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_path_label.add_theme_color_override("font_color", Color(0.62, 0.68, 0.76))
@@ -130,20 +147,29 @@ func _build() -> void:
 	restore.pressed.connect(_restore_defaults)
 	footer.add_child(restore)
 	_status = Label.new()
+	_status.custom_minimum_size = Vector2(0, 0)
+	_status.clip_text = true
+	_status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_status.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status.add_theme_color_override("font_color", Color(0.65, 0.82, 0.65))
 	footer.add_child(_status)
 
-	var body := VBoxContainer.new()
+	# 预览与参数左右分栏：1152×648 下设置区不再只剩三行高；
+	# 窄窗口（编辑器停靠面板占位后）自动改为上下排列。
+	var body := BoxContainer.new()
+	body.vertical = false
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 10)
 	add_child(body)
+	_body = body
 
 	var preview_side := VBoxContainer.new()
 	preview_side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	preview_side.size_flags_vertical = Control.SIZE_FILL
-	preview_side.custom_minimum_size = Vector2(0, 480)
+	preview_side.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	preview_side.custom_minimum_size = Vector2(360, 0)
 	body.add_child(preview_side)
+	_preview_side = preview_side
 
 	var preview_title := Label.new()
 	preview_title.text = L10n.ui("theme.preview")
@@ -152,25 +178,29 @@ func _build() -> void:
 
 	var preview_panel := PanelContainer.new()
 	preview_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	preview_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	preview_panel.custom_minimum_size = Vector2(480, 420)
+	# 固定预览高度：编辑器主屏本身可能很高，预览若跟着拉伸，对话框会落到可视区外。
+	preview_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	preview_panel.custom_minimum_size = Vector2(320, 480)
 	var preview_style := StyleBoxFlat.new()
 	preview_style.bg_color = Color(0.08, 0.09, 0.12)
 	preview_style.set_corner_radius_all(4)
 	preview_panel.add_theme_stylebox_override("panel", preview_style)
 	preview_side.add_child(preview_panel)
 	var container := SubViewportContainer.new()
-	container.stretch = true
+	container.stretch = false
 	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	container.resized.connect(_sync_preview_size)
+	visibility_changed.connect(_sync_preview_size)
 	preview_panel.add_child(container)
+	_preview_container = container
 	_preview_viewport = SubViewport.new()
-	_preview_viewport.size = Vector2i(960, 540)
+	_preview_viewport.size = Vector2i(320, 180)
 	_preview_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	container.add_child(_preview_viewport)
 	var bg := ColorRect.new()
 	bg.color = Color(0.08, 0.09, 0.12)
-	bg.size = Vector2(960, 540)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_preview_viewport.add_child(bg)
 	_preview = DialoguePresenter.new()
@@ -192,17 +222,86 @@ func _build() -> void:
 	replay.pressed.connect(_play_preview)
 	sample_row.add_child(replay)
 
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 160)
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(scroll)
+	var settings := VBoxContainer.new()
+	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	settings.add_theme_constant_override("separation", 6)
+	body.add_child(settings)
+	_settings_box = settings
+
+	var settings_header := HBoxContainer.new()
+	settings.add_child(settings_header)
+	var settings_title := Label.new()
+	settings_title.text = L10n.ui("theme.settings")
+	settings_title.add_theme_font_size_override("font_size", 12)
+	settings_title.add_theme_color_override("font_color", Color(0.7, 0.74, 0.82))
+	settings_header.add_child(settings_title)
+	_section_jump = OptionButton.new()
+	_section_jump.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_section_jump.item_selected.connect(_on_section_jump)
+	settings_header.add_child(_section_jump)
+
+	_settings_scroll = ScrollContainer.new()
+	_settings_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_settings_scroll.custom_minimum_size = Vector2(360, 0)
+	_settings_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_settings_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	settings.add_child(_settings_scroll)
 	_controls_box = VBoxContainer.new()
 	_controls_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_controls_box.add_theme_constant_override("separation", 3)
-	scroll.add_child(_controls_box)
+	_settings_scroll.add_child(_controls_box)
 
+	resized.connect(_update_responsive_layout)
+	call_deferred("_update_responsive_layout")
+	call_deferred("_sync_preview_size")
 	_build_controls()
 	_play_preview.call_deferred()
+
+## 宽窗口左右分栏，窄窗口上下排列；避免固定 480px 预览把参数区挤成三行。
+func _update_responsive_layout() -> void:
+	if _body == null:
+		return
+	var available := get_parent_area_size().x
+	if available <= 1.0:
+		available = size.x
+	var side_by_side := available >= 720.0
+	if _body.vertical == side_by_side:
+		_body.vertical = not side_by_side
+	if side_by_side:
+		_preview_side.custom_minimum_size = Vector2(340, 0)
+		_preview_side.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		_settings_scroll.custom_minimum_size = Vector2(320, 0)
+		if _settings_box != null:
+			_settings_box.custom_minimum_size = Vector2(340, 0)
+	else:
+		_preview_side.custom_minimum_size = Vector2(0, 300)
+		_preview_side.size_flags_vertical = Control.SIZE_FILL
+		_settings_scroll.custom_minimum_size = Vector2(0, 220)
+		if _settings_box != null:
+			_settings_box.custom_minimum_size = Vector2(0, 0)
+	call_deferred("_sync_preview_size")
+
+## 预览 SubViewport 跟随真实容器尺寸，避免固定 960×540 被拉伸成灰边/错比例。
+func _sync_preview_size() -> void:
+	if _preview_container == null or _preview_viewport == null:
+		return
+	var container_size := _preview_container.size
+	if container_size.x < 1.0 or container_size.y < 1.0:
+		return
+	var target := Vector2i(maxi(1, int(container_size.x)), maxi(1, int(container_size.y)))
+	if target == _last_preview_size:
+		return
+	_last_preview_size = target
+	if container_size.x > 2.0 and container_size.y > 2.0:
+		_preview_viewport.size = target
+	if _preview != null and is_instance_valid(_preview):
+		_preview.call("_schedule_height_update")
+
+func _on_section_jump(index: int) -> void:
+	if index < 0 or index >= _section_anchors.size():
+		return
+	_settings_scroll.ensure_control_visible(_section_anchors[index])
 
 func _build_custom_mode() -> void:
 	var panel := PanelContainer.new()
@@ -271,17 +370,29 @@ func _build_controls() -> void:
 	for child in _controls_box.get_children():
 		_controls_box.remove_child(child)
 		child.queue_free()
-	for section in SECTIONS:
+	_section_anchors.clear()
+	if _section_jump != null:
+		_section_jump.clear()
+	for section_index in SECTIONS.size():
+		var section: Dictionary = SECTIONS[section_index]
+		if section_index > 0:
+			_controls_box.add_child(HSeparator.new())
+		var section_box := VBoxContainer.new()
+		section_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		section_box.add_theme_constant_override("separation", 2)
+		_controls_box.add_child(section_box)
 		var heading := Label.new()
 		heading.text = L10n.ui(str(section.get("title", "")))
 		heading.add_theme_font_size_override("font_size", 13)
 		heading.add_theme_color_override("font_color", Color(0.78, 0.84, 0.92))
-		var spacing := Control.new()
-		spacing.custom_minimum_size = Vector2(0, 4)
-		_controls_box.add_child(spacing)
-		_controls_box.add_child(heading)
+		section_box.add_child(heading)
 		for field in section.get("fields", []):
-			_controls_box.add_child(_make_field(field))
+			section_box.add_child(_make_field(field))
+		_section_anchors.append(section_box)
+		if _section_jump != null:
+			_section_jump.add_item(heading.text, section_index)
+	if _section_jump != null and _section_jump.item_count > 0:
+		_section_jump.select(0)
 	_loading = false
 
 func _make_field(field: Dictionary) -> Control:

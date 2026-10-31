@@ -22,6 +22,7 @@ var _new_button: Button
 var _state_library_button: Button
 var _check_button: Button
 var _layout_button: MenuButton
+var _fit_button: Button
 var _group_button: MenuButton
 var _highlight_check: CheckButton
 var _check_label: Label
@@ -29,6 +30,8 @@ var _graph_edit: GraphEdit
 var _params_box: VBoxContainer
 var _status_label: Label
 var _empty_hint: Label
+var _split: HSplitContainer
+var _fit_retries := 0
 
 var _check_panel: PanelContainer
 var _check_tree: Tree
@@ -90,6 +93,7 @@ func open_graph(graph: LevelGraph) -> void:
 	_title_label.text = "%s　[%s]" % [String(graph.graph_id), String(graph.level_id)]
 	_show_status()
 	_validate_graph()
+	call_deferred("fit_view")
 
 func current_graph() -> LevelGraph:
 	return _graph
@@ -99,13 +103,17 @@ func current_graph() -> LevelGraph:
 func _build_ui() -> void:
 	add_theme_constant_override("separation", 6)
 
-	var toolbar := HBoxContainer.new()
-	toolbar.add_theme_constant_override("separation", 6)
+	# 工具栏用流式布局：窗口变窄时按钮换行，而不是把整个主屏撑到 1371px。
+	var toolbar := HFlowContainer.new()
+	toolbar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toolbar.add_theme_constant_override("h_separation", 6)
+	toolbar.add_theme_constant_override("v_separation", 4)
 	add_child(toolbar)
 
 	_title_label = Label.new()
 	_title_label.text = L10n.ui("graph.title")
-	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_title_label.custom_minimum_size = Vector2(120, 0)
+	_title_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_title_label.add_theme_font_size_override("font_size", 15)
 	toolbar.add_child(_title_label)
 
@@ -138,6 +146,12 @@ func _build_ui() -> void:
 	_layout_button.tooltip_text = L10n.ui("graph.layout.tip")
 	toolbar.add_child(_layout_button)
 
+	_fit_button = Button.new()
+	_fit_button.text = L10n.ui("graph.fit")
+	_fit_button.tooltip_text = L10n.ui("graph.fit.tip")
+	_fit_button.pressed.connect(fit_view)
+	toolbar.add_child(_fit_button)
+
 	_group_button = MenuButton.new()
 	_group_button.text = L10n.ui("graph.group")
 	_group_button.tooltip_text = L10n.ui("graph.group.tip")
@@ -167,6 +181,9 @@ func _build_ui() -> void:
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	split.split_offset = 900
 	add_child(split)
+	_split = split
+	resized.connect(_update_split_bounds)
+	call_deferred("_update_split_bounds")
 
 	var canvas := Control.new()
 	canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -179,6 +196,8 @@ func _build_ui() -> void:
 	_graph_edit.right_disconnects = true
 	_graph_edit.show_grid = true
 	_graph_edit.minimap_enabled = true
+	_graph_edit.minimap_size = Vector2(160, 110)
+	_graph_edit.minimap_opacity = 0.65
 	_graph_edit.connection_lines_curvature = 0.4
 	_graph_edit.connection_request.connect(_on_connection_request)
 	_graph_edit.disconnection_request.connect(_on_disconnection_request)
@@ -234,6 +253,58 @@ func _build_ui() -> void:
 	_rebuild_add_menu()
 	_rebuild_layout_menu()
 	_rebuild_group_menu()
+
+## 画布与参数栏的比例随窗口宽度调整：小窗口保证画布至少 560px，
+## 参数栏保持 320px 可用宽度，不会被固定 split_offset=900 挤扁。
+func _update_split_bounds() -> void:
+	if _split == null or size.x <= 0.0:
+		return
+	_split.split_offset = maxf(560.0, size.x - 320.0)
+
+## 缩放到能看见全部节点与分组框；打开图时自动调用，也可点工具栏「适配」。
+func fit_view() -> void:
+	_fit_retries = 0
+	_apply_fit_view()
+
+func _apply_fit_view() -> void:
+	if _graph == null or _graph_edit == null or _node_views.is_empty():
+		return
+	var canvas := _graph_edit.size
+	if canvas.x <= 40.0 or canvas.y <= 40.0:
+		if _fit_retries < 3:
+			_fit_retries += 1
+			call_deferred("_apply_fit_view")
+		return
+	var bounds := Rect2()
+	var has_bounds := false
+	for node in _graph.nodes:
+		if node == null:
+			continue
+		var view: GraphNode = _node_views.get(node.node_id, null)
+		if view == null:
+			continue
+		var rect := Rect2(view.position_offset, view.size)
+		bounds = rect if not has_bounds else bounds.merge(rect)
+		has_bounds = true
+	for group in _graph.groups:
+		if group == null:
+			continue
+		var frame: GraphFrame = _frame_views.get(group.group_id, null)
+		if frame == null:
+			continue
+		var frame_rect := Rect2(frame.position_offset, frame.size)
+		bounds = frame_rect if not has_bounds else bounds.merge(frame_rect)
+		has_bounds = true
+	if not has_bounds:
+		return
+	var margin := 56.0
+	var zoom := minf(
+		(canvas.x - margin * 2.0) / maxf(bounds.size.x, 1.0),
+		(canvas.y - margin * 2.0) / maxf(bounds.size.y, 1.0),
+	)
+	zoom = clampf(zoom, 0.55, 1.0)
+	_graph_edit.zoom = zoom
+	_graph_edit.scroll_offset = bounds.get_center() * zoom - canvas * 0.5
 
 ## 检查结果面板（默认收起，点工具栏「检查」展开）。
 func _build_check_panel() -> void:
@@ -364,15 +435,30 @@ func _rebuild_view() -> void:
 func _make_node_view(node: LevelNode) -> GraphNode:
 	var view := GraphNode.new()
 	view.name = String(node.node_id)
-	view.title = L10n.ui("graph.node." + node.type)
+	var type_cn := L10n.ui("graph.node." + node.type)
+	var custom_title := node.title.strip_edges()
+	# 用户给节点起的标题优先；没起标题时才用类型名，避免自定义标题被类型名覆盖。
+	view.title = custom_title if custom_title != "" else type_cn
 	view.position_offset = node.position
-	view.custom_minimum_size = Vector2(200, 0)
+	view.custom_minimum_size = Vector2(220, 0)
 	view.add_theme_font_size_override("title_font_size", 13)
+	view.tooltip_text = "%s · %s\n%s" % [type_cn, String(node.node_id), _summary_of(node)]
+
+	if custom_title != "":
+		var type_label := Label.new()
+		type_label.text = type_cn
+		type_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
+		type_label.add_theme_color_override("font_color", _node_color(node.type))
+		view.add_child(type_label)
 
 	var summary := Label.new()
 	summary.text = _summary_of(node)
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.custom_minimum_size = Vector2(200, 0)
+	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	summary.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	summary.add_theme_color_override("font_color", Color(0.78, 0.80, 0.86))
+	summary.tooltip_text = view.tooltip_text
 	view.add_child(summary)
 
 	var has_output := node.type != "end"
@@ -392,6 +478,25 @@ func _make_node_view(node: LevelNode) -> GraphNode:
 	_graph_edit.add_child(view)
 	_apply_marker(node)
 	return view
+
+## 节点类型色：自定义标题只显示类型文字，颜色仍能帮助快速区分节点。
+func _node_color(node_type: String) -> Color:
+	match node_type:
+		"start":
+			return Color(0.48, 0.78, 1.0)
+		"stage":
+			return Color(0.95, 0.78, 0.42)
+		"condition":
+			return Color(0.98, 0.64, 0.44)
+		"action":
+			return Color(0.56, 0.86, 0.62)
+		"event":
+			return Color(0.80, 0.68, 0.98)
+		"merge_and", "merge_or":
+			return Color(0.48, 0.84, 0.86)
+		"end":
+			return Color(0.94, 0.56, 0.56)
+	return Color(0.78, 0.80, 0.86)
 
 func _make_frame_view(group: LevelGroup) -> GraphFrame:
 	var view := GraphFrame.new()

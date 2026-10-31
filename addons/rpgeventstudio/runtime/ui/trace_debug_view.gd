@@ -260,19 +260,21 @@ func _update_status() -> void:
 func _update_current() -> void:
 	var records := _trace.records()
 	var current := ""
+	var raw := _raw_mode()
 	for index in range(records.size() - 1, -1, -1):
 		var record: Dictionary = records[index]
 		var kind := str(record.get("kind", ""))
 		if kind == "event_start":
+			var event_text := _raw_event_id(record) if raw else RuntimeDisplayNames.event_label(
+				str(record.get("event_name", "")), str(record.get("event_id", "")))
 			current = L10n.game("trace.current_event", {
-				"event": RuntimeDisplayNames.event_label(
-					str(record.get("event_name", "")), str(record.get("event_id", ""))),
+				"event": event_text,
 				"page": int(record.get("page_index", 0)) + 1,
 			})
 			break
 		if kind == "event_end":
 			current = L10n.game("trace.current_finished", {
-				"event": _event_name_for(int(record.get("trace_id", 0))),
+				"event": _raw_event_id(record) if raw else _event_name_for(int(record.get("trace_id", 0))),
 			})
 			break
 	if current == "":
@@ -323,7 +325,102 @@ func _node_label(record: Dictionary, node_id: String) -> String:
 func _raw_mode() -> bool:
 	return _detail_mode != null and int(_detail_mode.get_item_id(_detail_mode.selected)) == 1
 
+## 专业视图摘要：只翻译模板文字，变量一律使用原始 ID / 原始枚举。
+## 这样「自然语言」和「原始 JSON」两种模式的边界是可验证的：
+## 切到专业视图后，true/false、out、and/or、stage id、状态键、节点 ID 都不再被替换成中文。
+func _raw_summary(record: Dictionary) -> String:
+	match str(record.get("kind", "")):
+		"event_start":
+			return L10n.game("trace.summary.event_start", {
+				"name": _raw_event_id(record),
+			})
+		"event_end":
+			return L10n.game("trace.summary.event_end", {
+				"event": _raw_event_id(record),
+				"result": str(record.get("result", "")),
+			})
+		"event_rejected":
+			return L10n.game("trace.summary.event_rejected", {
+				"name": _raw_event_id(record),
+			})
+		"event_ignored":
+			return L10n.game("trace.summary.event_ignored", {
+				"name": _raw_event_id(record),
+				"reason": str(record.get("reason", "")),
+			})
+		"page":
+			return L10n.game("trace.summary.page", {
+				"page": int(record.get("page_index", 0)) + 1,
+				"trigger": str(record.get("trigger", "")),
+				"state": _raw_bool(record.get("selected", false)),
+			})
+		"command_start":
+			return L10n.game("trace.summary.command_start", {
+				"command": str(record.get("command_type", "")),
+			})
+		"command_end":
+			return L10n.game("trace.summary.command_end", {
+				"command": str(record.get("command_type", "")),
+			})
+		"condition":
+			return L10n.game("trace.summary.condition", {
+				"key": str(record.get("key", "")),
+				"actual": _raw_text(record.get("actual", null)),
+				"branch": str(record.get("branch", "")),
+			})
+		"state":
+			return L10n.game("trace.summary.state", {
+				"name": str(record.get("key", "")),
+				"old": _raw_text(record.get("old", null)),
+				"new": _raw_text(record.get("new", null)),
+			})
+		"call":
+			return L10n.game("trace.summary.call", {
+				"phase": str(record.get("phase", "")),
+				"target": str(record.get("target", "")),
+			})
+		"graph_node":
+			return L10n.game("trace.summary.graph_node", {
+				"graph": str(record.get("graph_id", "")),
+				"node": str(record.get("node_id", "")),
+				"phase": str(record.get("phase", "")),
+			})
+		"graph_branch":
+			return L10n.game("trace.summary.graph_branch", {
+				"node": str(record.get("node_id", "")),
+				"port": str(record.get("port", "")),
+				"to": str(record.get("to_node", "")),
+			})
+		"graph_merge":
+			return L10n.game("trace.summary.graph_merge", {
+				"node": str(record.get("node_id", "")),
+				"mode": str(record.get("mode", "")),
+				"count": int(record.get("count", 0)),
+				"required": int(record.get("required", 0)),
+			})
+	return str(record.get("kind", ""))
+
+## 专业视图里的事件标识：优先原始 event_id，没有就退回 trace 编号。
+func _raw_event_id(record: Dictionary) -> String:
+	var event_id := str(record.get("event_id", ""))
+	if event_id != "":
+		return event_id
+	return "#%d" % int(record.get("trace_id", 0))
+
+## 专业视图的标量显示：布尔保留 JSON 形式，null 明确写 null。
+func _raw_text(value: Variant) -> String:
+	if value == null:
+		return "null"
+	if value is bool:
+		return "true" if value else "false"
+	return str(value)
+
+func _raw_bool(value: Variant) -> String:
+	return "true" if bool(value) else "false"
+
 func _summary(record: Dictionary) -> String:
+	if _raw_mode():
+		return _raw_summary(record)
 	match str(record.get("kind", "")):
 		"event_start":
 			return L10n.game("trace.summary.event_start", {
@@ -432,6 +529,8 @@ func _result_text_for(record: Dictionary) -> String:
 	return _result_label(raw)
 
 func _result_text(record: Dictionary) -> String:
+	if _raw_mode():
+		return _raw_result_text(record)
 	match str(record.get("kind", "")):
 		"event_end", "command_end":
 			return _result_text_for(record)
@@ -441,6 +540,19 @@ func _result_text(record: Dictionary) -> String:
 		return L10n.game("trace.true" if bool(record.get("matched", false)) else "trace.false")
 	if record.has("fired"):
 		return L10n.game("trace.fired" if bool(record.get("fired", false)) else "trace.waiting")
+	return ""
+
+## 专业视图结果列：事件/指令结果保留原始枚举，布尔字段保留 true/false。
+func _raw_result_text(record: Dictionary) -> String:
+	match str(record.get("kind", "")):
+		"event_end", "command_end":
+			return str(record.get("result", ""))
+	if record.has("selected"):
+		return _raw_bool(record.get("selected", false))
+	if record.has("matched"):
+		return _raw_bool(record.get("matched", false))
+	if record.has("fired"):
+		return _raw_bool(record.get("fired", false))
 	return ""
 
 # ── 详情 / 定位 / 导出 ──────────────────────────────────

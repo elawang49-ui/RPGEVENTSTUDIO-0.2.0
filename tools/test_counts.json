@@ -12,12 +12,13 @@
     "interaction_test": 19,
     "node_ref_test": 12,
     "runtime_trace_test": 63,
-    "trace_ui_test": 14
+    "trace_ui_test": 21,
+    "dialogue_layout_test": 11
   },
   "editor": {
     "editor": 19,
-    "map": 50,
-    "gvl": 59,
+    "map": 51,
+    "gvl": 64,
     "story": 20,
     "audit": 14,
     "trace": 8

@@ -35,6 +35,7 @@ func start(_plugin: EditorPlugin, _main_screen: Control) -> void:
 	await get_tree().process_frame
 
 	_test_sample_has_no_errors()
+	await _test_toolbar_and_node_title()
 	await _test_validation_panel_and_locate()
 	await _test_save_guard()
 	await _test_groups_and_undo()
@@ -46,6 +47,25 @@ func start(_plugin: EditorPlugin, _main_screen: Control) -> void:
 	_finish()
 
 # ── 校验 ─────────────────────────────────────────────────
+
+func _test_toolbar_and_node_title() -> void:
+	var fit: Button = _panel.get("_fit_button")
+	_check(fit != null and fit.text == L10n.ui("graph.fit"), "工具栏有「适配」视图按钮")
+	_check(_panel.get_child(0) is HFlowContainer, "工具栏使用流式布局，窄窗口可换行")
+	var probe := LevelNode.new()
+	probe.node_id = &"probe_title"
+	probe.type = "action"
+	probe.title = "自定义标题"
+	var view: GraphNode = _panel.call("_make_node_view", probe)
+	_check(view != null and view.title == "自定义标题", "节点卡片优先显示自定义标题")
+	if view != null:
+		var labels: Dictionary = _panel.get("_summary_labels")
+		_check(labels.has(probe.node_id), "自定义标题节点仍有摘要标签")
+		view.queue_free()
+	_panel.call("fit_view")
+	await get_tree().process_frame
+	var zoom: float = _panel.get("_graph_edit").zoom
+	_check(zoom > 0.0 and zoom <= 1.0, "适配视图后的缩放有效（%.2f）" % zoom)
 
 func _test_sample_has_no_errors() -> void:
 	var issues: Array = _panel.get("_issues")

@@ -97,7 +97,10 @@ func _build_ui() -> void:
 	_text_label = RichTextLabel.new()
 	_text_label.bbcode_enabled = true
 	_text_label.fit_content = false
+	# 滚动在 _update_heights 里按内容高度按需开启：短文本不显示滚动条，
+	# 超长文本必须能滚动，否则 1152×648 下正文会被从行中间裁掉。
 	_text_label.scroll_active = false
+	_text_label.scroll_following = false
 	_text_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_column.add_child(_text_label)
 
@@ -209,6 +212,8 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	_name_label.visible = speaker.strip_edges() != ""
 	_text_label.text = text
 	_text_label.visible_characters = 0
+	if _text_label.scroll_active:
+		_text_label.scroll_to_line(0)
 	_hint_label.visible = false
 	last_parsed_text = _text_label.get_parsed_text()
 	last_bbcode_issues = Bbcode.analyze(text)
@@ -343,14 +348,22 @@ func _update_heights() -> void:
 		_height_retries += 1
 		call_deferred("_update_heights")
 		return
-	# 对话框：正文高度夹在 [text_min_height, 可用高度] 之间；
-	# 超长正文在这里截断为滚动，不会把面板顶出屏幕。
+	# 对话框：正文高度夹在 [可用高度下限, 可用高度] 之间。
+	# 窗口太矮时连 text_min_height 都放不下，此时优先保证面板不出屏；
+	# 内容仍超过可见高度时开启滚动，不能把正文裁掉。
 	var text_content := float(_text_label.get_content_height())
 	var reserved := float(_margin.get_theme_constant("margin_top")) + float(_margin.get_theme_constant("margin_bottom")) \
 		+ _name_label.get_combined_minimum_size().y + _hint_label.get_combined_minimum_size().y \
 		+ 2.0 * float(_column.get_theme_constant("separation"))
-	var panel_max := maxf(style.text_min_height, viewport_size.y * (style.panel_bottom - style.panel_top) - reserved)
-	_text_label.custom_minimum_size = Vector2(0, clampf(text_content, style.text_min_height, panel_max))
+	var panel_room := maxf(1.0, viewport_size.y * (style.panel_bottom - style.panel_top) - reserved)
+	var text_min := minf(style.text_min_height, panel_room)
+	var panel_max := maxf(text_min, panel_room)
+	_text_label.custom_minimum_size = Vector2(0, clampf(text_content, text_min, panel_max))
+	var needs_scroll := text_content > panel_max + 0.5
+	if _text_label.scroll_active != needs_scroll:
+		_text_label.scroll_active = needs_scroll
+		if needs_scroll:
+			_text_label.scroll_to_line(0)
 	# 选项面板：高度贴合选项数量；窗口过矮且选项过多时出现滚动。
 	var choice_content := _choices_box.get_combined_minimum_size().y
 	var choice_reserved := 2.0 * float(style.choice_margin)
