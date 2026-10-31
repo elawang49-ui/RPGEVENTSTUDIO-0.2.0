@@ -20,6 +20,7 @@ const AUTOLOAD_NAME := "RPGEventStudio"
 const EDITOR_LANGUAGE_SETTING := "rpg_event_studio/editor_language"
 
 var _panel: Control
+var _panel_scroll: ScrollContainer
 var _main_tabs: TabContainer
 var _main_screen: Control
 var _theme_view: Control
@@ -39,7 +40,6 @@ func _enter_tree() -> void:
 	_create_dock()
 	_create_main_screen()
 	_create_list_dock()
-	_create_map_dock()
 	_create_debugger()
 	_connect_selection()
 
@@ -65,15 +65,20 @@ func _enter_tree() -> void:
 		_start_audit_selftest.call_deferred()
 	if OS.get_environment("RPGEVENTSTUDIO_TRACE_SELFTEST") == "1":
 		_start_trace_selftest.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_MAIN_TAB_SHOT") == "1":
+		_capture_main_tab_screen.call_deferred()
+	if OS.get_environment("RPGEVENTSTUDIO_DOCK_SHOT") == "1":
+		_capture_dock_screen.call_deferred()
 
 func _exit_tree() -> void:
 	if _selection != null and _selection.selection_changed.is_connected(_on_selection_changed):
 		_selection.selection_changed.disconnect(_on_selection_changed)
 	_selection = null
 
-	if _panel != null:
-		remove_control_from_docks(_panel)
-		_panel.queue_free()
+	if _panel_scroll != null:
+		remove_control_from_docks(_panel_scroll)
+		_panel_scroll.queue_free()
+		_panel_scroll = null
 		_panel = null
 
 	if _main_tabs != null:
@@ -84,6 +89,7 @@ func _exit_tree() -> void:
 	_story_view = null
 	_audit_view = null
 	_map_view = null
+	_map_panel = null
 
 	if _filesystem != null and _filesystem.filesystem_changed.is_connected(_on_filesystem_changed):
 		_filesystem.filesystem_changed.disconnect(_on_filesystem_changed)
@@ -93,11 +99,6 @@ func _exit_tree() -> void:
 		remove_control_from_docks(_list_panel)
 		_list_panel.queue_free()
 		_list_panel = null
-
-	if _map_panel != null:
-		remove_control_from_docks(_map_panel)
-		_map_panel.queue_free()
-		_map_panel = null
 
 	if _debugger_plugin != null:
 		remove_debugger_plugin(_debugger_plugin)
@@ -115,7 +116,16 @@ func _create_dock() -> void:
 	_panel = script.new()
 	_panel.name = L10n.ui("editor.title")
 	_panel.call("bind_plugin", self)
-	add_control_to_dock(DOCK_SLOT_RIGHT_UL, _panel)
+	# 事件编辑器内容很高；直接放进 Dock 会把整条右侧栏撑到 2000+，
+	# 进而把主屏（关卡图/主题/剧情/审计）也按超高画布布局。外层滚动切断这个最小高度。
+	_panel_scroll = ScrollContainer.new()
+	_panel_scroll.name = L10n.ui("editor.title")
+	_panel_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_panel_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_panel_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_panel_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_panel_scroll.add_child(_panel)
+	add_control_to_dock(DOCK_SLOT_RIGHT_UL, _panel_scroll)
 
 # ── 事件列表 ─────────────────────────────────────────────
 
@@ -128,7 +138,7 @@ func _create_list_dock() -> void:
 	_list_panel.name = L10n.ui("eventlist.title")
 	_list_panel.event_activated.connect(_open_event)
 	_list_panel.graph_activated.connect(_open_graph)
-	add_control_to_dock(DOCK_SLOT_RIGHT_BL, _list_panel)
+	add_control_to_dock(DOCK_SLOT_RIGHT_UL, _list_panel)
 
 	_filesystem = EditorInterface.get_resource_filesystem()
 	if _filesystem != null and not _filesystem.filesystem_changed.is_connected(_on_filesystem_changed):
@@ -136,23 +146,7 @@ func _create_list_dock() -> void:
 
 # ── 地图事件 ─────────────────────────────────────────────
 
-func _create_map_dock() -> void:
-	var script := load(MAP_SCRIPT)
-	if script == null:
-		push_error("[RPGEventStudio] 找不到地图事件面板脚本")
-		return
-	_map_panel = script.new()
-	_map_panel.name = L10n.ui("map.title")
-	_map_panel.custom_minimum_size = Vector2(300, 0)
-	_map_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_map_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_map_panel.event_activated.connect(_open_event)
-	_map_panel.place_requested.connect(_on_place_map_event)
-	add_control_to_dock(DOCK_SLOT_RIGHT_UR, _map_panel)
-
 func refresh_map_events() -> void:
-	if _map_panel != null:
-		_map_panel.call("refresh")
 	if _map_view != null:
 		_map_view.call("refresh")
 
@@ -406,6 +400,8 @@ func _create_main_screen() -> void:
 		_map_view.place_requested.connect(_on_place_map_event)
 		_main_tabs.add_child(_map_view)
 		_main_tabs.set_tab_title(4, L10n.ui("map.title"))
+		# 兼容旧测试/截图钩子：地图事件只有一个真实实例（主屏页），不再占独立 Dock。
+		_map_panel = _map_view
 	else:
 		push_error("[RPGEventStudio] 找不到地图事件面板脚本")
 	_make_visible(false)
@@ -448,8 +444,6 @@ func _on_selection_changed() -> void:
 		_panel.call("open_from_selection", nodes)
 	if _main_screen != null:
 		_main_screen.call("open_from_selection", nodes)
-	if _map_panel != null:
-		_map_panel.call("on_selection_changed", nodes)
 	if _map_view != null:
 		_map_view.call("on_selection_changed", nodes)
 	if _story_view != null and _main_tabs != null and _main_tabs.current_tab == 2:
@@ -504,6 +498,38 @@ func _shot_target_size() -> Vector2i:
 		return Vector2i.ZERO
 	return Vector2i(int(parts[0]), int(parts[1]))
 
+## 截图钩子：直接触发编辑器顶栏的主屏按钮。
+## set_main_screen_editor() 在部分编辑器布局下对插件名不生效，但按钮本身可用。
+func _focus_main_screen() -> void:
+	var base := EditorInterface.get_base_control()
+	if base == null:
+		return
+	for node in base.find_children("*", "Button", true, false):
+		var button := node as Button
+		if button == null or button.text != L10n.ui("graph.title"):
+			continue
+		var viewport := button.get_viewport()
+		var pos := button.get_global_rect().get_center()
+		var motion := InputEventMouseMotion.new()
+		motion.position = pos
+		motion.global_position = pos
+		viewport.push_input(motion)
+		var down := InputEventMouseButton.new()
+		down.button_index = MOUSE_BUTTON_LEFT
+		down.pressed = true
+		down.position = pos
+		down.global_position = pos
+		viewport.push_input(down)
+		await get_tree().process_frame
+		var up := InputEventMouseButton.new()
+		up.button_index = MOUSE_BUTTON_LEFT
+		up.pressed = false
+		up.position = pos
+		up.global_position = pos
+		viewport.push_input(up)
+		await get_tree().process_frame
+		return
+
 func _apply_shot_window_size() -> void:
 	var target := _shot_target_size()
 	if target.x <= 0 or target.y <= 0:
@@ -513,6 +539,13 @@ func _apply_shot_window_size() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 	DisplayServer.window_set_position(Vector2i(0, 0))
 	DisplayServer.window_set_size(target)
+
+## 编辑器加载布局后会把窗口恢复到屏幕尺寸；截图前再强制一次目标尺寸。
+func _enforce_shot_size() -> void:
+	_apply_shot_window_size()
+	await get_tree().create_timer(0.5).timeout
+	_apply_shot_window_size()
+	await get_tree().create_timer(0.3).timeout
 
 func _save_shot(path: String, image: Image) -> void:
 	if image == null:
@@ -535,6 +568,7 @@ func _capture_graph_screen() -> void:
 	_apply_shot_window_size()
 	await get_tree().create_timer(3.0).timeout
 	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	await _focus_main_screen()
 	if _main_tabs != null:
 		_main_tabs.current_tab = 0
 	await get_tree().create_timer(0.5).timeout
@@ -556,6 +590,7 @@ func _capture_graph_screen() -> void:
 			await get_tree().create_timer(0.4).timeout
 			_capture_viewport("res://docs/images/graph_editor_running.png")
 	await get_tree().create_timer(0.8).timeout
+	await _enforce_shot_size()
 	var base := EditorInterface.get_base_control()
 	if base != null:
 		var image := base.get_viewport().get_texture().get_image()
@@ -580,12 +615,99 @@ func _start_map_selftest() -> void:
 	add_child(runner)
 	runner.call_deferred("start", self)
 
+## RC 验收：打开右侧 Dock（事件编辑器 / 事件列表）并截图。
+func _capture_dock_screen() -> void:
+	_apply_shot_window_size()
+	await get_tree().create_timer(6.0).timeout
+	EditorInterface.open_scene_from_path("res://addons/rpgeventstudio/samples/scenes/school_demo.tscn")
+	await get_tree().create_timer(1.5).timeout
+	EditorInterface.set_main_screen_editor("2D")
+	await get_tree().create_timer(0.6).timeout
+	var kind := OS.get_environment("DOCK_KIND").strip_edges()
+	if kind == "event":
+		var root := EditorInterface.get_edited_scene_root()
+		if root != null:
+			var interactor := root.get_node_or_null("Librarian/EventInteractor")
+			if interactor != null:
+				var selection := EditorInterface.get_selection()
+				selection.clear()
+				selection.add_node(interactor)
+		_select_dock_tab(L10n.ui("editor.title"))
+	else:
+		_select_dock_tab(L10n.ui("eventlist.title"))
+	await get_tree().create_timer(1.2).timeout
+	await _enforce_shot_size()
+	var base := EditorInterface.get_base_control()
+	if base != null:
+		var image := base.get_viewport().get_texture().get_image()
+		if image != null:
+			var path := OS.get_environment("DOCK_SHOT_PATH").strip_edges()
+			if path == "":
+				path = "user://dock_shot.png"
+			_save_shot(path, image)
+	get_tree().quit()
+
+## 在编辑器 Dock 的 TabBar/TabContainer 中按标题选中标签。
+func _select_dock_tab(title: String) -> void:
+	var base := EditorInterface.get_base_control()
+	if base == null:
+		return
+	for node in base.find_children("*", "TabBar", true, false):
+		var bar := node as TabBar
+		for i in bar.tab_count:
+			if bar.get_tab_title(i) == title:
+				bar.current_tab = i
+				return
+	for node in base.find_children("*", "TabContainer", true, false):
+		var tabs := node as TabContainer
+		for i in tabs.get_tab_count():
+			if tabs.get_tab_title(i) == title:
+				tabs.current_tab = i
+				return
+
+## RC 验收：打开主屏指定标签页并截图（0 关卡图 / 1 主题 / 2 剧情 / 3 审计 / 4 地图事件）。
+func _capture_main_tab_screen() -> void:
+	_apply_shot_window_size()
+	await get_tree().create_timer(6.0).timeout
+	EditorInterface.open_scene_from_path("res://addons/rpgeventstudio/samples/scenes/school_demo.tscn")
+	await get_tree().create_timer(1.5).timeout
+	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	await _focus_main_screen()
+	await get_tree().create_timer(0.8).timeout
+	var tab := clampi(int(OS.get_environment("MAIN_TAB_INDEX")), 0, 4)
+	if _main_tabs != null:
+		_main_tabs.current_tab = tab
+	match tab:
+		0:
+			if _main_screen != null:
+				_main_screen.call("open_graph", load("res://addons/rpgeventstudio/samples/graphs/school_graph.tres"))
+		2:
+			if _story_view != null:
+				_story_view.call("open_definition", load("res://addons/rpgeventstudio/samples/events/librarian.tres"), null)
+		3:
+			if _audit_view != null:
+				_audit_view.call("_on_scan_pressed")
+		4:
+			if _map_view != null:
+				_map_view.call("refresh")
+	await get_tree().create_timer(1.8).timeout
+	await _enforce_shot_size()
+	var base := EditorInterface.get_base_control()
+	if base != null:
+		var image := base.get_viewport().get_texture().get_image()
+		if image != null:
+			var path := OS.get_environment("MAIN_TAB_SHOT_PATH").strip_edges()
+			if path == "":
+				path = "user://main_tab_shot.png"
+			_save_shot(path, image)
+	get_tree().quit()
+
 func _capture_theme_screen() -> void:
 	_apply_shot_window_size()
-	await get_tree().create_timer(4.0).timeout
+	await get_tree().create_timer(8.0).timeout
 	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	await _focus_main_screen()
 	await get_tree().create_timer(0.8).timeout
-	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
 	if _main_tabs != null:
 		_main_tabs.current_tab = 1
 		print("[SHOT] theme tab=", _main_tabs.current_tab, " visible=", _main_tabs.visible)
@@ -595,7 +717,8 @@ func _capture_theme_screen() -> void:
 			(sample as OptionButton).selected = 1
 			(sample as OptionButton).item_selected.emit(1)
 		_theme_view.call("_play_preview")
-	await get_tree().create_timer(1.5).timeout
+	await get_tree().create_timer(1.0).timeout
+	await _enforce_shot_size()
 	var base := EditorInterface.get_base_control()
 	if base != null:
 		var image := base.get_viewport().get_texture().get_image()
@@ -626,9 +749,11 @@ func _capture_map_screen() -> void:
 		_map_view.call("refresh")
 	if OS.get_environment("MAP_SHOT_TAB") == "1":
 		EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+		await _focus_main_screen()
 		if _main_tabs != null:
 			_main_tabs.current_tab = 4
 	await get_tree().create_timer(0.5).timeout
+	await _enforce_shot_size()
 	var base := EditorInterface.get_base_control()
 	if base != null:
 		var image := base.get_viewport().get_texture().get_image()
@@ -701,6 +826,7 @@ func _capture_gvl_screen() -> void:
 	_apply_shot_window_size()
 	await get_tree().create_timer(3.0).timeout
 	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
+	await _focus_main_screen()
 	if _main_tabs != null:
 		_main_tabs.current_tab = 0
 	await get_tree().create_timer(0.5).timeout
@@ -712,6 +838,7 @@ func _capture_gvl_screen() -> void:
 			if _main_screen.has_method("gvl_acceptance_setup"):
 				await _main_screen.call("gvl_acceptance_setup")
 			await get_tree().create_timer(0.6).timeout
+			await _enforce_shot_size()
 			_capture_viewport("res://docs/images/graph_editor_validation.png")
 	await get_tree().create_timer(0.8).timeout
 	get_tree().quit()
