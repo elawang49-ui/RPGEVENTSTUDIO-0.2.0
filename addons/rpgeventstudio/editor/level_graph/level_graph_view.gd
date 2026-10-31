@@ -328,13 +328,17 @@ func _apply_fit_view() -> void:
 	if not has_bounds:
 		return
 	var margin := 56.0
-	var zoom := minf(
+	var fit_zoom := minf(
 		(canvas.x - margin * 2.0) / maxf(bounds.size.x, 1.0),
 		(canvas.y - margin * 2.0) / maxf(bounds.size.y, 1.0),
 	)
-	zoom = clampf(zoom, 0.55, 1.0)
+	var zoom := clampf(fit_zoom, 0.7, 1.0)
 	_graph_edit.zoom = zoom
-	_graph_edit.scroll_offset = bounds.get_center() * zoom - canvas * 0.5
+	if zoom > fit_zoom + 0.001:
+		# 为保证文字可读性放大了最小缩放；此时从左上角开始显示，避免左侧节点被裁掉。
+		_graph_edit.scroll_offset = bounds.position * zoom - Vector2(28.0, 28.0)
+	else:
+		_graph_edit.scroll_offset = bounds.get_center() * zoom - canvas * 0.5
 
 ## 检查结果面板（默认收起，点工具栏「检查」展开）。
 func _build_check_panel() -> void:
@@ -471,7 +475,7 @@ func _make_node_view(node: LevelNode) -> GraphNode:
 	view.title = custom_title if custom_title != "" else type_cn
 	view.position_offset = node.position
 	view.custom_minimum_size = Vector2(220, 0)
-	view.add_theme_font_size_override("title_font_size", 13)
+	view.add_theme_font_size_override("title_font_size", 15)
 	view.tooltip_text = "%s · %s\n%s" % [type_cn, String(node.node_id), _summary_of(node)]
 
 	if custom_title != "":
@@ -486,7 +490,7 @@ func _make_node_view(node: LevelNode) -> GraphNode:
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.custom_minimum_size = Vector2(200, 0)
 	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	summary.add_theme_font_size_override("font_size", UiFonts.NOTE)
+	summary.add_theme_font_size_override("font_size", 13)
 	summary.add_theme_color_override("font_color", Color(0.78, 0.80, 0.86))
 	summary.tooltip_text = view.tooltip_text
 	view.add_child(summary)

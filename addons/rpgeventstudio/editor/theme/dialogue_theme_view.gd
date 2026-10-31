@@ -299,7 +299,7 @@ func _update_responsive_layout() -> void:
 			_settings_box.visible = not _preview_only
 		if _preview_only:
 			if _preview_panel != null:
-				_preview_panel.custom_minimum_size = Vector2(240, clampf(available_h - 90.0, 240.0, 620.0))
+				_preview_panel.custom_minimum_size = Vector2(240, clampf(available_h - 230.0, 240.0, 620.0))
 			_preview_side.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		else:
 			_settings_scroll.custom_minimum_size = Vector2(0, 220)
