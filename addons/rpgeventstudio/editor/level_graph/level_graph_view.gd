@@ -28,6 +28,10 @@ var _highlight_check: CheckButton
 var _check_label: Label
 var _graph_edit: GraphEdit
 var _params_box: VBoxContainer
+var _side: VBoxContainer
+var _params_toggle: Button
+var _params_visible := true
+var _params_initialized := false
 var _status_label: Label
 var _empty_hint: Label
 var _split: HSplitContainer
@@ -136,6 +140,17 @@ func _build_ui() -> void:
 	_delete_button.pressed.connect(_on_delete_selected)
 	toolbar.add_child(_delete_button)
 
+	_params_toggle = Button.new()
+	_params_toggle.text = L10n.ui("graph.params.toggle")
+	_params_toggle.tooltip_text = L10n.ui("graph.params.toggle.tip")
+	_params_toggle.toggle_mode = true
+	_params_toggle.button_pressed = true
+	_params_toggle.toggled.connect(func(pressed: bool) -> void:
+		_params_visible = pressed
+		_update_split_bounds()
+	)
+	toolbar.add_child(_params_toggle)
+
 	_check_button = Button.new()
 	_check_button.text = L10n.ui("graph.check")
 	_check_button.pressed.connect(_on_check_pressed)
@@ -222,6 +237,7 @@ func _build_ui() -> void:
 	side.custom_minimum_size = Vector2(320, 0)
 	side.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	split.add_child(side)
+	_side = side
 
 	var params_title := Label.new()
 	params_title.text = L10n.ui("graph.params")
@@ -259,7 +275,21 @@ func _build_ui() -> void:
 func _update_split_bounds() -> void:
 	if _split == null or size.x <= 0.0:
 		return
-	_split.split_offset = maxf(560.0, size.x - 320.0)
+	# 窄窗口默认收起参数栏，把宽度让给画布；用户可用「参数」按钮重新展开。
+	if not _params_initialized:
+		_params_initialized = true
+		_params_visible = size.x >= 700.0
+		if _params_toggle != null:
+			_params_toggle.set_pressed_no_signal(_params_visible)
+	if _side != null:
+		_side.visible = _params_visible
+	if _params_visible:
+		_split.split_offset = maxf(560.0, size.x - 320.0)
+	else:
+		_split.split_offset = int(size.x)
+	# 参数栏显示/隐藏会改变画布宽度，重新适配，避免节点被滚到视野外。
+	if _graph != null and not _loading:
+		call_deferred("_apply_fit_view")
 
 ## 缩放到能看见全部节点与分组框；打开图时自动调用，也可点工具栏「适配」。
 func fit_view() -> void:

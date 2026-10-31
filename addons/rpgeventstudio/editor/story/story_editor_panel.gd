@@ -26,6 +26,14 @@ var _building := false
 var _live_editing := false
 
 var _title_label: Label
+var _body_split: HSplitContainer
+var _roster_panel: Control
+var _preview_panel: Control
+var _panels_menu: MenuButton
+var _roster_visible := true
+var _preview_visible := true
+var _panels_user_set := false
+
 var _pages_box: HBoxContainer
 var _save_button: Button
 var _undo_button: Button
@@ -130,6 +138,17 @@ func _build_ui() -> void:
 	_save_button.pressed.connect(_on_save_pressed)
 	header.add_child(_save_button)
 
+	_panels_menu = MenuButton.new()
+	_panels_menu.text = L10n.ui("story.panels")
+	_panels_menu.tooltip_text = L10n.ui("story.panels.tip")
+	var panels_popup := _panels_menu.get_popup()
+	panels_popup.add_check_item(L10n.ui("story.panels.roster"), 0)
+	panels_popup.add_check_item(L10n.ui("story.panels.preview"), 1)
+	panels_popup.set_item_checked(0, true)
+	panels_popup.set_item_checked(1, true)
+	panels_popup.id_pressed.connect(_on_panels_menu)
+	header.add_child(_panels_menu)
+
 	_pages_box = HBoxContainer.new()
 	_pages_box.add_theme_constant_override("separation", 2)
 	add_child(_pages_box)
@@ -139,16 +158,19 @@ func _build_ui() -> void:
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.split_offset = -560
 	add_child(body)
+	_body_split = body
 
-	body.add_child(_build_roster_section())
+	_roster_panel = _build_roster_section()
+	body.add_child(_roster_panel)
 
 	var center := VBoxContainer.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	center.add_theme_constant_override("separation", 4)
 	body.add_child(center)
 
-	var insert_row := HBoxContainer.new()
-	insert_row.add_theme_constant_override("separation", 4)
+	var insert_row := HFlowContainer.new()
+	insert_row.add_theme_constant_override("h_separation", 4)
+	insert_row.add_theme_constant_override("v_separation", 4)
 	center.add_child(insert_row)
 	for entry in [
 		{"key": "line", "text_key": "story.insert.line"},
@@ -200,12 +222,57 @@ func _build_ui() -> void:
 	_editor_box.add_theme_constant_override("separation", 4)
 	editor_scroll.add_child(_editor_box)
 
-	body.add_child(_build_preview_section())
+	_preview_panel = _build_preview_section()
+	body.add_child(_preview_panel)
+
+	resized.connect(_update_responsive_panels)
+	call_deferred("_update_responsive_panels")
 
 	_status_label = Label.new()
 	_status_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_status_label)
+
+## 窄窗口默认收起角色/预览两栏，把宽度让给台词编辑；用户可从「面板」菜单重新打开。
+func _update_responsive_panels() -> void:
+	if size.x <= 1.0:
+		return
+	if not _panels_user_set:
+		var available := get_parent_area_size().x
+		if available <= 1.0:
+			available = size.x
+		var narrow := available < 860.0
+		_roster_visible = not narrow
+		_preview_visible = not narrow
+		if _panels_menu != null:
+			var popup := _panels_menu.get_popup()
+			popup.set_item_checked(0, _roster_visible)
+			popup.set_item_checked(1, _preview_visible)
+	if _roster_panel != null:
+		_roster_panel.visible = _roster_visible
+	if _preview_panel != null:
+		_preview_panel.visible = _preview_visible
+	if _body_split != null:
+		_body_split.split_offset = -560 if _preview_visible else 0
+
+func _on_panels_menu(id: int) -> void:
+	_panels_user_set = true
+	var popup := _panels_menu.get_popup()
+	var available := get_parent_area_size().x
+	if available <= 1.0:
+		available = size.x
+	var narrow := available < 860.0
+	if id == 0:
+		_roster_visible = not _roster_visible
+		if narrow and _roster_visible:
+			_preview_visible = false
+	if id == 1:
+		_preview_visible = not _preview_visible
+		if narrow and _preview_visible:
+			_roster_visible = false
+	popup.set_item_checked(0, _roster_visible)
+	popup.set_item_checked(1, _preview_visible)
+	_update_responsive_panels()
 
 func _build_roster_section() -> Control:
 	var panel := VBoxContainer.new()

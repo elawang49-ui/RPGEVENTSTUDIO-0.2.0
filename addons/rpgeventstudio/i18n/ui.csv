@@ -865,3 +865,11 @@ graph.fit.tip,缩放到能看见全部节点与分组框,Fit all nodes and group
 map.col.event,地图事件,Map event
 map.col.trigger,触发,Trigger
 theme.settings,参数,Settings
+graph.params.toggle,参数,Params
+graph.params.toggle.tip,显示或收起右侧节点参数栏,Show or hide the node parameters panel
+story.panels,面板,Panels
+story.panels.tip,显示或收起角色花名册/台词预览,Show or hide roster and preview
+story.panels.roster,角色花名册,Roster
+story.panels.preview,台词预览,Preview
+theme.preview.toggle,预览,Preview
+theme.preview.toggle.tip,在低高度窗口中切换预览/参数,Switch preview and settings in short windows

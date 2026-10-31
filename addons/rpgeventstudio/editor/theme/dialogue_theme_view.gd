@@ -83,6 +83,7 @@ var _theme: RpgEventStudioTheme
 var _preview: DialoguePresenter
 var _preview_viewport: SubViewport
 var _preview_container: SubViewportContainer
+var _preview_panel: PanelContainer
 var _preview_side: VBoxContainer
 var _body: BoxContainer
 var _settings_scroll: ScrollContainer
@@ -90,6 +91,8 @@ var _settings_box: VBoxContainer
 var _section_jump: OptionButton
 var _section_anchors: Array[Control] = []
 var _last_preview_size := Vector2i.ZERO
+var _preview_toggle: Button
+var _preview_only := false
 var _sample: OptionButton
 var _controls_box: VBoxContainer
 var _status: Label
@@ -146,6 +149,15 @@ func _build() -> void:
 	restore.text = L10n.ui("theme.restore")
 	restore.pressed.connect(_restore_defaults)
 	footer.add_child(restore)
+	_preview_toggle = Button.new()
+	_preview_toggle.text = L10n.ui("theme.preview.toggle")
+	_preview_toggle.tooltip_text = L10n.ui("theme.preview.toggle.tip")
+	_preview_toggle.toggle_mode = true
+	_preview_toggle.toggled.connect(func(pressed: bool) -> void:
+		_preview_only = pressed
+		_update_responsive_layout()
+	)
+	footer.add_child(_preview_toggle)
 	_status = Label.new()
 	_status.custom_minimum_size = Vector2(0, 0)
 	_status.clip_text = true
@@ -186,6 +198,7 @@ func _build() -> void:
 	preview_style.set_corner_radius_all(4)
 	preview_panel.add_theme_stylebox_override("panel", preview_style)
 	preview_side.add_child(preview_panel)
+	_preview_panel = preview_panel
 	var container := SubViewportContainer.new()
 	container.stretch = false
 	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -265,21 +278,52 @@ func _update_responsive_layout() -> void:
 	var available := get_parent_area_size().x
 	if available <= 1.0:
 		available = size.x
-	var side_by_side := available >= 720.0
+	var available_h := get_parent_area_size().y
+	if available_h <= 1.0:
+		available_h = size.y
+	var viewport_h := get_viewport_rect().size.y
+	if viewport_h > 1.0:
+		available_h = minf(available_h, viewport_h)
+	var preview_h := clampf(available_h - 280.0, 240.0, 480.0)
+	var compact := available_h < 700.0
+	var side_by_side := available >= 540.0
+	if _preview_toggle != null:
+		_preview_toggle.visible = compact
 	if _body.vertical == side_by_side:
 		_body.vertical = not side_by_side
-	if side_by_side:
-		_preview_side.custom_minimum_size = Vector2(340, 0)
-		_preview_side.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		_settings_scroll.custom_minimum_size = Vector2(320, 0)
+	if compact:
+		# 低高度下预览/参数二选一，避免两者都被压扁；按钮可切换。
+		if _preview_side != null:
+			_preview_side.visible = _preview_only
 		if _settings_box != null:
-			_settings_box.custom_minimum_size = Vector2(340, 0)
+			_settings_box.visible = not _preview_only
+		if _preview_only:
+			if _preview_panel != null:
+				_preview_panel.custom_minimum_size = Vector2(240, clampf(available_h - 90.0, 240.0, 620.0))
+			_preview_side.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		else:
+			_settings_scroll.custom_minimum_size = Vector2(0, 220)
 	else:
-		_preview_side.custom_minimum_size = Vector2(0, 300)
-		_preview_side.size_flags_vertical = Control.SIZE_FILL
-		_settings_scroll.custom_minimum_size = Vector2(0, 220)
+		if _preview_side != null:
+			_preview_side.visible = true
 		if _settings_box != null:
-			_settings_box.custom_minimum_size = Vector2(0, 0)
+			_settings_box.visible = true
+		if side_by_side:
+			_preview_side.custom_minimum_size = Vector2(260, 0)
+			_preview_side.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			_settings_scroll.custom_minimum_size = Vector2(240, 0)
+			if _settings_box != null:
+				_settings_box.custom_minimum_size = Vector2(260, 0)
+			if _preview_panel != null:
+				_preview_panel.custom_minimum_size = Vector2(240, preview_h)
+		else:
+			_preview_side.custom_minimum_size = Vector2(0, 300)
+			_preview_side.size_flags_vertical = Control.SIZE_FILL
+			_settings_scroll.custom_minimum_size = Vector2(0, 220)
+			if _settings_box != null:
+				_settings_box.custom_minimum_size = Vector2(0, 0)
+			if _preview_panel != null:
+				_preview_panel.custom_minimum_size = Vector2(320, 300)
 	call_deferred("_sync_preview_size")
 
 ## 预览 SubViewport 跟随真实容器尺寸，避免固定 960×540 被拉伸成灰边/错比例。
