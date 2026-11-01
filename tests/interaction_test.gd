@@ -99,12 +99,17 @@ func _test_no_target(drawer: Node) -> void:
 	_check(not _prompt_visible(drawer), "没有目标时提示应消失")
 
 func _test_mouse(librarian: Node) -> void:
-	# 无头模式下鼠标停在 (0,0)：把目标挪到原点附近，点击应触发；
-	# 目标在远处时同样点击不应触发。
+	# 屏幕坐标 → 世界坐标的往返必须对任意世界位都成立：
+	# 点在目标「屏幕位置」（用正确的正变换 canvas_transform * 世界位 构造）应触发；
+	# 点偏 400px 不应触发。原点场景保留作基线（历史实现只在原点凑巧成立）。
 	var librarian_node: Node2D = librarian
+	var camera: Camera2D = _scene.get_node("Camera")
 	var original := librarian_node.global_position
+
+	# 场景 1：目标在世界原点，点击原点的屏幕位置应触发
 	_move_player(Vector2(8, 0))
 	librarian_node.global_position = Vector2.ZERO
+	_settle_camera(camera, Vector2(8, 0))
 	await _frames(2)
 	_check(_manager.active == librarian, "原点处的对象应成为目标")
 
@@ -112,18 +117,36 @@ func _test_mouse(librarian: Node) -> void:
 	var click := InputEventMouseButton.new()
 	click.button_index = MOUSE_BUTTON_LEFT
 	click.pressed = true
-	click.position = librarian_node.get_global_transform_with_canvas() * librarian_node.global_position
+	click.position = librarian_node.get_viewport().get_canvas_transform() * librarian_node.global_position
 	_manager.call("_unhandled_input", click)
 	await _frames(2)
-	_check(_runtime.get("runner").active_count() > 0, "鼠标点在目标附近应触发交互")
+	_check(_runtime.get("runner").active_count() > 0, "鼠标点在目标的屏幕位置应触发交互（原点）")
 	_runtime.call("cancel_all", "测试")
 	await _wait_idle()
 
+	# 场景 2：目标在非原点世界位 (900,600)，点击它的屏幕位置同样应触发
 	librarian_node.global_position = Vector2(900, 600)
+	_move_player(Vector2(908, 600))
+	_settle_camera(camera, Vector2(908, 600))
 	await _frames(2)
+	_check(_manager.active == librarian, "非原点世界位的目标应成为当前目标")
+
+	await _wait_idle()
+	click.position = librarian_node.get_viewport().get_canvas_transform() * librarian_node.global_position
 	_manager.call("_unhandled_input", click)
 	await _frames(2)
-	_check(_runtime.get("runner").active_count() == 0, "目标不在鼠标位置时点击不应触发")
+	_check(_runtime.get("runner").active_count() > 0, "鼠标点在非原点目标的屏幕位置应触发交互")
+	_runtime.call("cancel_all", "测试")
+	await _wait_idle()
+
+	# 场景 3：同一目标位置，点击点在屏幕上偏离 400px——不应触发
+	var miss := InputEventMouseButton.new()
+	miss.button_index = MOUSE_BUTTON_LEFT
+	miss.pressed = true
+	miss.position = librarian_node.get_viewport().get_canvas_transform() * librarian_node.global_position + Vector2(400, 0)
+	_manager.call("_unhandled_input", miss)
+	await _frames(2)
+	_check(_runtime.get("runner").active_count() == 0, "点击点偏离目标 400px 时不应触发交互")
 
 	librarian_node.global_position = original
 	await process_frame
@@ -132,6 +155,12 @@ func _test_mouse(librarian: Node) -> void:
 
 func _move_player(target: Vector2) -> void:
 	_player.global_position = target
+
+func _settle_camera(camera: Camera2D, target: Vector2) -> void:
+	# 演示相机靠 lerp 平滑跟随，无头模式下收敛速度依赖真实 delta。
+	# 这里直接把相机对齐到跟随目标，等价于跟随收敛后的稳定画面，
+	# 保证被点击的世界点确实落在屏幕内、canvas_transform 可预测。
+	camera.global_position = target
 
 func _prompt_visible(interactor: Node) -> bool:
 	var prompt: Label = interactor.get("_prompt")

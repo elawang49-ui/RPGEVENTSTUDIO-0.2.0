@@ -73,7 +73,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		# 用事件自带的点击坐标（而不是全局鼠标位置），这样摄像头移动、注入事件时都正确
 		var click_position: Vector2 = (event as InputEventMouseButton).position
-		var world := active.get_global_transform_with_canvas().affine_inverse() * click_position
+		# 屏幕 → 世界：canvas_transform 把世界坐标画到屏幕上（含相机位移/缩放），
+		# 其逆变换把屏幕点还原为世界坐标，才能与 active.global_position（世界系）比距离。
+		# 不能用 get_global_transform_with_canvas().affine_inverse()：那是「节点局部 → 屏幕」
+		# 的逆，得到的是相对 active 的局部坐标，与世界坐标比距离维度就错了。
+		# 局限：get_canvas_transform() 只反映当前 viewport 主画布（相机）的变换；
+		# 若交互对象挂在带自身变换的 CanvasLayer 里，需按该层的变换另行换算，
+		# SubViewport 内的对象则由 get_viewport() 取到对应 viewport，天然正确。
+		var world := active.get_viewport().get_canvas_transform().affine_inverse() * click_position
 		if world.distance_to(active.global_position) > active.interaction_radius + 24.0:
 			return
 	_trigger_active()
