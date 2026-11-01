@@ -40,6 +40,7 @@ var _wait_deadline_ms: int = -1
 var _after_wait: Callable = Callable()
 var _logs: PackedStringArray = []
 var _cancel_hooks: Array = []
+var _active_children: Array = []   ## 运行中的嵌套 / 公共事件上下文：随父级一起取消
 
 # ── 状态读写 ─────────────────────────────────────────────
 
@@ -109,6 +110,13 @@ func on_cancel(hook: Callable) -> void:
 	if hook.is_valid():
 		_cancel_hooks.append(hook)
 
+## 嵌套 / 公共事件开始执行时登记，结束时注销（见 EventRunner._run_nested_event）。
+func _attach_child(child: EventContext) -> void:
+	_active_children.append(child)
+
+func _detach_child(child: EventContext) -> void:
+	_active_children.erase(child)
+
 func cancel(reason: String = "调用方取消") -> void:
 	if cancelled:
 		return
@@ -119,7 +127,13 @@ func cancel(reason: String = "调用方取消") -> void:
 		if hook.is_valid():
 			hook.call()
 	_cancel_hooks.clear()
-	if presenter != null and presenter.has_method("close_all"):
+	# 嵌套 / 公共事件有独立上下文，不在 EventRunner 的运行列表里：
+	# 父级取消时必须级联，否则子级会继续等下去，父级协程收不了尾。
+	for child in _active_children:
+		if child is EventContext and not child.cancelled:
+			child.cancel(reason)
+	_active_children.clear()
+	if presenter != null and is_instance_valid(presenter) and presenter.has_method("close_all"):
 		presenter.close_all()
 
 ## 统一的场景对象解析规则（详见 docs/16）：
