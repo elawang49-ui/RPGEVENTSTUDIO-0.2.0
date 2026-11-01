@@ -23,6 +23,8 @@ var _active: Dictionary = {}       ## event_id -> instance_id
 var _page_runs: Dictionary = {}    ## "event@page" -> {count, revision}
 var _next_instance_id: int = 1
 var _running_instances: Array = []
+## 当前监听离树信号的 Node 型展示层（切场景 / 释放时取消运行中的事件）。
+var _watched_presenter: Node = null
 
 # ── 启动 ─────────────────────────────────────────────────
 
@@ -93,6 +95,7 @@ func start(definition: EventDefinition, p_args: Dictionary = {}, trigger_filter:
 
 	_active[definition.event_id] = ctx.instance_id
 	_running_instances.append(ctx)
+	_watch_presenter(presenter)
 	_drive.call_deferred(ctx)
 
 func is_busy(event_id: StringName) -> bool:
@@ -105,6 +108,33 @@ func cancel_all(reason: String = "场景切换") -> void:
 	for ctx in _running_instances:
 		if ctx is EventContext and not ctx.cancelled:
 			ctx.cancel(reason)
+
+# ── 展示层生命周期 ───────────────────────────────────────
+## Node 型展示层可以被宿主挂在自己的场景树里（set_presenter 不重复挂载），
+## 会随场景切换一起离树甚至释放。监听 tree_exited：离树即对持有它的运行中
+## 上下文执行带原因的取消，让等待谓词、_active 擦除与 event_finished 正常收尾，
+## 避免「已释放实例逐帧报错且永不满足」导致的全场交互软锁。
+## 非 Node（RefCounted / Object）展示层没有 tree_exited 信号，不监听，
+## 只靠等待谓词与调用点的 is_instance_valid 防护。
+func _watch_presenter(candidate) -> void:
+	if candidate == null or not is_instance_valid(candidate) or not (candidate is Node):
+		return
+	if _watched_presenter == candidate:
+		return
+	_unwatch_presenter()
+	_watched_presenter = candidate
+	(candidate as Node).tree_exited.connect(_on_watched_presenter_tree_exited)
+
+func _unwatch_presenter() -> void:
+	if _watched_presenter != null and is_instance_valid(_watched_presenter):
+		_watched_presenter.tree_exited.disconnect(_on_watched_presenter_tree_exited)
+	_watched_presenter = null
+
+func _on_watched_presenter_tree_exited() -> void:
+	var exited: Node = _watched_presenter
+	for ctx in _running_instances:
+		if ctx is EventContext and not ctx.cancelled and ctx.presenter == exited:
+			ctx.cancel("presenter 已释放")
 
 # ── 主循环 ───────────────────────────────────────────────
 
@@ -145,7 +175,7 @@ func _drive(ctx: EventContext) -> void:
 	bus.event_finished.emit(report)
 	# 收尾时关闭「本事件实际使用的」展示层：presenter 可能在事件中途被替换，
 	# 不能拿新的展示层去关别人的 UI。
-	if ctx.presenter != null and ctx.presenter.has_method("close_all") and _running_instances.is_empty():
+	if ctx.presenter != null and is_instance_valid(ctx.presenter) and ctx.presenter.has_method("close_all") and _running_instances.is_empty():
 		ctx.presenter.close_all()
 
 func _execute_list(ctx: EventContext, commands: Array) -> int:
@@ -312,7 +342,11 @@ func _run_nested_event(parent: EventContext, target: EventDefinition, call_args:
 		trace.enter_context(child.trace_id, child.event_id)
 	_next_instance_id += 1
 	var started_ms := Time.get_ticks_msec()
+	# 嵌套事件有独立上下文且不在 _running_instances 里：登记到父级，
+	# 父级被取消（如展示层离树）时随级联一起取消，避免子级独自等待、父级收不了尾。
+	parent._attach_child(child)
 	var code := await _execute_list(child, child.page.commands)
+	parent._detach_child(child)
 	if trace != null:
 		var result := Result.COMPLETED
 		var reason := ""
