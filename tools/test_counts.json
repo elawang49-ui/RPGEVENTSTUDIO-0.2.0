@@ -14,7 +14,8 @@
     "runtime_trace_test": 63,
     "trace_ui_test": 21,
     "dialogue_layout_test": 16,
-    "dialogue_pagination_test": 163
+    "dialogue_pagination_test": 163,
+    "input_coexistence_test": 35
   },
   "editor": {
     "editor": 19,

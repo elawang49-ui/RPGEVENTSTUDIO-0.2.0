@@ -11,9 +11,18 @@ extends RefCounted
 ##   - register_action()            注册游戏自己的动作（进同一套设置面板）
 ##   - extend_action_defaults()     给已有动作补充默认键（如把 E 加进对话推进）
 ## 两者都只影响默认值；用户改过的键永远不被覆盖。
+##
+## 动作所有权策略：InputMap 是宿主与插件共用的全局表。插件自建的动作
+## 由插件全量管理；宿主已在 ProjectSettings/InputMap 预定义的同名动作
+## （interact/confirm/cancel/move_up 等高度通用名）归宿主，插件构造时
+## 快照其事件，之后 _apply 只做「宿主快照 + 插件管理集」的去重合并，
+## 绝不擦除宿主事件（详见 _snapshot_host_actions 与 _apply）。
 
 signal bindings_changed
 
+# user:// 按工程名（project.godot [application] config/name）隔离到用户目录：
+# 不同工程互不影响。已知限制：两个工程若同名，会共用同一存档目录而串档
+# （input_map.cfg 会被对方读到）；本轮不改路径设计，仅在此记录。
 const SAVE_PATH := "user://rpg_event_studio/input_map.cfg"
 
 const ACTION_MOVE_UP := &"move_up"
@@ -102,15 +111,21 @@ const ACTIONS := [
 	]},
 ]
 
-var _events: Dictionary = {}      ## 动作名(String) -> Array[InputEvent]
+var _events: Dictionary = {}      ## 动作名(String) -> Array[InputEvent]（插件管理集，永不含宿主事件）
 var _customized: Dictionary = {}  ## 动作名(String) -> true（用户明确改过键）
+## 宿主事件保护表：动作名(String) -> Array[InputEvent]（构造时快照的宿主事件，深拷贝）。
+var _host_events: Dictionary = {}
 var save_path := SAVE_PATH
 
 ## 宿主游戏注册的自定义动作与默认键补充（工程级共享，设置面板可见）。
 static var _registered_actions: Array = []
 static var _default_extensions: Dictionary = {}  ## 动作名 -> Array[事件dict]
+## 进程内记录插件最近一次写入 InputMap 的插件管理事件集（动作名 -> Array[InputEvent]）。
+## 供后续实例构造时区分「插件放进 InputMap 的事件」与「宿主定义的事件」。
+static var _applied_plugin_events: Dictionary = {}
 
 func _init() -> void:
+	_snapshot_host_actions()
 	load_bindings()
 
 # ── 查询 ─────────────────────────────────────────────────
@@ -253,6 +268,7 @@ func register_action(entry: Dictionary) -> void:
 		if String(existing["id"]) == action:
 			return   # 已注册：保持首次注册的定义
 	_registered_actions.append(entry.duplicate(true))
+	_capture_host_action(action)   # 宿主已预定义同名动作：先记快照，_apply 时合并不覆盖
 	_events[action] = _resolve_saved_or_defaults(action)
 	_apply()
 	save_bindings()
@@ -290,6 +306,47 @@ static func registered_action_ids() -> Array:
 	for entry in _registered_actions:
 		out.append(String(entry["id"]))
 	return out
+
+# ── 宿主动作共存（所有权策略） ───────────────────────────
+#
+# 插件动作分两类：
+#   - 插件自建：InputMap 里原本没有，插件拥有全部事件，_apply 全量重建；
+#   - 宿主同名：宿主已在 ProjectSettings/InputMap 预定义，插件绝不丢弃
+#     宿主事件，_apply 只做「宿主快照 + 插件管理集」的去重合并（shared）。
+# 所有权在实例构造时（首次 _apply 之前）判定，此后不变；宿主所有权只从
+# InputMap 现状推导、不写入存档——宿主从工程里删掉动作，下次启动插件
+# 自然不再保护它，也不会有残留的存档条目。
+
+## 构造时快照：把插件动作表中已被宿主定义的动作及其事件记入保护表。
+func _snapshot_host_actions() -> void:
+	for entry in all_action_entries():
+		_capture_host_action(String(entry["id"]))
+
+## 单个动作的宿主判定与事件快照：已在 InputMap 里的动作视为宿主动作。
+## 其中「插件自己放进 InputMap 的事件」（进程内 _applied_plugin_events
+## 记录的，等价判定与 same_event 一致）不重复保护；其余全部视为宿主事件
+## 加以保护。快照为空（宿主只是建了空动作，或事件全是插件应用的）则不
+## 标记 shared，行为与插件自建动作一致。
+## 注意：宿主事件与插件默认值恰好相同（如宿主也给 interact 绑了空格）时
+## 无法区分归属，按插件事件处理——插件默认集里本就含该键，合并态不丢。
+func _capture_host_action(action: String) -> void:
+	if _host_events.has(action) or not InputMap.has_action(action):
+		return
+	var applied: Array = _applied_plugin_events.get(action, [])
+	var host_snapshot: Array = []
+	for event in InputMap.action_get_events(action):
+		if _contains_event(applied, event):
+			continue   # 插件自己应用的（上次实例留下的），不算宿主事件
+		if _contains_event(host_snapshot, event):
+			continue   # 宿主事件本身去重
+		host_snapshot.append(event.duplicate())
+	if host_snapshot.is_empty():
+		return
+	_host_events[action] = host_snapshot
+
+## 动作当前是否处于 shared 状态（宿主与插件共用同一动作名且宿主有受保护事件）。
+func is_host_owned(action: String) -> bool:
+	return _host_events.has(action)
 
 # ── 绑定编辑 ─────────────────────────────────────────────
 
@@ -366,9 +423,15 @@ func _mark_customized(action: String) -> void:
 # 存档约定：
 #   [actions] 动作名 -> 绑定事件数组（全量，含未改键的动作）
 #   [meta]    customized -> 用户明确改过键的动作名数组
+# 存档只包含「插件管理集」（_events，永不混入宿主事件——宿主所有权每次
+# 启动从 InputMap 现状重新推导，不落盘，宿主删除动作后插件不会留下残留）。
+# host-owned 动作改键时存的是插件管理的事件集；_apply 恢复时 = 宿主快照
+# 事件 + 插件存档事件的去重合并。
 # 加载规则：改过键的动作用存档绑定；没改过的动作跟随当前代码默认值，
 # 这样默认键位（含宿主补充）演进后，只有用户主动改过的键保持不变。
 # 旧格式存档没有 [meta]：保存过的绑定一律视为用户改过（不覆盖）；
+# host-owned 动作读到与插件默认相同的旧存档时，宿主快照与插件事件在
+# _apply 里去重共存，宿主事件优先存活；旧存档的自定义键照常生效。
 # 宿主补充默认键时对「绑定与插件基础默认完全一致」的动作例外补键。
 
 func load_bindings() -> void:
@@ -544,14 +607,28 @@ func _contains_event(events: Array, event: InputEvent) -> bool:
 			return true
 	return false
 
+## 把插件管理集写入 InputMap。
+## 宿主同名（shared）动作的合并集 = 宿主快照事件（永不丢弃）+ 插件管理集，
+## 按 InputEvent 等价去重，保证反复 _apply / 多实例不会让事件重复累积。
+## erase 后按合并集全量重灌：宿主事件在合并集里所以不会真的丢失，同时
+## 插件已不再管理的事件（如改键后同设备被替换的旧键）能被正确清掉。
 func _apply() -> void:
 	for entry in all_action_entries():
 		var action := String(entry["id"])
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
-		InputMap.action_erase_events(action)
+		var merged: Array = []
+		for event in _host_events.get(action, []):
+			if not _contains_event(merged, event):
+				merged.append(event)
 		for event in events_of(action):
+			if not _contains_event(merged, event):
+				merged.append(event)
+		InputMap.action_erase_events(action)
+		for event in merged:
 			InputMap.action_add_event(action, event)
+		# 只记录插件管理集（不含宿主快照），供下一个实例构造时区分事件归属
+		_applied_plugin_events[action] = events_of(action).duplicate()
 
 # ── 序列化（只存必要字段） ───────────────────────────────
 

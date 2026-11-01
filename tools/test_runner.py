@@ -68,6 +68,7 @@ HEADLESS_SUITES = [
     ("tutorial_flow", ["--script", "res://tests/tutorial_flow.gd"], {}, 180),
     ("interaction_test", ["--script", "res://tests/interaction_test.gd"], {}, 180),
     ("node_ref_test", ["--script", "res://tests/node_ref_test.gd"], {}, 120),
+    ("input_coexistence_test", ["--script", "res://tests/input_coexistence_test.gd"], {}, 120),
 ]
 
 EDITOR_SUITES = [
