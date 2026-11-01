@@ -38,6 +38,7 @@ func start(_plugin: EditorPlugin, _main_screen: Control) -> void:
 	await _test_toolbar_and_node_title()
 	await _test_validation_panel_and_locate()
 	await _test_save_guard()
+	await _test_param_undo_redo()
 	await _test_groups_and_undo()
 	await _test_group_persistence()
 	await _test_layout_and_undo()
@@ -361,3 +362,58 @@ func _finish() -> void:
 	var tree := get_tree()
 	if tree != null:
 		tree.quit(0 if _failures.is_empty() else 1)
+
+## 参数编辑的撤销/重做往返（审计 P1-1）：_change_param 必须先取旧值再登记 undo，
+## 摘要更新必须走 _summary_labels，不得覆盖自定义标题节点的类型标签。
+func _test_param_undo_redo() -> void:
+	var stage: LevelNode = null
+	for node in _graph.nodes:
+		if node.type == "stage":
+			stage = node
+			break
+	if stage == null:
+		_fail("示例图中找不到 stage 节点")
+		return
+	var old_value: Variant = stage.params.get("stage_id")
+	var target_value := "basement" if old_value != "basement" else "exploration"
+	_panel.call("_change_param", stage, "stage_id", target_value)
+	_check(stage.params.get("stage_id") == target_value, "参数修改应立即写入模型")
+	_history().undo()
+	_check(stage.params.get("stage_id") == old_value, "撤销后参数应恢复为修改前的旧值（undo 不能登记新值）")
+	_history().redo()
+	_check(stage.params.get("stage_id") == target_value, "重做后参数应恢复为新值")
+
+	# 自定义标题节点（与 _test_toolbar_and_node_title 相同的探针做法，但要进图：
+	# undo/redo 会走 _rebuild_view，不在图里的节点视图会被清掉）。
+	var titled := LevelNode.new()
+	titled.node_id = &"probe_param"
+	titled.type = "condition"
+	titled.title = "自定义标题2"
+	_graph.nodes.append(titled)
+	_panel.call("_rebuild_view")
+	# 用新键做探针：undo 应回到 null（等价于"修改前"）。
+	var probe_key := "note"
+	var probe_old: Variant = titled.params.get(probe_key)
+	var probe_value := "__undo_probe__"
+	_panel.call("_change_param", titled, probe_key, probe_value)
+	var view: GraphNode = _panel.get("_node_views").get(titled.node_id, null)
+	var summary_label: Label = _panel.get("_summary_labels").get(titled.node_id, null)
+	if view == null or summary_label == null:
+		_fail("拿不到目标节点的视图或摘要标签")
+		return
+	var type_label := view.get_child(0) as Label
+	_check(type_label != null and type_label.text == L10n.ui("graph.node." + titled.type),
+		"改参数不应覆盖自定义标题节点的类型标签")
+	_check(summary_label.text == _panel.call("_summary_of", titled), "改参数后摘要标签应同步更新")
+	_history().undo()
+	_check(titled.params.get(probe_key) == probe_old, "自定义标题节点：撤销应恢复旧值")
+	summary_label = _panel.get("_summary_labels").get(titled.node_id, null)
+	_check(summary_label != null and summary_label.text == _panel.call("_summary_of", titled),
+		"撤销后摘要标签应同步回旧值")
+	_history().redo()
+	_check(titled.params.get(probe_key) == probe_value, "自定义标题节点：重做应恢复新值")
+	# 清理：探针出图并释放视图，不影响后续用例的撤销历史断言
+	_graph.nodes.erase(titled)
+	var leftover: GraphNode = _panel.get("_node_views").get(titled.node_id, null)
+	if leftover != null:
+		leftover.queue_free()

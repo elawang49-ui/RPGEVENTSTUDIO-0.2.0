@@ -1661,7 +1661,8 @@ func _make_control(node: LevelNode, name: String, type: String, field: Dictionar
 func _change_param(node: LevelNode, key: String, value: Variant) -> void:
 	if _loading or node == null:
 		return
-	if node.params.get(key) == value:
+	var old_value: Variant = node.params.get(key, null)   # 先取旧值：undo 必须登记修改前的值
+	if old_value == value:
 		return
 	node.params[key] = value
 	node.emit_changed()
@@ -1676,15 +1677,13 @@ func _change_param(node: LevelNode, key: String, value: Variant) -> void:
 		_graph
 	)
 	undo.add_do_method(self, "_apply_param", node, key, value)
-	undo.add_undo_method(self, "_apply_param", node, key, node.params.get(key, null))
+	undo.add_undo_method(self, "_apply_param", node, key, old_value)
 	undo.commit_action(false)
 
-	# 摘要要实时更新
-	var view: GraphNode = _node_views.get(node.node_id, null)
-	if view != null and view.get_child_count() > 0:
-		var summary := view.get_child(0) as Label
-		if summary != null:
-			summary.text = _summary_of(node)
+	# 摘要要实时更新（走 _summary_labels；child(0) 在自定义标题节点上是类型标签）
+	var summary: Label = _summary_labels.get(node.node_id, null)
+	if summary != null:
+		summary.text = _summary_of(node)
 
 func _apply_param(node: LevelNode, key: String, value: Variant) -> void:
 	if node == null:
