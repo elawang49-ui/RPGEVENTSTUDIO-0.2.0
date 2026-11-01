@@ -4,7 +4,7 @@
 - 分支：`feat/ui-theme-presets-v2`
 - 独立 worktree：`/Users/elawang/Godot/rpg-studio-ui-themes-v2`
 - 基线：`feat/ui-polish-round3`（`51186c6`，含长文翻页与窄窗口打磨）
-- 提交：`7d1a521f66a94566d0f335300ae3b6975b6b09e8`
+- 实现提交：`b0d18e085057dc3e82a9ef09a3f9348128710e1a`（回填本记录的文档提交见分支 HEAD）
 - 设计原型（只读）：`~/.gemini/antigravity/brain/f8470edc-973f-4584-bc55-83a63e7db800/rpgm_ui_presets_v3.html`
 - 未修改 Argon 工作区 `/Users/elawang/Godot/RPGEVENTSTUDIO`，未合并 `main`，未发布版本。
 
