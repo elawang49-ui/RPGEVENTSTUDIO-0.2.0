@@ -36,6 +36,10 @@ var _speed := 42.0
 var _auto_deadline := 0
 var _auto_duration := 0.0
 var _page_line := 0
+## 翻页是否重复上一页最后一个完整行；默认不重复，只在边界重复部分可见行。
+var page_overlap := false
+var _line_tops: PackedFloat32Array = PackedFloat32Array()
+var _line_tops_key := ""
 var _input_cooldown := 0
 var _mouse_click := false
 var _choice_result := -1
@@ -60,6 +64,8 @@ func _ready() -> void:
 	_apply_style()
 	_panel.hide()
 	_choices_panel.hide()
+	if not get_viewport().size_changed.is_connected(_on_viewport_resized):
+		get_viewport().size_changed.connect(_on_viewport_resized)
 
 func _build_ui() -> void:
 	_theme_root = Theme.new()
@@ -137,6 +143,8 @@ func _make_panel_style() -> StyleBoxFlat:
 ## 注入/刷新主题。主题页与运行时共用同一个入口。
 func set_dialogue_theme(theme: RpgEventStudioTheme) -> void:
 	style = theme if theme != null else RpgEventStudioTheme.new()
+	_line_tops.clear()
+	_line_tops_key = ""
 	if _root != null:
 		_apply_style()
 		if _choices_panel.visible:
@@ -216,6 +224,8 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	_text_label.visible_characters = 0
 	_text_label.scroll_active = false
 	_page_line = 0
+	_line_tops.clear()
+	_line_tops_key = ""
 	_hint_label.visible = false
 	last_parsed_text = _text_label.get_parsed_text()
 	last_bbcode_issues = Bbcode.analyze(text)
@@ -371,15 +381,18 @@ func _update_heights() -> void:
 	# 游戏内台词不使用玩家可见的滚动条：超出部分由 _dismiss_text 翻页。
 	_text_label.scroll_active = false
 	if _waiting_confirm:
-		var max_start := maxi(0, _text_label.get_line_count() - _visible_lines())
-		_page_line = mini(_page_line, max_start)
-		_text_label.scroll_to_line(_page_line)
+		_clamp_page_line()
 		_update_page_hint()
 	# 选项面板：高度贴合选项数量；窗口过矮且选项过多时出现滚动。
 	var choice_content := _choices_box.get_combined_minimum_size().y
 	var choice_reserved := 2.0 * float(style.choice_margin)
 	var choice_max := maxf(0.0, viewport_size.y * (style.choice_bottom - style.choice_top) - choice_reserved)
 	_choices_scroll.custom_minimum_size = Vector2(0, clampf(choice_content, 0.0, choice_max))
+
+func _on_viewport_resized() -> void:
+	# 窗口变化会改写换行/行高；重新贴合高度并按真实行偏移夹住当前页。
+	_height_retries = 0
+	call_deferred("_update_heights")
 
 # ── 关闭 ─────────────────────────────────────────────────
 
@@ -447,17 +460,72 @@ func _finish_typing() -> void:
 
 ## 下一页：用 RichTextLabel 的内部滚动值翻页，但不显示滚动条。
 ## 保留一行重叠，避免分页边界把一行切成两半。
+## 用 RichTextLabel 的真实布局测量每一行的顶部偏移。
+## 不能用 font_size + line_separation 估算：实际行高受字体度量、BBCode
+## [font_size] 混排和自动换行影响，估算会导致页底半行或跳行。
+func _measure_line_tops(force: bool = false) -> PackedFloat32Array:
+	var total := _text_label.get_line_count()
+	var content := float(_text_label.get_content_height())
+	var key := "%d|%.1f|%.1f|%.1f|%d|%d" % [
+		total, _text_label.size.x, _text_label.size.y, content,
+		style.text_font_size if style != null else 0,
+		style.line_separation if style != null else 0,
+	]
+	if not force and key == _line_tops_key and _line_tops.size() == total:
+		return _line_tops
+	var bar := _text_label.get_v_scroll_bar()
+	var restore := bar.value
+	var tops := PackedFloat32Array()
+	for i in total:
+		_text_label.scroll_to_line(i)
+		tops.append(bar.value)
+	_line_tops = tops
+	_line_tops_key = key
+	bar.value = restore
+	return tops
+
+## 当前页第一行的顶部。
+func _page_top(tops: PackedFloat32Array) -> float:
+	if tops.is_empty():
+		return 0.0
+	return tops[clampi(_page_line, 0, tops.size() - 1)]
+
+## 当前页最后一行（不包含）的索引；行高来自真实布局偏移。
+func _page_end_line() -> int:
+	var total := _text_label.get_line_count()
+	if total <= 0:
+		return 0
+	var tops := _measure_line_tops()
+	if tops.is_empty():
+		return total
+	var start := clampi(_page_line, 0, total - 1)
+	var limit := _page_top(tops) + _text_label.size.y + 0.5
+	var content := float(_text_label.get_content_height())
+	var end := start
+	while end < total:
+		var bottom := content if end + 1 >= total else tops[end + 1]
+		if bottom > limit:
+			break
+		end += 1
+	if end == start:
+		end = mini(total, start + 1)
+	return end
+
 func _visible_lines() -> int:
-	var line_height := 28.0
-	if style != null:
-		line_height = maxf(8.0, float(style.text_font_size + style.line_separation))
-	return maxi(1, int(_text_label.size.y / line_height))
+	return maxi(1, _page_end_line() - _page_line)
 
 func _next_page() -> void:
-	var visible := _visible_lines()
 	var total := _text_label.get_line_count()
-	var max_start := maxi(0, total - visible)
-	_page_line = mini(_page_line + maxi(1, visible - 1), max_start)
+	if total <= 0:
+		return
+	var end := _page_end_line()
+	if end >= total:
+		return
+	var next := end
+	if page_overlap:
+		next = maxi(_page_line + 1, end - 1)
+	next = clampi(next, _page_line + 1, total - 1)
+	_page_line = next
 	_text_label.scroll_to_line(_page_line)
 	if _auto_duration > 0.0:
 		_auto_deadline = Time.get_ticks_msec() + int(_auto_duration * 1000.0)
@@ -469,10 +537,17 @@ func _has_more_pages() -> bool:
 	if view_h < 24.0:
 		return false
 	var total := _text_label.get_line_count()
-	var visible := _visible_lines()
-	if total <= visible:
+	if total <= 0:
 		return false
-	return _page_line < total - visible
+	return _page_end_line() < total
+
+func _clamp_page_line() -> void:
+	var total := _text_label.get_line_count()
+	if total <= 0:
+		_page_line = 0
+		return
+	_page_line = clampi(_page_line, 0, total - 1)
+	_text_label.scroll_to_line(_page_line)
 
 func _update_page_hint() -> void:
 	if _hint_label == null or not _waiting_confirm:
@@ -481,6 +556,8 @@ func _update_page_hint() -> void:
 
 func _reset_text_page() -> void:
 	_page_line = 0
+	_line_tops.clear()
+	_line_tops_key = ""
 	_text_label.scroll_to_line(0)
 	if _waiting_confirm:
 		_update_page_hint()
