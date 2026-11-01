@@ -42,6 +42,8 @@ GLOBAL_ALLOWED_ERRORS = [
 ]
 
 # 已知的、与功能无关的引擎诊断；按套件显式列出，不按套件整体忽略。
+# 注意：gvl 这三类不是「预期负向测试」，是编辑器 Undo/GraphFrame 清理诊断；
+# 分页专项报告会单独列为待清理项，不能当作负向测试通过依据。
 SUITE_ALLOWED_ERRORS = {
     "gvl": [
         "UndoRedo history mismatch",
@@ -55,6 +57,7 @@ HEADLESS_SUITES = [
     ("runtime_trace_test", ["--script", "res://tests/runtime_trace_test.gd"], {}, 180),
     ("trace_ui_test", ["--script", "res://tests/trace_ui_test.gd"], {}, 120),
     ("dialogue_layout_test", ["--script", "res://tests/dialogue_layout_test.gd"], {}, 120),
+    ("dialogue_pagination_test", ["--script", "res://tests/dialogue_pagination_test.gd"], {}, 300),
     ("story_audit_test", ["--script", "res://tests/story_audit_test.gd"], {}, 120),
     ("state_bulk_register_test", ["--script", "res://tests/state_bulk_register_test.gd"], {}, 120),
     ("graph_editor_smoke", ["--script", "res://tests/graph_editor_smoke.gd"], {}, 120),
@@ -142,13 +145,13 @@ def validate(suite, output, code, expected_count=None, check_cases=False):
         if not (is_script_error or is_error):
             continue
         if expected_window is not None:
-            allowed_seen.append(line.strip())
+            allowed_seen.append("EXPECTED[%s] %s" % (expected_window, line.strip()))
             continue
         if is_error and any(msg in line for msg in GLOBAL_ALLOWED_ERRORS):
-            allowed_seen.append(line.strip())
+            allowed_seen.append("ENGINE_EXIT %s" % line.strip())
             continue
         if is_error and any(msg in line for msg in SUITE_ALLOWED_ERRORS.get(suite, [])):
-            allowed_seen.append(line.strip())
+            allowed_seen.append("SUITE_DIAG %s" % line.strip())
             continue
         if is_script_error:
             label = "脚本解析错误" if "Parse Error" in line else "运行时异常"

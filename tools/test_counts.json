@@ -13,7 +13,8 @@
     "node_ref_test": 12,
     "runtime_trace_test": 63,
     "trace_ui_test": 21,
-    "dialogue_layout_test": 16
+    "dialogue_layout_test": 16,
+    "dialogue_pagination_test": 163
   },
   "editor": {
     "editor": 19,
