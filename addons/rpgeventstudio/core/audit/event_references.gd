@@ -74,13 +74,12 @@ static func _parse_scene(path: String, result: Dictionary) -> void:
 	file.close()
 
 static func _parse_graph(path: String, result: Dictionary) -> void:
+	# 头部判断走 SafeFile.read_head：第 240 字节切进多字节字符时不再产生乱码/空串导致漏判
+	var head := SafeFile.read_head(path, 240)
+	if not head.contains("LevelGraph"):
+		return
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		return
-	var head := file.get_buffer(240).get_string_from_utf8()
-	file.seek(0)
-	if not head.contains("LevelGraph"):
-		file.close()
 		return
 	while not file.eof_reached():
 		var line := file.get_line().strip_edges()

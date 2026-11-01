@@ -116,6 +116,10 @@ func _build() -> void:
 	select_row.add_child(_small_button("state.bulk.apply_type", _on_apply_type))
 
 	_tree = Tree.new()
+	# 隐藏根规范模式：数据行全部挂在隐藏根下保持平级。
+	# 若首行直接充当 root，后续 create_item() 会变成它的子节点，
+	# 兄弟遍历（get_next）也只能看到首行，搜索/批量会从第 2 行起静默失效。
+	_tree.hide_root = true
 	_tree.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_tree.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_tree.item_edited.connect(_on_item_edited)
@@ -243,12 +247,14 @@ func _reset_results() -> void:
 func _rebuild_tree() -> void:
 	_building = true
 	_tree.clear()
+	# 先建隐藏根，数据行逐行挂在它下面保持平级（见 _build 里的说明）
+	var hidden_root := _tree.create_item()
 	var filter := _search.text.strip_edges().to_lower() if _search != null else ""
 	for key in _entries.keys():
 		var entry: Dictionary = _entries[key]
 		if filter != "" and not (_match_text(entry).contains(filter)):
 			continue
-		var item := _tree.create_item()
+		var item := _tree.create_item(hidden_root)
 		item.set_metadata(COL_CHECK, entry["key"])
 		item.set_cell_mode(COL_CHECK, TreeItem.CELL_MODE_CHECK)
 		item.set_editable(COL_CHECK, true)
@@ -282,7 +288,9 @@ func _apply_row_visibility() -> void:
 		return
 	var filter := _search.text.strip_edges().to_lower() if _search != null else ""
 	var mode := _filter.selected if _filter != null else 0
-	var item := _tree.get_root()
+	var root := _tree.get_root()
+	# 数据行都是隐藏根的子节点，遍历子节点链（root 自身无兄弟，get_next 恒为 null）
+	var item := root.get_first_child() if root != null else null
 	while item != null:
 		var entry: Dictionary = _entries.get(str(item.get_metadata(COL_CHECK)), {})
 		var visible := true
@@ -410,7 +418,9 @@ func set_entry_type(entry: Dictionary, type: String) -> void:
 	_update_summary()
 
 func _row_item(key: String) -> TreeItem:
-	var item := _tree.get_root()
+	var root := _tree.get_root()
+	# 数据行都是隐藏根的子节点，沿子节点链查找（root 自身无兄弟）
+	var item := root.get_first_child() if root != null else null
 	while item != null:
 		if str(item.get_metadata(COL_CHECK)) == key:
 			return item
