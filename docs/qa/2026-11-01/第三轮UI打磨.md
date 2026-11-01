@@ -99,10 +99,10 @@ python3 tools/test_runner.py --all
 
 | 门禁 | 结果 |
 | --- | --- |
-| headless 14 套 | **760 项，0 失败**（对话布局 11→16） |
+| headless 15 套 | **923 项，0 失败**（新增分页专项 163 项） |
 | 编辑器 6 套 | **176 项，0 失败** |
 | 故障注入 11 项 | **PASS** |
-| i18n | **PASS，876 键** |
+| i18n | **PASS，875 键** |
 | Runner | **RUNNER RESULT: PASS** |
 
 `dialogue_layout_test` 新增：长文无玩家可见滚动条、滚动条不可见、可翻页、翻页后仍等待、面板保持显示。
