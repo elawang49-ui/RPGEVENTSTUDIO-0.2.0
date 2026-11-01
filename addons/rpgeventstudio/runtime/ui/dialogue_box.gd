@@ -294,7 +294,7 @@ func show_choices(prompt: String, options: Array) -> void:
 
 	_show_choices_panel_with_animation()
 	_schedule_height_update()
-	_hint_label.visible = true
+	_hint_label.visible = not editor_preview
 	_hint_label.text = L10n.game("game.choice_hint")
 	_choice_index = 0
 	_update_choice_highlight()
@@ -441,7 +441,7 @@ func _finish_typing() -> void:
 	_typing = false
 	_text_label.visible_characters = -1
 	_waiting_confirm = true
-	_hint_label.visible = true
+	_hint_label.visible = not editor_preview
 	_update_page_hint()
 	call_deferred("_update_page_hint")
 

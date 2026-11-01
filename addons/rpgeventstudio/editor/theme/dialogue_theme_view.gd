@@ -287,21 +287,26 @@ func _update_responsive_layout() -> void:
 	var compact := available_h < 700.0
 	var side_by_side := available >= 540.0
 	if _preview_toggle != null:
-		_preview_toggle.visible = compact
+		_preview_toggle.visible = true
 	if _body.vertical == side_by_side:
 		_body.vertical = not side_by_side
-	if compact:
-		# 低高度下预览/参数二选一，避免两者都被压扁；按钮可切换。
+	if _preview_only:
+		# 预览模式：全高显示对话框，参数栏暂时让位；任何窗口尺寸都可切换。
 		if _preview_side != null:
-			_preview_side.visible = _preview_only
-		if _settings_box != null:
-			_settings_box.visible = not _preview_only
-		if _preview_only:
-			if _preview_panel != null:
-				_preview_panel.custom_minimum_size = Vector2(240, 240)
+			_preview_side.visible = true
+			_preview_side.custom_minimum_size = Vector2(0, 0)
 			_preview_side.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		else:
-			_settings_scroll.custom_minimum_size = Vector2(0, 220)
+		if _settings_box != null:
+			_settings_box.visible = false
+		if _preview_panel != null:
+			_preview_panel.custom_minimum_size = Vector2(240, 240)
+	elif compact:
+		# 低高度下默认只显示参数，避免两者都被压扁；按钮可切到预览。
+		if _preview_side != null:
+			_preview_side.visible = false
+		if _settings_box != null:
+			_settings_box.visible = true
+		_settings_scroll.custom_minimum_size = Vector2(0, 220)
 	else:
 		if _preview_side != null:
 			_preview_side.visible = true
@@ -329,14 +334,16 @@ func _update_responsive_layout() -> void:
 func _sync_preview_size() -> void:
 	if _preview_container == null or _preview_viewport == null:
 		return
-	var container_size := _preview_container.size
-	if container_size.x < 1.0 or container_size.y < 1.0:
+	var panel_size := _preview_panel.size
+	if panel_size.x < 1.0 or panel_size.y < 1.0:
+		panel_size = _preview_container.size
+	if panel_size.x < 1.0 or panel_size.y < 1.0:
 		return
-	var target := Vector2i(maxi(1, int(container_size.x)), maxi(1, int(container_size.y)))
+	var target := Vector2i(maxi(1, int(panel_size.x)), maxi(1, int(panel_size.y)))
 	if target == _last_preview_size:
 		return
 	_last_preview_size = target
-	if container_size.x > 2.0 and container_size.y > 2.0:
+	if panel_size.x > 2.0 and panel_size.y > 2.0:
 		_preview_viewport.size = target
 	if _preview != null and is_instance_valid(_preview):
 		_preview.call("_schedule_height_update")
