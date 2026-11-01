@@ -1,8 +1,8 @@
 extends SceneTree
 ## 对话框小窗口布局测试（无编辑器）：
 ##   godot --headless --path . --script res://tests/dialogue_layout_test.gd
-## 覆盖 1152×648 下：超长正文必须可滚动、短正文不显示滚动条、
-## 对话框/选项面板底边不越出窗口、选项过多时使用内部滚动。
+## 覆盖 1152×648 下：超长正文不能出现玩家可见滚动条，必须可翻页；
+## 短正文不显示滚动条；对话框/选项面板底边不越出窗口；选项过多时使用内部滚动。
 
 const VIEW_W := 1152
 const VIEW_H := 648
@@ -36,15 +36,23 @@ func _run() -> void:
 	for i in 10:
 		await process_frame
 
-	_check(label.scroll_active, "超长正文启用滚动")
+	var text_bar := label.get_v_scroll_bar()
+	_check(not label.scroll_active, "超长正文不启用玩家滚动条")
+	_check(not text_bar.visible, "超长正文本体滚动条不可见")
 	_check(label.get_content_height() > label.size.y, "超长正文内容高于可见区域")
+	_check(bool(presenter.call("_has_more_pages")), "超长正文可翻页")
+	presenter.call("_dismiss_text")
+	await process_frame
+	_check(text_bar.value > 0.0, "推进后翻到下一页（scroll=%.1f）" % text_bar.value)
+	_check(bool(presenter.get("_waiting_confirm")), "翻页后仍等待继续")
+	_check(panel.visible, "翻页后面板保持显示")
 	_assert_inside(panel, "超长正文对话框")
 
 	presenter.show_text("旁白", "短句。")
 	presenter.call("_finish_typing")
 	for i in 10:
 		await process_frame
-	_check(not label.scroll_active, "短正文不显示滚动条")
+	_check(not label.scroll_active and not text_bar.visible, "短正文不显示滚动条")
 	_check(label.get_content_height() <= label.size.y + 1.0, "短正文完整可见")
 	_assert_inside(panel, "短正文对话框")
 

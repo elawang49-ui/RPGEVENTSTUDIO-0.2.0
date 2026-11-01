@@ -34,6 +34,8 @@ var _reveal := 0.0
 var _reveal_total := 0
 var _speed := 42.0
 var _auto_deadline := 0
+var _auto_duration := 0.0
+var _page_line := 0
 var _input_cooldown := 0
 var _mouse_click := false
 var _choice_result := -1
@@ -212,8 +214,8 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	_name_label.visible = speaker.strip_edges() != ""
 	_text_label.text = text
 	_text_label.visible_characters = 0
-	if _text_label.scroll_active:
-		_text_label.scroll_to_line(0)
+	_text_label.scroll_active = false
+	_page_line = 0
 	_hint_label.visible = false
 	last_parsed_text = _text_label.get_parsed_text()
 	last_bbcode_issues = Bbcode.analyze(text)
@@ -227,11 +229,13 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	_waiting_confirm = false
 	_text_done = false
 	_auto_deadline = 0
+	_auto_duration = auto_advance
 	_input_cooldown = Time.get_ticks_msec() + 160
 	_clear_choices()
 
 	_show_panel_with_animation()
 	_schedule_height_update()
+	call_deferred("_reset_text_page")
 	if not _typing:
 		_finish_typing()
 	elif auto_advance > 0.0:
@@ -358,12 +362,19 @@ func _update_heights() -> void:
 	var panel_room := maxf(1.0, viewport_size.y * (style.panel_bottom - style.panel_top) - reserved)
 	var text_min := minf(style.text_min_height, panel_room)
 	var panel_max := maxf(text_min, panel_room)
-	_text_label.custom_minimum_size = Vector2(0, clampf(text_content, text_min, panel_max))
-	var needs_scroll := text_content > panel_max + 0.5
-	if _text_label.scroll_active != needs_scroll:
-		_text_label.scroll_active = needs_scroll
-		if needs_scroll:
-			_text_label.scroll_to_line(0)
+	# 正文高度按整行对齐，分页边界不会留下半行。
+	var line_height := maxf(1.0, float(style.text_font_size + style.line_separation))
+	var snapped_max: float = floor(panel_max / line_height) * line_height
+	if snapped_max < text_min:
+		snapped_max = panel_max
+	_text_label.custom_minimum_size = Vector2(0, clampf(text_content, text_min, snapped_max))
+	# 游戏内台词不使用玩家可见的滚动条：超出部分由 _dismiss_text 翻页。
+	_text_label.scroll_active = false
+	if _waiting_confirm:
+		var max_start := maxi(0, _text_label.get_line_count() - _visible_lines())
+		_page_line = mini(_page_line, max_start)
+		_text_label.scroll_to_line(_page_line)
+		_update_page_hint()
 	# 选项面板：高度贴合选项数量；窗口过矮且选项过多时出现滚动。
 	var choice_content := _choices_box.get_combined_minimum_size().y
 	var choice_reserved := 2.0 * float(style.choice_margin)
@@ -385,6 +396,7 @@ func close_all() -> void:
 	_typing = false
 	_waiting_confirm = false
 	_text_done = true
+	_auto_duration = 0.0
 	_choice_result = -1
 	_choice_index = -1
 
@@ -430,9 +442,53 @@ func _finish_typing() -> void:
 	_text_label.visible_characters = -1
 	_waiting_confirm = true
 	_hint_label.visible = true
-	_hint_label.text = L10n.game("game.advance_hint")
+	_update_page_hint()
+	call_deferred("_update_page_hint")
+
+## 下一页：用 RichTextLabel 的内部滚动值翻页，但不显示滚动条。
+## 保留一行重叠，避免分页边界把一行切成两半。
+func _visible_lines() -> int:
+	var line_height := 28.0
+	if style != null:
+		line_height = maxf(8.0, float(style.text_font_size + style.line_separation))
+	return maxi(1, int(_text_label.size.y / line_height))
+
+func _next_page() -> void:
+	var visible := _visible_lines()
+	var total := _text_label.get_line_count()
+	var max_start := maxi(0, total - visible)
+	_page_line = mini(_page_line + maxi(1, visible - 1), max_start)
+	_text_label.scroll_to_line(_page_line)
+	if _auto_duration > 0.0:
+		_auto_deadline = Time.get_ticks_msec() + int(_auto_duration * 1000.0)
+	_update_page_hint()
+
+func _has_more_pages() -> bool:
+	var view_h := _text_label.size.y
+	# 极端小窗口/无窗口测试下正文高度可能只有 1px；此时不翻页。
+	if view_h < 24.0:
+		return false
+	var total := _text_label.get_line_count()
+	var visible := _visible_lines()
+	if total <= visible:
+		return false
+	return _page_line < total - visible
+
+func _update_page_hint() -> void:
+	if _hint_label == null or not _waiting_confirm:
+		return
+	_hint_label.text = L10n.game("game.advance_more") if _has_more_pages() else L10n.game("game.advance_hint")
+
+func _reset_text_page() -> void:
+	_page_line = 0
+	_text_label.scroll_to_line(0)
+	if _waiting_confirm:
+		_update_page_hint()
 
 func _dismiss_text() -> void:
+	if _has_more_pages():
+		_next_page()
+		return
 	_waiting_confirm = false
 	_text_done = true
 	_hide_panel_with_animation()
