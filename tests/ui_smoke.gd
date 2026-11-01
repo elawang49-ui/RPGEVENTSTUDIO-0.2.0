@@ -156,7 +156,9 @@ func _test_branch_edit(panel: Control, page: EventPage) -> void:
 	panel.call("_on_command_row_pressed", inside)
 	panel.call("_on_add_command_pressed", 0)
 	_check(if_command.children.size() == then_before + 1, "选中分支内指令时新增应进入同一分支")
-	_check(if_command.children[1] == panel.get("_selected") or if_command.children[0] == panel.get("_selected"), "新指令应紧跟在选中项之后")
+	# 旧断言的 or 右侧（children[0] == 新指令）只可能出现在「插到选中项之前」的错误行为里，
+	# 与断言文案矛盾且在当前实现下恒假（_select 设 _insert_index = 选中项 index + 1），故删除该退路。
+	_check(if_command.children[1] == panel.get("_selected"), "新指令应紧跟在选中项之后")
 	panel.call("_on_delete_command")
 
 # ── 移到另一分支 / 移出分支 ──────────────────────────────

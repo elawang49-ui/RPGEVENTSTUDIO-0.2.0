@@ -409,6 +409,20 @@ func _detach_all_frames() -> void:
 		for member in _graph_edit.get_attached_nodes_of_frame(String(group_id)):
 			_graph_edit.detach_graph_element_from_frame(member)
 
+## 退役一个图元素视图：改名腾出模型名，再排队到帧末销毁。
+## 不能用 free()：GraphEdit 在 add_child_notify（graph_edit.cpp:723-724）和
+## _ensure_node_order_from（graph_edit.cpp:558）里对 GraphFrame 排队了延迟
+## move_child；同帧（同一帧内挂接 / 选中 / 重建之后）free 会让这些延迟调用
+## 落在已移除的节点上，报「Child is not a child of this node」。
+## 改名 + queue_free 后：消息队列先于删除队列刷新，延迟调用执行时视图仍是
+## 子节点（移动到无害位置），随后才真正销毁；腾出的名字允许同帧重建同名视图。
+var _retired_view_seq := 0
+
+func _retire_view(view: Node) -> void:
+	_retired_view_seq += 1
+	view.name = "%s_retired_%d" % [view.name, _retired_view_seq]
+	view.queue_free()
+
 func _show_status() -> void:
 	if _graph == null:
 		return
@@ -429,7 +443,8 @@ func _rebuild_view() -> void:
 	_detach_all_frames()
 	for child in _graph_edit.get_children():
 		if child is GraphNode or child is GraphFrame:
-			child.free()
+			# 见 _retire_view：同帧重建同名视图，必须先改名腾出名字再排队销毁。
+			_retire_view(child)
 	_node_views.clear()
 	_frame_views.clear()
 	_summary_labels.clear()
@@ -649,6 +664,7 @@ func _on_connection_request(from_node: StringName, from_port: int, to_node: Stri
 		_after_change()
 		return
 	undo.create_action(L10n.ui("graph.undo.connect"), UndoRedo.MERGE_DISABLE, _graph)
+	undo.force_fixed_history()  # 固定历史：原因见 _undo_redo() 的用法约定
 	undo.add_do_method(self, "_do_connect", connection)
 	undo.add_undo_method(self, "_do_disconnect", connection)
 	undo.add_do_reference(connection)
@@ -666,6 +682,7 @@ func _on_disconnection_request(from_node: StringName, from_port: int, to_node: S
 		_after_change()
 		return
 	undo.create_action(L10n.ui("graph.undo.disconnect"), UndoRedo.MERGE_DISABLE, _graph)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_disconnect", connection)
 	undo.add_undo_method(self, "_do_connect", connection)
 	undo.add_do_reference(connection)
@@ -733,6 +750,7 @@ func _delete_nodes(ids: Array) -> void:
 		_after_change()
 		return
 	undo.create_action(L10n.ui("graph.undo.delete"), UndoRedo.MERGE_DISABLE, _graph)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_remove_nodes", removed_nodes)
 	undo.add_undo_method(self, "_do_restore", removed_nodes, removed_connections, membership)
 	for node in removed_nodes:
@@ -813,6 +831,7 @@ func _on_end_node_move() -> void:
 			_apply_frame_rects(new_frames)
 		else:
 			undo.create_action(L10n.ui("graph.undo.move"), UndoRedo.MERGE_DISABLE, _graph)
+			undo.force_fixed_history()
 			undo.add_do_method(self, "_apply_positions", new_positions)
 			undo.add_do_method(self, "_apply_frame_rects", new_frames)
 			# 快照必须以副本绑定：本方法末尾会 clear() 变量，而 UndoRedo 只保存引用，
@@ -907,6 +926,7 @@ func _on_frame_resize_end(group: LevelGroup, new_size: Vector2) -> void:
 		_mark_dirty()
 		return
 	undo.create_action(L10n.ui("graph.undo.frame_resize"), UndoRedo.MERGE_DISABLE, _graph)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_apply_frame_rects", {group.group_id: new_rect})
 	undo.add_undo_method(self, "_apply_frame_rects", {group.group_id: old_rect})
 	undo.commit_action()
@@ -997,6 +1017,7 @@ func _create_group(from_selection: bool) -> void:
 		_do_group_add(group)
 	else:
 		undo.create_action(L10n.ui("graph.undo.group_add"), UndoRedo.MERGE_DISABLE, _graph)
+		undo.force_fixed_history()
 		undo.add_do_method(self, "_do_group_add", group)
 		undo.add_undo_method(self, "_do_group_remove", group.group_id)
 		undo.add_do_reference(group)
@@ -1029,7 +1050,9 @@ func _do_group_remove(group_id: StringName) -> void:
 		for member in _graph_edit.get_attached_nodes_of_frame(String(group_id)):
 			_graph_edit.detach_graph_element_from_frame(member)
 		_frame_views.erase(group_id)
-		view.free()
+		# 同帧早先的挂接 / 选中可能还排着指向该框的延迟 move_child，用 _retire_view 避免
+		# 「Child is not a child of this node」；撤销在同一帧恢复分组时也能立即重建同名框。
+		_retire_view(view)
 	if _selected_group != null and _selected_group.group_id == group_id:
 		_selected_group = null
 		_rebuild_params()
@@ -1052,6 +1075,7 @@ func _delete_groups(group_ids: Array) -> void:
 			_do_group_remove(group.group_id)
 		return
 	undo.create_action(L10n.ui("graph.undo.group_delete"), UndoRedo.MERGE_DISABLE, _graph)
+	undo.force_fixed_history()
 	for group in groups:
 		undo.add_do_method(self, "_do_group_remove", group.group_id)
 		undo.add_undo_method(self, "_do_group_add", group)
@@ -1093,6 +1117,7 @@ func _commit_group_members(group: LevelGroup, new_members: Array) -> void:
 		_do_group_members(group.group_id, new_members)
 		return
 	undo.create_action(L10n.ui("graph.undo.group_members"), UndoRedo.MERGE_DISABLE, _graph)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_group_members", group.group_id, new_members)
 	undo.add_undo_method(self, "_do_group_members", group.group_id, old_members)
 	undo.commit_action()
@@ -1268,6 +1293,7 @@ func _layout_auto() -> void:
 		_apply_frame_rects(after_frames)
 		return
 	undo.create_action(L10n.ui("graph.undo.layout"), UndoRedo.MERGE_DISABLE, _graph)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_apply_positions", after)
 	undo.add_do_method(self, "_apply_frame_rects", after_frames)
 	undo.add_undo_method(self, "_apply_positions", before)
@@ -1280,6 +1306,7 @@ func _commit_positions(before: Dictionary, after: Dictionary, action_name: Strin
 		_apply_positions(after)
 		return
 	undo.create_action(action_name, UndoRedo.MERGE_DISABLE, _graph)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_apply_positions", after)
 	undo.add_undo_method(self, "_apply_positions", before)
 	undo.commit_action()
@@ -1318,6 +1345,7 @@ func _on_add_node_pressed(id: int) -> void:
 		_select_node(node)
 		return
 	undo.create_action(L10n.ui("graph.undo.add"), UndoRedo.MERGE_DISABLE, _graph)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_add_node", node)
 	undo.add_undo_method(self, "_do_remove_nodes", [node])
 	undo.add_do_reference(node)
@@ -1510,6 +1538,7 @@ func _change_group_property(group: LevelGroup, prop: String, value: Variant) -> 
 		return
 	undo.create_action("%s:%s:%d" % [L10n.ui("graph.undo.group_prop"), prop, group.get_instance_id()],
 		UndoRedo.MERGE_ENDS, _graph)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_group_property", group.group_id, prop, value)
 	undo.add_undo_method(self, "_do_group_property", group.group_id, prop, old_value)
 	undo.commit_action(false)
@@ -1676,6 +1705,7 @@ func _change_param(node: LevelNode, key: String, value: Variant) -> void:
 		UndoRedo.MERGE_ENDS,
 		_graph
 	)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_apply_param", node, key, value)
 	undo.add_undo_method(self, "_apply_param", node, key, old_value)
 	undo.commit_action(false)
@@ -2018,6 +2048,15 @@ func _update_toolbar() -> void:
 		_group_button.disabled = _graph == null
 		_rebuild_group_menu()
 
+## 撤销管理器（编辑器注入的全局单例）。
+## 用法约定：每个 undo 动作在 `create_action(..., _graph)` 之后必须立刻
+## `undo.force_fixed_history()`。原因：关卡图是外部 .tres 资源，其动作固定落在
+## 全局历史（GLOBAL_HISTORY = 0）；而动作里 new 出来的 LevelNode / LevelConnection /
+## LevelGroup 是无路径的内建资源，EditorUndoRedoManager 会把它们解析到
+## 「当前编辑场景历史」（有场景打开时为 1），于是 add_do_reference 等逐对象登记
+## 每次都触发「UndoRedo history mismatch: expected 0, got 1.」诊断
+## （editor_undo_redo_manager.cpp get_history_for_object）。引擎在 mismatch 时
+## 本来就回退到 pending 历史，所以这里只是把这一行为显式化，不改变撤销语义。
 func _undo_redo() -> EditorUndoRedoManager:
 	if not Engine.is_editor_hint():
 		return null

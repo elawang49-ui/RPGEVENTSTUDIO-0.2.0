@@ -139,7 +139,10 @@ func _test_resize() -> void:
 	_check(int(_p.get("_page_line")) >= 0 and int(_p.get("_page_line")) < total,
 		"缩小窗口：页起始行有效（%d/%d）" % [int(_p.get("_page_line")), total])
 	_check(int(_p.call("_page_end_line")) <= total, "缩小窗口：页结束行不越界")
-	_check(before >= 0, "缩小窗口：翻页状态未崩溃")
+	# before 只可能 >= 0（_page_line 全程被 clamp），旧断言 before >= 0 恒真无鉴别力；
+	# 改为 _next_page 的真实后序条件：要么页起始行已前进（>= 1），要么正文本就一页容纳（末页无需翻页）。
+	_check(before >= 1 or int(_p.call("_page_end_line")) >= total,
+		"缩小窗口：翻页状态未崩溃（翻页后应已前进，或正文本就一页容纳）")
 	root.size = Vector2i(1280, 820)
 	await create_timer(0.25).timeout
 	_p.call("_update_heights")
