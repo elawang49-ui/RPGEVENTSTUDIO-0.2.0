@@ -13,6 +13,11 @@ func _ready() -> void:
 		return
 	start_graph()
 
+func _exit_tree() -> void:
+	# 场景释放 / 切换关卡：自动停图并从运行时注销，
+	# 避免旧图继续响应状态变化、重进关卡时出现双 Runner。
+	stop_graph()
+
 func start_graph() -> void:
 	var runtime := get_node_or_null("/root/" + StudioRuntime.AUTOLOAD_NAME)
 	if runtime == null:
@@ -25,6 +30,9 @@ func start_graph() -> void:
 	if graph == null:
 		push_error("[RPGEventStudio] 不是关卡图资源：%s" % graph_path)
 		return
+	if runner != null:
+		# 重复启动：先停掉旧图，避免同一节点出现双 Runner
+		stop_graph()
 
 	runner = GraphRunner.new()
 	runner.host = self
@@ -40,3 +48,6 @@ func start_graph() -> void:
 func stop_graph() -> void:
 	if runner != null:
 		runner.stop()
+		# 停止后不再保留引用（runner 会通过 stopped 信号从运行时注销）；
+		# 置空也让重复调用 stop_graph 天然安全。
+		runner = null
