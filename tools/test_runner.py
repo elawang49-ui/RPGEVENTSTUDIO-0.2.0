@@ -55,6 +55,7 @@ HEADLESS_SUITES = [
     ("runtime_trace_test", ["--script", "res://tests/runtime_trace_test.gd"], {}, 180),
     ("trace_ui_test", ["--script", "res://tests/trace_ui_test.gd"], {}, 120),
     ("dialogue_layout_test", ["--script", "res://tests/dialogue_layout_test.gd"], {}, 120),
+    ("dialogue_theme_presets_test", ["--script", "res://tests/dialogue_theme_presets_test.gd"], {}, 240),
     ("story_audit_test", ["--script", "res://tests/story_audit_test.gd"], {}, 120),
     ("state_bulk_register_test", ["--script", "res://tests/state_bulk_register_test.gd"], {}, 120),
     ("graph_editor_smoke", ["--script", "res://tests/graph_editor_smoke.gd"], {}, 120),

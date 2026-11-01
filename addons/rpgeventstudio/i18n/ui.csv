@@ -874,3 +874,149 @@ story.panels.preview,台词预览,Preview
 theme.preview.toggle,预览,Preview
 theme.preview.toggle.tip,在低高度窗口中切换预览/参数,Switch preview and settings in short windows
 game.advance_more,空格 / 鼠标左键继续 / 手柄 A ▼,Space / Left Click / Pad A to continue ▼
+theme.preset,主题预设,Theme Preset
+theme.preset.custom,自定义 / 插件默认外观,Custom / Plugin Default
+theme.preset.custom_desc,当前为插件默认外观。选择上方预设可直接载入完整视觉方案；保存后会写入项目主题资源。,Plugin default. Choose a preset above to load a complete visual style; saving writes the project theme resource.
+theme.preset.series1,第一弹,Series 1
+theme.preset.series2,第二弹,Series 2
+theme.preset.portrait,立绘框,Portrait Frame
+theme.preset.portrait_tip,开启后预览会使用示例立绘检查框体；关闭后正文自动占满宽度。,"Preview uses a sample portrait when enabled; when disabled, text reclaims the full width."
+theme.preview.size_tip,预览虚拟分辨率（等比缩放，不改变实际游戏窗口）,Preview virtual resolution (scaled to fit; does not change the game window)
+theme.status.preset_selected,已载入预设，点击「保存主题」写入项目,Preset loaded. Click Save Theme to write it.
+theme.section.nameplate,铭牌,Nameplate
+theme.section.portrait,立绘框,Portrait Frame
+theme.panel.shadow_offset,阴影偏移,Shadow Offset
+theme.panel.shape,面板轮廓,Panel Shape
+theme.panel.notch,缺口尺寸,Notch Size
+theme.panel.slant,斜切尺寸,Slant Size
+theme.panel.frame,装饰边框,Decorative Frame
+theme.panel.frame_color,内框颜色,Inner Frame Color
+theme.panel.frame_gap,内框间距,Inner Frame Gap
+theme.panel.frame_width,内框宽度,Inner Frame Width
+theme.panel.frame_dash,内框虚线,Dashed Inner Frame
+theme.panel.ornament,角饰,Corner Ornament
+theme.panel.ornament_color,角饰颜色,Ornament Color
+theme.panel.ornament_glyph,角饰字符,Ornament Glyph
+theme.panel.ornament_size,角饰字号,Ornament Size
+theme.panel.gradient,底色渐变,Background Gradient
+theme.panel.gradient_top,渐变上色,Gradient Top
+theme.panel.gradient_bottom,渐变下色,Gradient Bottom
+theme.panel.pattern,底纹,Pattern
+theme.panel.pattern_color,底纹颜色,Pattern Color
+theme.panel.pattern_spacing,底纹间距,Pattern Spacing
+theme.panel.hard_shadow,硬阴影色,Hard Shadow Color
+theme.panel.hard_shadow_offset,硬阴影偏移,Hard Shadow Offset
+theme.panel.accent,主强调色,Accent Color
+theme.panel.accent2,副强调色,Secondary Accent
+theme.panel.blade_color,顶刃颜色,Top Blade Color
+theme.panel.blade_width,顶刃宽度,Top Blade Width
+theme.panel.armor_width,装甲条宽度,Armor Bar Width
+theme.text.family,标题字体,Heading Font Family
+theme.text.body_family,正文字体,Body Font Family
+theme.text.outline,正文描边色,Text Outline Color
+theme.text.outline_size,正文描边宽度,Text Outline Size
+theme.choice.panel_style,选项面板,Choice Panel
+theme.choice.shape,选项形状,Choice Shape
+theme.choice.skew,斜切角度,Skew Degrees
+theme.choice.shift,选中位移,Selected Shift
+theme.choice.hover_bg,悬停背景,Hover Background
+theme.choice.hover_text,悬停文字,Hover Text
+theme.choice.accent,选项强调色,Choice Accent
+theme.choice.selected_border,选中边框,Selected Border
+theme.choice.marker,序号标记,Marker
+theme.choice.marker_glyph,标记字符,Marker Glyph
+theme.choice.marker_width,标记栏宽,Marker Width
+theme.choice.marker_size,标记字号,Marker Size
+theme.choice.shadow,选项阴影,Choice Shadow
+theme.choice.shadow_offset,选项阴影偏移,Choice Shadow Offset
+theme.nameplate.style,铭牌样式,Nameplate Style
+theme.nameplate.bg,铭牌背景,Nameplate Background
+theme.nameplate.border,铭牌边框,Nameplate Border
+theme.nameplate.border_width,铭牌边框宽,Nameplate Border Width
+theme.nameplate.radius,铭牌圆角,Nameplate Radius
+theme.nameplate.text,铭牌文字,Nameplate Text
+theme.nameplate.accent,铭牌强调色,Nameplate Accent
+theme.nameplate.offset,铭牌偏移,Nameplate Offset
+theme.nameplate.rotation,铭牌旋转,Nameplate Rotation
+theme.nameplate.glyph,铭牌字符,Nameplate Glyph
+theme.nameplate.tag,铭牌附标,Nameplate Tag
+theme.nameplate.shadow,铭牌阴影,Nameplate Shadow
+theme.nameplate.shadow_offset,铭牌阴影偏移,Nameplate Shadow Offset
+theme.nameplate.padding_x,铭牌横内边距,Nameplate Padding X
+theme.nameplate.padding_y,铭牌纵内边距,Nameplate Padding Y
+theme.nameplate.column_width,左栏宽度,Column Width
+theme.nameplate.divider,左栏分隔线,Column Divider
+theme.nameplate.divider_color,分隔线颜色,Divider Color
+theme.portrait.style,立绘框样式,Portrait Frame Style
+theme.portrait.side,立绘位置,Portrait Side
+theme.portrait.size,立绘框高度,Portrait Height
+theme.portrait.aspect,立绘框宽高比,Portrait Aspect
+theme.portrait.bg,立绘框底色,Portrait Background
+theme.portrait.border,立绘框边框,Portrait Border
+theme.portrait.border_width,立绘框边框宽,Portrait Border Width
+theme.portrait.corner,立绘框圆角,Portrait Corner
+theme.portrait.padding,立绘内边距,Portrait Padding
+theme.portrait.inner_border,立绘内框,Portrait Inner Border
+theme.portrait.inner_color,立绘内框色,Portrait Inner Color
+theme.portrait.accent,立绘强调色,Portrait Accent
+theme.portrait.shadow,立绘阴影,Portrait Shadow
+theme.portrait.shadow_offset,立绘阴影偏移,Portrait Shadow Offset
+theme.portrait.rotation,立绘旋转,Portrait Rotation
+theme.portrait.glyph,立绘角标,Portrait Glyph
+theme.portrait.gap,立绘间距,Portrait Gap
+theme.portrait.tint,立绘色调,Portrait Tint
+theme.portrait.placeholder,无立绘时保留占位,Show Placeholder Without Texture
+theme.opt.rect,矩形,Rect
+theme.opt.notched,缺口,Notched
+theme.opt.slant,斜切,Slant
+theme.opt.cinema,电影暗角,Cinema
+theme.opt.frame_plain,单层,Plain
+theme.opt.frame_double,双层,Double
+theme.opt.frame_ornament,角花,Ornament
+theme.opt.frame_stitch,缝线,Stitch
+theme.opt.frame_blade,刀锋,Blade
+theme.opt.frame_hairline,刻度线,Hairline
+theme.opt.frame_armor,装甲条,Armor
+theme.opt.none,无,None
+theme.opt.ornament_star,星芒,Star
+theme.opt.ornament_cross,十字,Cross
+theme.opt.ornament_tape,胶带,Tape
+theme.opt.ornament_seal,印章,Seal
+theme.opt.ornament_blade,刀角,Blade Corner
+theme.opt.pattern_notebook,方格纸,Notebook
+theme.opt.pattern_dots,圆点,Dots
+theme.opt.pattern_grid,网格,Grid
+theme.opt.pattern_slash,斜线,Slash
+theme.opt.pattern_rays,放射,Rays
+theme.opt.sans,无衬线,Sans
+theme.opt.serif,衬线,Serif
+theme.opt.mono,等宽,Mono
+theme.opt.font_rounded,圆体,Rounded
+theme.opt.choice_panel,带面板,Panel
+theme.opt.choice_bare,独立成形,Bare
+theme.opt.pill,胶囊,Pill
+theme.opt.skew,斜切,Skew
+theme.opt.note,便签,Note
+theme.opt.bar,竖线光带,Bar
+theme.opt.notch,缺口条,Notch
+theme.opt.wing,羽翼,Wing
+theme.opt.marker_number,序号,Number
+theme.opt.marker_glyph,字符,Glyph
+theme.opt.marker_crosshair,十字准星,Crosshair
+theme.opt.marker_seal,印章,Seal
+theme.opt.inline,旧版内嵌,Inline
+theme.opt.float,压线矩形,Floating
+theme.opt.capsule,胶囊,Capsule
+theme.opt.parallelogram,平行四边形,Parallelogram
+theme.opt.wood,木牌印章,Wood Seal
+theme.opt.blood,血封条,Blood Seal
+theme.opt.column,左栏式,Column
+theme.opt.square,方形,Square
+theme.opt.rounded,圆角,Rounded
+theme.opt.circle,圆形,Circle
+theme.opt.octagon,八角,Octagon
+theme.opt.polaroid,拍立得,Polaroid
+theme.opt.angular,斜切,Angular
+theme.opt.left,左,Left
+theme.opt.right,右,Right
+theme.portrait.ornament,框体角标,Frame Ornament
