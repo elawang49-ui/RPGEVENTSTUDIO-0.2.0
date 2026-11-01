@@ -18,7 +18,9 @@
     "graph_lifecycle_test": 32,
     "presenter_lifecycle_test": 48,
     "input_coexistence_test": 35,
-    "nested_event_semantics_test": 31
+    "nested_event_semantics_test": 31,
+    "story_insert_choice_test": 29,
+    "theme_reload_test": 10
   },
   "editor": {
     "editor": 19,

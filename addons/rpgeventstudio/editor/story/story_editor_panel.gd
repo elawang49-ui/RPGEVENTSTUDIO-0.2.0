@@ -689,9 +689,16 @@ func _insert_where_text() -> String:
 	return str(_selected_item.get("where", L10n.ui("story.where.page", {"page": _page_index + 1})))
 
 ## 选中条目之后（同一条列表）；没有选中就是当前页末尾。
+## 选项块占 1 + N 条连续指令（show_choices + N 条 if），选中它时必须插到整块之后，
+## 否则会插进 show_choices 与第一条 if 之间，把分支配对拆断。
 func _insert_target() -> Dictionary:
 	if not _selected_item.is_empty():
-		return {"list": _selected_item["list"], "index": int(_selected_item["index"]) + 1}
+		var index := int(_selected_item["index"])
+		if str(_selected_item.get("kind", "")) == "choice":
+			index += int(_selected_item.get("consumed", 1))
+		else:
+			index += 1
+		return {"list": _selected_item["list"], "index": index}
 	var page := _current_page()
 	return {"list": page.commands, "index": page.commands.size()}
 
