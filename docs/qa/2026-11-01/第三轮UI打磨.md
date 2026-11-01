@@ -54,7 +54,7 @@ _text_label.scroll_active = needs_scroll
 
 ## 二、实际修复
 
-### 1. 游戏内长台词翻页（P1）
+### 1. 游戏内长台词翻页（P2 体验问题，非阻塞）
 
 - `RichTextLabel` 始终保持 `scroll_active=false`，玩家不可见滚动条。
 - 正文高度按整行对齐；超过可见行数时，推进键/鼠标/手柄翻到下一页。
