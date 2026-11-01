@@ -16,6 +16,10 @@ const SPEAKERS := {
 	"minimal": "观测者 2B",
 	"biscuit": "面包房主 · 可可",
 	"crimson": "处刑人 · 维克多",
+	"astrolabe": "占星术士 · 塞蕾丝汀",
+	"macaron": "茶会主人 · 爱丽丝",
+	"morpho": "MAKOTO // 结城理",
+	"feather": "守夜诗人 · 奥菲莉娅",
 }
 
 const TEXTS := {
@@ -25,6 +29,10 @@ const TEXTS := {
 	"minimal": "雨停了。录音带转到了尽头，废墟里只剩下机械心脏跳动的回音。",
 	"biscuit": "今天的「薄荷焦糖曲奇」烤得刚刚好！我已经把配方贴在你的手账第 3 页啦～",
 	"crimson": "「午夜的钟声已经敲响了十二下。在绯红之月落下之前，交出你的底牌吧。」",
+	"astrolabe": "「银白星轨已经在第十二宫交汇。命运并非不可改写的石碑，而是一曲等待你拨动琴弦的夜曲。」",
+	"macaron": "欢迎来到午后三点的庭院茶会～要来一块刚烤好的「覆盆子马卡龙」吗？",
+	"morpho": "「午夜零点的影时间已经降临。听见那阵振翅声了吗？那是命运呼唤你的声音。」",
+	"feather": "「森林记住了每一片雪花落下的名字，正如灰烬记住了火焰最初的形状。」",
 }
 
 const CHOICES := {
@@ -34,6 +42,10 @@ const CHOICES := {
 	"minimal": ["继续回放录音", "检查机械心脏", "关闭终端，回到地面"],
 	"biscuit": ["翻开烘焙手账第 3 页", "帮可可搅拌焦糖", "把曲奇分给门口的猫"],
 	"crimson": ["交出底牌，接受审判", "否认契约，直视逆十字", "保持沉默，等待钟声"],
+	"astrolabe": ["转动星盘，窥探命运的潮汐", "合上诗篇，询问守夜人的来历", "什么也不说，静候黎明"],
+	"macaron": ["品尝伯爵红茶与马卡龙", "询问茶会主人的来历", "悄悄把糖霜曲奇藏进口袋"],
+	"morpho": ["唤醒人格面具，直视影时间", "追踪冥蝶，潜入深海矩阵", "保持沉默，等待零点钟声"],
+	"feather": ["拾起白鸦之羽，继续守夜", "询问奥菲莉娅诗篇的结尾", "合上诗集，静候黎明"],
 }
 
 var _w := 1280
@@ -82,6 +94,8 @@ func _run() -> void:
 	await _shot_pagination("biscuit")
 
 	await _shot_editor(1)
+	await _shot_editor(7)
+	await _shot_editor(10)
 	if _w <= 1160:
 		await _shot_editor_preview_mode()
 	await _shot_editor(5)
@@ -109,7 +123,9 @@ func _backdrop_for(id: String) -> void:
 
 func _apply(id: String, portrait: bool = true) -> RpgEventStudioTheme:
 	var theme: RpgEventStudioTheme = _runtime.call("apply_dialogue_theme_preset", id)
-	theme.portrait_enabled = portrait
+	# 正常截图遵循预设本身是否带立绘；只有“无立绘”补拍才强制关闭。
+	if not portrait:
+		theme.portrait_enabled = false
 	_presenter.call("set_dialogue_theme", theme)
 	if portrait:
 		_runtime.call("set_dialogue_portrait", _portrait)
@@ -222,7 +238,7 @@ func _shot_editor(preset_index: int) -> void:
 	view.call("_on_preset_selected", preset_index)
 	var sample: OptionButton = view.get("_sample")
 	if sample != null:
-		sample.selected = 0 if preset_index == 1 else 3
+		sample.selected = 0 if preset_index in [1, 7, 8, 9, 10] else 3
 		sample.item_selected.emit(sample.selected)
 	await create_timer(0.8).timeout
 	await _shot(_name("theme_editor_%d" % preset_index))
@@ -316,6 +332,14 @@ class Backdrop extends Control:
 			"minimal":
 				for i in 6:
 					draw_line(Vector2(0, size.y * 0.25 + i * 6), Vector2(size.x, size.y * 0.25 + i * 6), Color(1, 1, 1, 0.02), 1.0)
+			"astrolabe":
+				var stars := [Vector2(0.10, 0.18), Vector2(0.20, 0.11), Vector2(0.32, 0.24), Vector2(0.46, 0.14), Vector2(0.58, 0.27), Vector2(0.72, 0.16), Vector2(0.86, 0.28)]
+				for i in stars.size():
+					var p := Vector2(stars[i].x * size.x, stars[i].y * size.y)
+					draw_circle(p, 1.8, Color(0.957, 0.906, 0.773, 0.55))
+					if i > 0:
+						var q := Vector2(stars[i - 1].x * size.x, stars[i - 1].y * size.y)
+						draw_dashed_line(q, p, Color(0.957, 0.906, 0.773, 0.28), 1.0, 2.0)
 			"biscuit":
 				var y := 0.0
 				while y < size.y:

@@ -44,26 +44,28 @@ extends Resource
 @export_range(32, 300, 1) var text_min_height: int = 96
 
 ## 面板轮廓：rect 传统矩形；notched 斜切缺口；slant 平行四边形；cinema 无边框电影暗角。
-@export_enum("rect", "notched", "slant", "cinema") var panel_shape: String = "rect"
+@export_enum("rect", "notched", "slant", "cinema", "octagon", "shard") var panel_shape: String = "rect"
 @export_range(0, 32, 1) var panel_notch_size: int = 10
 @export_range(0, 32, 1) var panel_slant_size: int = 12
 ## 双层/装饰边框：plain 单层；double 内缩细线；ornament 细线+角花；
 ## stitch 手账缝线；blade 顶部刀锋；hairline 顶部刻度线；armor 左侧装甲条。
-@export_enum("plain", "double", "ornament", "stitch", "blade", "hairline", "armor") var frame_style: String = "plain"
+@export_enum("plain", "double", "ornament", "stitch", "blade", "hairline", "armor", "lace", "tapered") var frame_style: String = "plain"
 @export var frame_inner_color: Color = Color(0.85, 0.75, 0.55, 0.35)
 @export_range(0, 24, 1) var frame_inner_gap: int = 4
 @export_range(0, 8, 1) var frame_inner_width: int = 1
 @export var frame_inner_dash: bool = false
-@export var corner_ornament: String = "none"
+@export_enum("none", "star", "cross", "tape", "seal", "blade", "astrolabe", "butterfly") var corner_ornament: String = "none"
 @export var corner_ornament_color: Color = Color(0.85, 0.75, 0.55, 0.8)
 @export var corner_glyph: String = "✦"
 @export_range(0, 48, 1) var corner_ornament_size: int = 13
+## 角饰旋转/振翅速度（度/秒）；0 表示静态。
+@export_range(0.0, 30.0, 0.1) var ornament_rotation_speed: float = 0.0
 ## 面板底色是否使用上下渐变（由绘制组件实现）。
 @export var panel_gradient: bool = false
 @export var panel_gradient_top: Color = Color(0.08, 0.10, 0.16, 0.96)
 @export var panel_gradient_bottom: Color = Color(0.04, 0.05, 0.08, 0.96)
 ## 面板底纹：none / notebook / dots / grid / slash / rays。
-@export_enum("none", "notebook", "dots", "grid", "slash", "rays") var pattern_style: String = "none"
+@export_enum("none", "notebook", "dots", "grid", "slash", "rays", "constellation") var pattern_style: String = "none"
 @export var pattern_color: Color = Color(1, 1, 1, 0.05)
 @export_range(4, 64, 1) var pattern_spacing: int = 16
 ## 贴纸式硬阴影（0 alpha 表示不使用）。
@@ -95,6 +97,8 @@ extends Resource
 @export_range(0, 12, 1) var text_outline_size: int = 0
 ## 正文/选项的字体样式（预设可给“手账”用圆体、圣堂用水宋）。
 @export_enum("sans", "serif", "rounded") var body_font_flavor: String = "sans"
+## 正文水平对齐；center 用于诗集式主题（通过 BBCode [center] 实现）。
+@export_enum("left", "center") var text_align: String = "left"
 
 # ── 选项 ─────────────────────────────────────────────────
 
@@ -117,7 +121,7 @@ extends Resource
 ## panel：沿用原来的选项面板；bare：每个选项自己成形（胶囊/斜切/纸条等）。
 @export_enum("panel", "bare") var choice_panel_style: String = "panel"
 ## rect / pill / skew / note / bar / notch / wing
-@export_enum("rect", "pill", "skew", "note", "bar", "notch", "wing") var choice_style: String = "rect"
+@export_enum("rect", "pill", "skew", "note", "bar", "notch", "wing", "spindle", "swallowtail", "crystal", "filament") var choice_style: String = "rect"
 @export_range(0, 20, 1) var choice_skew_degrees: int = 0
 @export_range(0, 20, 1) var choice_selected_shift: int = 0
 @export var choice_hover_bg: Color = Color(0.16, 0.19, 0.26, 0.72)
@@ -125,9 +129,11 @@ extends Resource
 @export var choice_accent_color: Color = Color(0.85, 0.75, 0.55)
 @export var choice_selected_border_color: Color = Color(0.85, 0.75, 0.55)
 ## none / number / glyph / crosshair / seal
-@export_enum("none", "number", "glyph", "crosshair", "seal") var choice_marker: String = "none"
+@export_enum("none", "number", "glyph", "crosshair", "seal", "heart") var choice_marker: String = "none"
 @export var choice_marker_glyph: String = "✦"
 @export_range(0, 32, 1) var choice_marker_width: int = 0
+## 选项列表整体停在对话框上方的距离（px）。
+@export_range(0, 40, 1) var choice_gap: int = 18
 @export_range(0, 8, 1) var choice_marker_size: int = 18
 @export var choice_shadow_color: Color = Color(0, 0, 0, 0)
 @export var choice_shadow_offset: Vector2 = Vector2.ZERO
@@ -137,7 +143,7 @@ extends Resource
 @export_group("铭牌")
 ## inline 旧版标题；float 压线矩形；capsule 胶囊；parallelogram 平行四边形；
 ## wood 印章木牌；blood 血封条；column 左栏式（不是压在正文上）。
-@export_enum("inline", "float", "capsule", "parallelogram", "wood", "blood", "column") var nameplate_style: String = "inline"
+@export_enum("inline", "float", "capsule", "parallelogram", "wood", "blood", "column", "ribbon", "header", "blade", "poetic") var nameplate_style: String = "inline"
 @export var nameplate_bg: Color = Color(0.06, 0.07, 0.10, 0.95)
 @export var nameplate_border: Color = Color(0.80, 0.70, 0.42, 0.85)
 @export_range(0, 8, 1) var nameplate_border_width: int = 1
@@ -156,6 +162,8 @@ extends Resource
 @export_range(40, 180, 1) var nameplate_column_width: int = 92
 @export var nameplate_divider: bool = false
 @export var nameplate_divider_color: Color = Color(1, 1, 1, 0.18)
+## inside 型铭牌（header/blade/poetic）占面板宽度的比例；0 表示按文字自适应。
+@export_range(0.0, 1.0, 0.01) var nameplate_width_ratio: float = 0.0
 
 # ── 立绘框 ───────────────────────────────────────────────
 

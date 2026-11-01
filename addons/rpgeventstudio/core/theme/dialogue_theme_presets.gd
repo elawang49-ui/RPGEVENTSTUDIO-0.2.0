@@ -111,6 +111,70 @@ const PRESETS := [
 		"stage_top": "#3B0813",
 		"stage_bottom": "#070507",
 	},
+	{
+		"id": "astrolabe",
+		"series": 4,
+		"title": "月神星轨 · 银白罗盘长卷",
+		"tab": "🌙 4-1 · 月神星轨",
+		"tag": "第四轮·星象仪",
+		"description": "八角内斜切长卷 + 缓慢旋转的黄金星盘罗盘 + 星座连线暗纹；星梭形选项选中时化为月白暖金。",
+		"bullets": [
+			"六角星梭异形框：对话框与选项都采用梭形斜切，没有死板直角。",
+			"旋转星盘徽章：左侧持续旋转的黄金星象仪与新月纹章。",
+			"星芒梭形选项：选中时月白金辉 + 金色描边。",
+		],
+		"colors": ["#141B33", "#F4E7C5", "#8DA9D4", "#D4AF37"],
+		"stage_top": "#273863",
+		"stage_bottom": "#090D19",
+	},
+	{
+		"id": "macaron",
+		"series": 4,
+		"title": "天使茶会 · 奶油蕾丝与燕尾缎带",
+		"tab": "🍰 4-2 · 蕾丝茶会",
+		"tag": "第四轮·绘本茶会",
+		"description": "奶油面板 + 顶部扇形蕾丝花边 + 草莓粉虚线内框 + 蝴蝶结缎带铭牌 + 燕尾丝带选项。",
+		"bullets": [
+			"扇形蕾丝花边：顶部内嵌一排扇形蕾丝，内圈草莓粉虚线。",
+			"蝴蝶结缎带铭牌：胶囊缎带 + 手绘蝴蝶结，不用系统 emoji。",
+			"燕尾丝带选项：右侧内凹燕尾切口，左端缀手绘爱心。",
+		],
+		"colors": ["#FFF8F0", "#F28B9F", "#5E3B41", "#F9DCE2"],
+		"stage_top": "#5E4352",
+		"stage_bottom": "#42303B",
+	},
+	{
+		"id": "morpho",
+		"series": 4,
+		"title": "深海幻蝶 · P3R 碎晶斜切美学",
+		"tab": "🦋 4-3 · 深海幻蝶",
+		"tag": "第四轮·P3R 潮酷",
+		"description": "不规则多边形斜切深海玻璃框 + 电光冰蓝重影 + 纯白锐角刀片铭牌 + 发光幽蓝冥蝶 + 错落碎晶选项。",
+		"bullets": [
+			"P3R 不规则多边形：深海蓝玻璃切角 + 冰蓝错位重影。",
+			"纯白锐角刀片铭牌：高反差白色尖刺直接刺入面板。",
+			"碎晶选项：角度错落的冰晶块，选中反转纯白 + 冰蓝流光。",
+		],
+		"colors": ["#071326", "#00D4FF", "#FFFFFF", "#0A3678"],
+		"stage_top": "#0D3B8C",
+		"stage_bottom": "#040B1C",
+	},
+	{
+		"id": "feather",
+		"series": 4,
+		"title": "白鸦诗篇 · 诗集黄金分割",
+		"tab": "🦢 4-4 · 白鸦诗篇",
+		"tag": "第四轮·诗集留白",
+		"description": "无外框柔光暗角 + 两端渐隐金丝与月相徽记 + 居中诗集排版 + 不画方盒的金丝选项。",
+		"bullets": [
+			"月相星芒分界线：去掉左右边框，仅留两端消隐金丝与月相。",
+			"诗集居中排版：宽字距衬线体，台词如诗句浮于底部柔光。",
+			"丝线菱形选项：无方盒；选中时文字两侧亮起金丝与菱星。",
+		],
+		"colors": ["#11131A", "#EDE6D6", "#C8B282", "#7E8494"],
+		"stage_top": "#262936",
+		"stage_bottom": "#0C0D12",
+	},
 ]
 
 static func all_meta() -> Array:
@@ -154,6 +218,14 @@ static func create(id: String) -> RpgEventStudioTheme:
 			_biscuit(theme)
 		"crimson":
 			_crimson(theme)
+		"astrolabe":
+			_astrolabe(theme)
+		"macaron":
+			_macaron(theme)
+		"morpho":
+			_morpho(theme)
+		"feather":
+			_feather(theme)
 		_:
 			return RpgEventStudioTheme.new()
 	theme.preset_id = id
@@ -683,3 +755,282 @@ static func _crimson(theme: RpgEventStudioTheme) -> void:
 	theme.portrait_shadow_offset = Vector2(3, 3)
 	theme.portrait_glyph = "†"
 	theme.portrait_gap = 14
+
+
+# ── 第四轮：月神星轨 ─────────────────────────────────────
+
+static func _astrolabe(theme: RpgEventStudioTheme) -> void:
+	_base(theme)
+	theme.preset_series = 4
+	theme.panel_top = 0.50
+	theme.panel_bg_color = Color(0.063, 0.090, 0.176, 0.96)
+	theme.panel_border_color = Color(0.831, 0.686, 0.216, 0.95)
+	theme.panel_border_width = 2
+	theme.panel_corner_radius = 0
+	theme.panel_shadow_color = Color(0, 0, 0, 0.55)
+	theme.panel_shadow_size = 18
+	theme.panel_shadow_offset = Vector2(0, 5)
+	theme.panel_shape = "octagon"
+	theme.panel_notch_size = 14
+	theme.panel_gradient = true
+	theme.panel_gradient_top = Color(0.063, 0.090, 0.176, 0.96)
+	theme.panel_gradient_bottom = Color(0.106, 0.149, 0.282, 0.94)
+	theme.frame_style = "double"
+	theme.frame_inner_color = Color(0.957, 0.906, 0.773, 0.30)
+	theme.frame_inner_gap = 6
+	theme.frame_inner_width = 1
+	theme.pattern_style = "constellation"
+	theme.pattern_color = Color(0.957, 0.906, 0.773, 0.13)
+	theme.pattern_spacing = 24
+	theme.corner_ornament = "astrolabe"
+	theme.corner_ornament_color = Color(0.831, 0.686, 0.216, 0.95)
+	theme.corner_ornament_size = 18
+	theme.ornament_rotation_speed = 10.0
+	theme.accent_color = Color(0.831, 0.686, 0.216, 1)
+	theme.accent_secondary = Color(0.553, 0.663, 0.831, 1)
+	theme.content_margin_left = 96
+	theme.content_margin_right = 30
+	theme.content_margin_top = 24
+	theme.content_margin_bottom = 12
+	theme.text_min_height = 80
+	theme.font_style = "serif"
+	theme.body_font_flavor = "serif"
+	theme.text_color = Color(0.902, 0.933, 0.988, 1)
+	theme.speaker_color = Color(0.957, 0.906, 0.773, 1)
+	theme.hint_color = Color(0.957, 0.906, 0.773, 0.72)
+	theme.text_align = "left"
+	theme.nameplate_style = "header"
+	theme.nameplate_bg = Color(0, 0, 0, 0)
+	theme.nameplate_border = Color(0, 0, 0, 0)
+	theme.nameplate_border_width = 0
+	theme.nameplate_radius = 0
+	theme.nameplate_text_color = Color(0.957, 0.906, 0.773, 1)
+	theme.nameplate_accent = Color(0.831, 0.686, 0.216, 1)
+	theme.nameplate_glyph = "☽"
+	theme.nameplate_width_ratio = 0.74
+	theme.nameplate_padding_x = 4
+	theme.nameplate_padding_y = 2
+	theme.choice_panel_style = "bare"
+	theme.choice_style = "spindle"
+	theme.choice_normal_bg = Color(0.063, 0.090, 0.176, 0.94)
+	theme.choice_selected_bg = Color(1.0, 0.965, 0.875, 1)
+	theme.choice_text_color = Color(0.784, 0.839, 0.925, 1)
+	theme.choice_selected_color = Color(0.102, 0.133, 0.220, 1)
+	theme.choice_hover_bg = Color(0.149, 0.212, 0.353, 1)
+	theme.choice_hover_text_color = Color(0.957, 0.906, 0.773, 1)
+	theme.choice_border_color = Color(0.831, 0.686, 0.216, 0.75)
+	theme.choice_selected_border_color = Color(0.957, 0.906, 0.773, 1)
+	theme.choice_border_width = 2
+	theme.choice_accent_color = Color(0.831, 0.686, 0.216, 1)
+	theme.choice_marker = "glyph"
+	theme.choice_marker_glyph = "✦"
+	theme.choice_marker_width = 24
+	theme.choice_selected_shift = 6
+	theme.choice_min_height = 46
+	theme.choice_separation = 10
+	theme.choice_gap = 18
+	theme.portrait_enabled = false
+
+# ── 第四轮：蕾丝茶会 ─────────────────────────────────────
+
+static func _macaron(theme: RpgEventStudioTheme) -> void:
+	_base(theme)
+	theme.preset_series = 4
+	theme.panel_top = 0.55
+	theme.panel_bg_color = Color(1.0, 0.973, 0.941, 1)
+	theme.panel_border_color = Color(0.831, 0.608, 0.655, 1)
+	theme.panel_border_width = 2
+	theme.panel_corner_radius = 20
+	theme.panel_shadow_color = Color(0.118, 0.055, 0.078, 0.38)
+	theme.panel_shadow_size = 18
+	theme.panel_shadow_offset = Vector2(0, 6)
+	theme.hard_shadow_color = Color(0.831, 0.608, 0.655, 1)
+	theme.hard_shadow_offset = Vector2(0, 4)
+	theme.panel_shape = "rect"
+	theme.panel_gradient = true
+	theme.panel_gradient_top = Color(1.0, 0.973, 0.941, 1)
+	theme.panel_gradient_bottom = Color(1.0, 0.945, 0.949, 1)
+	theme.frame_style = "lace"
+	theme.frame_inner_color = Color(0.902, 0.722, 0.761, 1)
+	theme.frame_inner_gap = 8
+	theme.frame_inner_width = 1
+	theme.frame_inner_dash = true
+	theme.corner_ornament = "none"
+	theme.accent_color = Color(0.949, 0.545, 0.624, 1)
+	theme.accent_secondary = Color(0.976, 0.863, 0.886, 1)
+	theme.content_margin_left = 28
+	theme.content_margin_right = 26
+	theme.content_margin_top = 30
+	theme.content_margin_bottom = 14
+	theme.text_min_height = 80
+	theme.font_style = "sans"
+	theme.body_font_flavor = "rounded"
+	theme.text_color = Color(0.369, 0.231, 0.255, 1)
+	theme.speaker_color = Color(1, 1, 1, 1)
+	theme.hint_color = Color(0.839, 0.420, 0.510, 1)
+	theme.nameplate_style = "ribbon"
+	theme.nameplate_bg = Color(0.949, 0.545, 0.624, 1)
+	theme.nameplate_border = Color(1.0, 0.973, 0.941, 1)
+	theme.nameplate_border_width = 2
+	theme.nameplate_radius = 16
+	theme.nameplate_text_color = Color(1, 1, 1, 1)
+	theme.nameplate_accent = Color(1.0, 0.973, 0.941, 1)
+	theme.nameplate_offset = Vector2(18, -24)
+	theme.nameplate_shadow_color = Color(0.706, 0.314, 0.412, 0.55)
+	theme.nameplate_shadow_offset = Vector2(0, 3)
+	theme.nameplate_padding_x = 14
+	theme.nameplate_padding_y = 4
+	theme.choice_panel_style = "bare"
+	theme.choice_style = "swallowtail"
+	theme.choice_normal_bg = Color(1.0, 0.973, 0.941, 1)
+	theme.choice_selected_bg = Color(0.949, 0.545, 0.624, 1)
+	theme.choice_text_color = Color(0.369, 0.231, 0.255, 1)
+	theme.choice_selected_color = Color(1, 1, 1, 1)
+	theme.choice_hover_bg = Color(1.0, 0.886, 0.910, 1)
+	theme.choice_hover_text_color = Color(0.369, 0.231, 0.255, 1)
+	theme.choice_border_color = Color(0.949, 0.545, 0.624, 1)
+	theme.choice_selected_border_color = Color(1.0, 0.973, 0.941, 1)
+	theme.choice_border_width = 4
+	theme.choice_accent_color = Color(0.949, 0.545, 0.624, 1)
+	theme.choice_marker = "heart"
+	theme.choice_marker_width = 26
+	theme.choice_selected_shift = 6
+	theme.choice_min_height = 48
+	theme.choice_separation = 10
+	theme.choice_gap = 18
+	theme.portrait_enabled = false
+
+# ── 第四轮：深海幻蝶 ─────────────────────────────────────
+
+static func _morpho(theme: RpgEventStudioTheme) -> void:
+	_base(theme)
+	theme.preset_series = 4
+	theme.panel_top = 0.52
+	theme.panel_bg_color = Color(0.024, 0.078, 0.200, 0.97)
+	theme.panel_border_color = Color(0, 0, 0, 0)
+	theme.panel_border_width = 0
+	theme.panel_corner_radius = 0
+	theme.panel_shadow_color = Color(0, 0, 0, 0.60)
+	theme.panel_shadow_size = 16
+	theme.panel_shadow_offset = Vector2(0, 5)
+	theme.hard_shadow_color = Color(0.0, 0.831, 1.0, 0.78)
+	theme.hard_shadow_offset = Vector2(6, 6)
+	theme.panel_shape = "shard"
+	theme.panel_gradient = true
+	theme.panel_gradient_top = Color(0.020, 0.063, 0.165, 0.98)
+	theme.panel_gradient_bottom = Color(0.039, 0.149, 0.345, 0.94)
+	theme.frame_style = "plain"
+	theme.corner_ornament = "butterfly"
+	theme.corner_ornament_color = Color(0.0, 0.831, 1.0, 1)
+	theme.corner_ornament_size = 18
+	theme.ornament_rotation_speed = 2.2
+	theme.accent_color = Color(0.0, 0.831, 1.0, 1)
+	theme.accent_secondary = Color(0.0, 0.467, 1.0, 1)
+	theme.content_margin_left = 36
+	theme.content_margin_right = 40
+	theme.content_margin_top = 30
+	theme.content_margin_bottom = 14
+	theme.text_min_height = 82
+	theme.font_style = "sans"
+	theme.body_font_flavor = "sans"
+	theme.text_color = Color(0.941, 0.973, 1.0, 1)
+	theme.speaker_color = Color(0.020, 0.078, 0.200, 1)
+	theme.hint_color = Color(0.0, 0.831, 1.0, 0.9)
+	theme.nameplate_style = "blade"
+	theme.nameplate_bg = Color(1, 1, 1, 1)
+	theme.nameplate_border = Color(0, 0, 0, 0)
+	theme.nameplate_border_width = 0
+	theme.nameplate_radius = 0
+	theme.nameplate_text_color = Color(0.020, 0.075, 0.161, 1)
+	theme.nameplate_accent = Color(0.0, 0.831, 1.0, 1)
+	theme.nameplate_glyph = "◆"
+	theme.nameplate_offset = Vector2(16, -22)
+	theme.nameplate_shadow_color = Color(0.0, 0.831, 1.0, 0.85)
+	theme.nameplate_shadow_offset = Vector2(4, 4)
+	theme.nameplate_padding_x = 14
+	theme.nameplate_padding_y = 4
+	theme.choice_panel_style = "bare"
+	theme.choice_style = "crystal"
+	theme.choice_normal_bg = Color(0.024, 0.078, 0.188, 0.92)
+	theme.choice_selected_bg = Color(1, 1, 1, 1)
+	theme.choice_text_color = Color(0.659, 0.831, 1.0, 1)
+	theme.choice_selected_color = Color(0.020, 0.075, 0.180, 1)
+	theme.choice_hover_bg = Color(0.047, 0.165, 0.376, 1)
+	theme.choice_hover_text_color = Color(1, 1, 1, 1)
+	theme.choice_border_color = Color(0.114, 0.435, 0.910, 1)
+	theme.choice_selected_border_color = Color(0.0, 0.831, 1.0, 1)
+	theme.choice_border_width = 5
+	theme.choice_accent_color = Color(0.0, 0.831, 1.0, 1)
+	theme.choice_marker = "number"
+	theme.choice_marker_glyph = "◆"
+	theme.choice_marker_width = 26
+	theme.choice_selected_shift = 8
+	theme.choice_min_height = 48
+	theme.choice_separation = 10
+	theme.choice_gap = 18
+	theme.portrait_enabled = false
+
+# ── 第四轮：白鸦诗篇 ─────────────────────────────────────
+
+static func _feather(theme: RpgEventStudioTheme) -> void:
+	_base(theme)
+	theme.preset_series = 4
+	theme.panel_top = 0.48
+	theme.panel_bg_color = Color(0.047, 0.051, 0.071, 0.12)
+	theme.panel_border_color = Color(0, 0, 0, 0)
+	theme.panel_border_width = 0
+	theme.panel_corner_radius = 0
+	theme.panel_shadow_color = Color(0, 0, 0, 0)
+	theme.panel_shadow_size = 0
+	theme.panel_shape = "cinema"
+	theme.panel_gradient = true
+	theme.panel_gradient_top = Color(0.047, 0.051, 0.071, 0.0)
+	theme.panel_gradient_bottom = Color(0.043, 0.047, 0.063, 0.96)
+	theme.frame_style = "tapered"
+	theme.frame_inner_color = Color(0.784, 0.698, 0.510, 0.55)
+	theme.frame_inner_gap = 0
+	theme.frame_inner_width = 1
+	theme.corner_ornament = "none"
+	theme.accent_color = Color(0.784, 0.698, 0.510, 1)
+	theme.accent_secondary = Color(0.494, 0.518, 0.580, 1)
+	theme.content_margin_left = 40
+	theme.content_margin_right = 40
+	theme.content_margin_top = 30
+	theme.content_margin_bottom = 14
+	theme.text_min_height = 84
+	theme.font_style = "serif"
+	theme.body_font_flavor = "serif"
+	theme.text_color = Color(0.929, 0.902, 0.839, 1)
+	theme.speaker_color = Color(0.929, 0.902, 0.839, 1)
+	theme.hint_color = Color(0.784, 0.698, 0.510, 0.72)
+	theme.text_align = "center"
+	theme.nameplate_style = "poetic"
+	theme.nameplate_bg = Color(0, 0, 0, 0)
+	theme.nameplate_border = Color(0, 0, 0, 0)
+	theme.nameplate_border_width = 0
+	theme.nameplate_radius = 0
+	theme.nameplate_text_color = Color(0.929, 0.902, 0.839, 1)
+	theme.nameplate_accent = Color(0.784, 0.698, 0.510, 1)
+	theme.nameplate_glyph = "☽"
+	theme.nameplate_width_ratio = 0.78
+	theme.nameplate_padding_x = 6
+	theme.nameplate_padding_y = 2
+	theme.choice_panel_style = "bare"
+	theme.choice_style = "filament"
+	theme.choice_normal_bg = Color(0, 0, 0, 0)
+	theme.choice_selected_bg = Color(0, 0, 0, 0)
+	theme.choice_text_color = Color(0.929, 0.902, 0.839, 0.55)
+	theme.choice_selected_color = Color(1.0, 0.973, 0.922, 1)
+	theme.choice_hover_bg = Color(0, 0, 0, 0)
+	theme.choice_hover_text_color = Color(0.929, 0.902, 0.839, 1)
+	theme.choice_border_color = Color(0, 0, 0, 0)
+	theme.choice_selected_border_color = Color(0.784, 0.698, 0.510, 1)
+	theme.choice_border_width = 0
+	theme.choice_accent_color = Color(0.784, 0.698, 0.510, 1)
+	theme.choice_marker = "none"
+	theme.choice_selected_shift = 0
+	theme.choice_min_height = 40
+	theme.choice_separation = 6
+	theme.choice_gap = 18
+	theme.choice_font_size = 19
+	theme.portrait_enabled = false

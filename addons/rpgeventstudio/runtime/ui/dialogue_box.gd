@@ -30,6 +30,7 @@ var _portrait_gap: Control
 var _speaker_spacer: Control
 var _text_column: VBoxContainer
 var _name_label: Label
+var _header_gap: Control
 var _nameplate: DialogueNameplate
 var _text_label: RichTextLabel
 var _hint_label: Label
@@ -148,6 +149,12 @@ func _build_ui() -> void:
 	_name_label.name = "SpeakerLabel"
 	_text_column.add_child(_name_label)
 
+	# inside 型铭牌（header/blade/poetic）在正文列顶部预留高度。
+	_header_gap = Control.new()
+	_header_gap.name = "HeaderGap"
+	_header_gap.custom_minimum_size = Vector2(0, 0)
+	_text_column.add_child(_header_gap)
+
 	_text_label = RichTextLabel.new()
 	_text_label.bbcode_enabled = true
 	_text_label.fit_content = false
@@ -250,9 +257,10 @@ func _apply_style() -> void:
 
 	_choices_panel.anchor_left = style.choice_left
 	_choices_panel.anchor_right = style.choice_right
-	# 顶边固定在 choice_top，底边随选项数量自适应下移。
-	_choices_panel.anchor_top = style.choice_top
-	_choices_panel.anchor_bottom = style.choice_top
+	# 选项面板不再固定在高处：底边贴着对话框上沿，位置由 _layout_choices_panel
+	# 根据当前对话框高度动态计算。choice_top/bottom 只用于限制最大高度。
+	_choices_panel.anchor_top = 0.0
+	_choices_panel.anchor_bottom = 0.0
 	_choices_panel.grow_vertical = Control.GROW_DIRECTION_END
 	_choices_panel.offset_left = 0
 	_choices_panel.offset_right = 0
@@ -330,10 +338,13 @@ func _update_nameplate_visibility() -> void:
 	var speaker := _name_label.text
 	var has_speaker := speaker.strip_edges() != ""
 	var inline := style.nameplate_style == "inline"
+	var inside := _nameplate.is_inside_panel()
 	_name_label.visible = inline and has_speaker
 	_nameplate.visible = (not inline) and has_speaker
 	if not inline:
 		_nameplate.set_speaker(speaker, style.nameplate_tag)
+	if _header_gap != null:
+		_header_gap.custom_minimum_size = Vector2(0, (_nameplate.size.y + 8.0) if (inside and has_speaker) else 0.0)
 	if _speaker_spacer != null:
 		var reserve := 0
 		if style.nameplate_style == "column" and has_speaker:
@@ -349,6 +360,27 @@ func _layout_nameplate() -> void:
 	if _nameplate == null or _panel == null or style == null or not _nameplate.visible:
 		return
 	var panel_pos := _panel.position
+	if _nameplate.is_inside_panel():
+		var ratio := style.nameplate_width_ratio
+		if ratio > 0.0:
+			_nameplate.apply_layout_width(maxf(120.0, _panel.size.x * ratio))
+		match style.nameplate_style:
+			"poetic":
+				_nameplate.position = Vector2(
+					panel_pos.x + maxf(8.0, (_panel.size.x - _nameplate.size.x) * 0.5),
+					panel_pos.y + float(style.content_margin_top) - 2.0
+				)
+			"blade":
+				_nameplate.position = Vector2(
+					panel_pos.x + float(style.content_margin_left),
+					panel_pos.y + float(style.content_margin_top) - 4.0
+				)
+			_:
+				_nameplate.position = Vector2(
+					panel_pos.x + float(style.content_margin_left),
+					panel_pos.y + float(style.content_margin_top) - 2.0
+				)
+		return
 	if style.nameplate_style == "column":
 		var x := panel_pos.x + float(style.content_margin_left)
 		if _portrait != null and _portrait.visible and style.portrait_side == "left":
@@ -364,7 +396,20 @@ func _layout_nameplate() -> void:
 func _on_viewport_resized() -> void:
 	_update_portrait_visibility()
 	_layout_nameplate()
+	_layout_choices_panel()
 	_schedule_height_update()
+
+## 选项底边停在对话框上沿上方 choice_gap 像素处；长对白导致面板上移时
+## 选项也跟着上移，而不是固定在一个与内容无关的高位置。
+func _layout_choices_panel() -> void:
+	if _choices_panel == null or _panel == null or style == null or not _choices_panel.visible:
+		return
+	var h := _choices_panel.size.y
+	if h < 1.0:
+		h = _choices_scroll.custom_minimum_size.y + 2.0 * float(style.choice_margin)
+	var y := _panel.position.y - h - float(style.choice_gap)
+	var max_y := maxf(8.0, _root.size.y - h - 8.0)
+	_choices_panel.position.y = clampf(y, 8.0, max_y)
 
 # ── 显示文字 ─────────────────────────────────────────────
 
@@ -372,7 +417,10 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	last_text = text
 	shown_texts.append(text)
 	_name_label.text = speaker
-	_text_label.text = text
+	var formatted := text
+	if style != null and style.text_align == "center" and text.strip_edges() != "":
+		formatted = "[center]%s[/center]" % text
+	_text_label.text = formatted
 	_text_label.visible_characters = 0
 	_text_label.scroll_active = false
 	_page_line = 0
@@ -540,8 +588,9 @@ func _update_heights() -> void:
 	# 内容仍超过可见高度时翻页，不能把正文裁掉。
 	var text_content := float(_text_label.get_content_height())
 	var name_height := _name_label.get_combined_minimum_size().y if _name_label.visible else 0.0
+	var header_height := _header_gap.get_combined_minimum_size().y if _header_gap != null else 0.0
 	var reserved := float(_margin.get_theme_constant("margin_top")) + float(_margin.get_theme_constant("margin_bottom")) \
-		+ name_height + _hint_label.get_combined_minimum_size().y \
+		+ name_height + header_height + _hint_label.get_combined_minimum_size().y \
 		+ 2.0 * float(_text_column.get_theme_constant("separation"))
 	var panel_room := maxf(1.0, viewport_size.y * (style.panel_bottom - style.panel_top) - reserved)
 	var text_min := minf(style.text_min_height, panel_room)
@@ -564,6 +613,7 @@ func _update_heights() -> void:
 	var choice_reserved := 2.0 * float(style.choice_margin)
 	var choice_max := maxf(0.0, viewport_size.y * (style.choice_bottom - style.choice_top) - choice_reserved)
 	_choices_scroll.custom_minimum_size = Vector2(0, clampf(choice_content, 0.0, choice_max))
+	_layout_choices_panel()
 	_layout_nameplate()
 
 # ── 关闭 ─────────────────────────────────────────────────
@@ -621,6 +671,7 @@ func _process(delta: float) -> void:
 		return
 
 	if _choices_panel.visible:
+		_layout_choices_panel()
 		if _pressed(InputService.ACTION_CHOICE_UP):
 			_move_choice(-1)
 		elif _pressed(InputService.ACTION_CHOICE_DOWN):

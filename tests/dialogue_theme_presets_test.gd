@@ -6,7 +6,7 @@ extends SceneTree
 
 const W1280 := Vector2i(1280, 820)
 const W1152 := Vector2i(1152, 648)
-const PRESET_IDS := ["sacred", "cute", "cool", "minimal", "biscuit", "crimson"]
+const PRESET_IDS := ["sacred", "cute", "cool", "minimal", "biscuit", "crimson", "astrolabe", "macaron", "morpho", "feather"]
 const PORTRAIT := "res://addons/rpgeventstudio/samples/ui/sample_portrait.png"
 
 var _checks := 0
@@ -31,13 +31,14 @@ func _run() -> void:
 
 func _test_registry() -> void:
 	var ids := DialogueThemePresets.ids()
-	_check(ids.size() == 6, "预设数量为 6（排除 Argon 指定不要的两套）")
+	_check(ids.size() == 10, "预设数量为 10（6 套保留 + 第四轮 4 套）")
 	var ids_array: Array = []
 	for id in ids:
 		ids_array.append(id)
 	_check(ids_array == PRESET_IDS, "预设 id 与顺序稳定")
 	var series1 := 0
 	var series2 := 0
+	var series4 := 0
 	for id in PRESET_IDS:
 		var info := DialogueThemePresets.meta(id)
 		_check(not info.is_empty(), "预设 %s 有元信息" % id)
@@ -48,7 +49,25 @@ func _test_registry() -> void:
 			series1 += 1
 		elif int(info.get("series", 0)) == 2:
 			series2 += 1
-	_check(series1 == 4 and series2 == 2, "第一弹 4 套全部保留，第二弹新增 2 套")
+		elif int(info.get("series", 0)) == 4:
+			series4 += 1
+	_check(series1 == 4 and series2 == 2 and series4 == 4, "第一弹 4 + 第二弹 2 + 第四轮 4 套")
+	var astrolabe := DialogueThemePresets.create("astrolabe")
+	var macaron := DialogueThemePresets.create("macaron")
+	var morpho := DialogueThemePresets.create("morpho")
+	var feather := DialogueThemePresets.create("feather")
+	_check(astrolabe.panel_shape == "octagon" and astrolabe.corner_ornament == "astrolabe"
+		and astrolabe.choice_style == "spindle" and astrolabe.nameplate_style == "header",
+		"月神星轨使用八角长卷 + 星盘 + 星梭 + 页眉铭牌")
+	_check(macaron.frame_style == "lace" and macaron.nameplate_style == "ribbon"
+		and macaron.choice_style == "swallowtail" and macaron.choice_marker == "heart",
+		"蕾丝茶会使用蕾丝 + 缎带 + 燕尾 + 爱心")
+	_check(morpho.panel_shape == "shard" and morpho.nameplate_style == "blade"
+		and morpho.choice_style == "crystal" and morpho.corner_ornament == "butterfly",
+		"深海幻蝶使用碎晶斜切 + 刀片铭牌 + 冥蝶")
+	_check(feather.frame_style == "tapered" and feather.nameplate_style == "poetic"
+		and feather.choice_style == "filament" and feather.text_align == "center",
+		"白鸦诗篇使用渐隐金丝 + 月相 + 金丝选项 + 居中排版")
 	var unknown := DialogueThemePresets.create("no_such_preset")
 	_check(unknown.preset_id == "" and not unknown.uses_decor_base(), "未知预设回退到插件默认外观")
 
@@ -159,10 +178,13 @@ func _test_each_preset() -> void:
 				"%s 跨框铭牌不压正文" % id)
 
 		var portrait: Control = presenter.get("_portrait")
-		_check(portrait.visible and is_equal_approx(portrait.size.y, float(theme.portrait_size)),
-			"%s 立绘框按预设高度显示" % id)
-		_check(portrait.get_global_rect().end.x <= text_label.get_global_rect().position.x + 1.0,
-			"%s 立绘不压正文" % id)
+		if theme.portrait_enabled:
+			_check(portrait.visible and is_equal_approx(portrait.size.y, float(theme.portrait_size)),
+				"%s 立绘框按预设高度显示" % id)
+			_check(portrait.get_global_rect().end.x <= text_label.get_global_rect().position.x + 1.0,
+				"%s 立绘不压正文" % id)
+		else:
+			_check(not portrait.visible, "%s 默认无立绘占位" % id)
 
 		presenter.show_choices("请选择", ["第一项", "第二项", "第三项"])
 		for i in 5:
@@ -170,6 +192,9 @@ func _test_each_preset() -> void:
 		var rows: Array = presenter.get("_choice_rows")
 		var buttons: Array = presenter.get("_choice_buttons")
 		_check(rows.size() == 3 and buttons.size() == 3, "%s 创建 3 个选项" % id)
+		var choices_panel: Control = presenter.get("_choices_panel")
+		var panel_gap: float = presenter.get("_panel").position.y - choices_panel.position.y - choices_panel.size.y
+		_check(panel_gap >= 4.0 and panel_gap <= 30.0, "%s 选项贴在对话框上方（gap=%.1f）" % [id, panel_gap])
 		_check(rows.size() == 3 and rows[0].selected and not rows[1].selected,
 			"%s 默认选中第一项" % id)
 		if rows.size() == 3:
@@ -306,8 +331,11 @@ func _test_window_sizes() -> void:
 			var portrait: Control = presenter.get("_portrait")
 			_check(panel.position.y >= -1.0 and panel.get_global_rect().end.y <= float(size.y) + 1.0,
 				"%s @%dx%d 对话框不越界" % [id, size.x, size.y])
-			_check(portrait.visible and portrait.get_global_rect().end.y <= panel.get_global_rect().end.y + 1.0,
-				"%s @%dx%d 立绘不越出对话框" % [id, size.x, size.y])
+			if theme.portrait_enabled:
+				_check(portrait.visible and portrait.get_global_rect().end.y <= panel.get_global_rect().end.y + 1.0,
+					"%s @%dx%d 立绘不越出对话框" % [id, size.x, size.y])
+			else:
+				_check(not portrait.visible, "%s @%dx%d 无立绘时正文完整" % [id, size.x, size.y])
 			presenter.show_choices("请选择", ["第一项", "第二项", "第三项"])
 			for i in 6:
 				await process_frame
@@ -348,13 +376,20 @@ func _test_editor_view() -> void:
 	await process_frame
 	await process_frame
 	var preset_select: OptionButton = view.get("_preset_select")
-	_check(preset_select != null and preset_select.item_count == 7, "主题页有默认 + 6 套预设")
+	_check(preset_select != null and preset_select.item_count == 11, "主题页有默认 + 10 套预设")
 	var sections: Array = view.get("_section_anchors")
 	_check(sections.size() == 7, "主题页有 7 个参数分区")
 	view.call("_on_preset_selected", 1)
 	await process_frame
 	var theme: RpgEventStudioTheme = view.get("_theme")
 	_check(theme != null and theme.preset_id == "sacred", "主题页能切换到圣堂预设")
+	view.call("_on_preset_selected", 7)
+	await process_frame
+	var astrolabe_theme: RpgEventStudioTheme = view.get("_theme")
+	_check(astrolabe_theme != null and astrolabe_theme.preset_id == "astrolabe", "主题页能切换到月神星轨")
+	view.call("_on_preset_selected", 1)
+	await process_frame
+	theme = view.get("_theme")
 	_check(theme != null and theme.text_font_size == 22, "预设载入完整视觉参数")
 	var portrait_toggle: CheckButton = view.get("_portrait_toggle")
 	_check(portrait_toggle != null and portrait_toggle.button_pressed == theme.portrait_enabled,

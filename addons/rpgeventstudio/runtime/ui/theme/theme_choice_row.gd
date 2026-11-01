@@ -69,6 +69,7 @@ func _apply_style() -> void:
 	custom_minimum_size = Vector2(0, style.choice_min_height)
 	button.add_theme_font_override("font", _font)
 	button.add_theme_font_size_override("font_size", style.choice_font_size)
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER if style.text_align == "center" else HORIZONTAL_ALIGNMENT_LEFT
 	var marker_pad := 12
 	if style.choice_marker != "none":
 		marker_pad = maxi(12, style.choice_marker_width + 10)
@@ -80,7 +81,7 @@ func _apply_style() -> void:
 		box.set_corner_radius_all(0)
 	else:
 		box = style.make_choice_style(selected)
-	box.content_margin_left = float(marker_pad)
+	box.content_margin_left = float(marker_pad) if style.text_align != "center" else 12.0
 	box.content_margin_right = 12.0
 	box.content_margin_top = 4.0
 	box.content_margin_bottom = 4.0
@@ -155,9 +156,17 @@ func _draw() -> void:
 			_draw_note(r, fill, text_color, border_color, border_w)
 		"pill":
 			_draw_pill(r, fill, text_color, border_color, border_w)
+		"spindle":
+			_draw_spindle(r, fill, text_color, border_color, border_w)
+		"swallowtail":
+			_draw_swallowtail(r, fill, text_color, border_color, border_w)
+		"crystal":
+			_draw_crystal(r, fill, text_color, border_color, border_w)
+		"filament":
+			_draw_filament(r, text_color)
 		_:
 			_draw_flat(r, fill, text_color, border_color, border_w)
-	if hovered and not selected:
+	if hovered and not selected and style.choice_style != "filament":
 		draw_line(Vector2(r.position.x + 2.0, r.position.y + 5.0), Vector2(r.position.x + 2.0, r.end.y - 5.0),
 			Color(style.choice_accent_color, 0.9), 2.0, true)
 	_draw_marker(r, text_color)
@@ -274,6 +283,124 @@ func _wing_fill(r: Rect2, fill: Color, steps: int) -> void:
 		var x := r.position.x + r.size.x * float(i) / float(steps)
 		draw_rect(Rect2(x, r.position.y, r.size.x / float(steps) + 1.0, r.size.y), c, true)
 
+func _draw_spindle(r: Rect2, fill: Color, _text_color: Color, border: Color, border_w: float) -> void:
+	if r.size.x < 8.0:
+		return
+	var n := minf(12.0, r.size.x * 0.08)
+	var p := PackedVector2Array([
+		Vector2(r.position.x + n, r.position.y),
+		Vector2(r.end.x - n, r.position.y),
+		Vector2(r.end.x, r.position.y + r.size.y * 0.5),
+		Vector2(r.end.x - n, r.end.y),
+		Vector2(r.position.x + n, r.end.y),
+		Vector2(r.position.x, r.position.y + r.size.y * 0.5),
+	])
+	if style.choice_shadow_color.a > 0.0:
+		var shifted := PackedVector2Array()
+		for point in p:
+			shifted.append(point + style.choice_shadow_offset)
+		draw_colored_polygon(shifted, style.choice_shadow_color)
+	draw_colored_polygon(p, fill)
+	if border_w > 0.0:
+		var closed := p.duplicate()
+		closed.append(p[0])
+		draw_polyline(closed, border, border_w, true)
+		if selected:
+			var inner := PackedVector2Array()
+			for point in p:
+				inner.append(r.get_center() + (point - r.get_center()) * 0.90)
+			var ic := inner.duplicate()
+			ic.append(inner[0])
+			draw_polyline(ic, Color(1, 1, 1, 0.55), 1.0, true)
+
+func _draw_swallowtail(r: Rect2, fill: Color, _text_color: Color, border: Color, border_w: float) -> void:
+	if r.size.x < 8.0:
+		return
+	var notch := minf(minf(9.0, r.size.y * 0.22), r.size.x * 0.15)
+	var p := PackedVector2Array([
+		Vector2(r.position.x, r.position.y),
+		Vector2(r.end.x, r.position.y),
+		Vector2(r.end.x - notch, r.position.y + r.size.y * 0.5),
+		Vector2(r.end.x, r.end.y),
+		Vector2(r.position.x, r.end.y),
+	])
+	if style.choice_shadow_color.a > 0.0:
+		var sr := Rect2(r.position + style.choice_shadow_offset, r.size)
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = style.choice_shadow_color
+		sb.set_corner_radius_all(style.choice_corner_radius)
+		draw_style_box(sb, sr)
+	draw_colored_polygon(p, fill)
+	if border_w > 0.0:
+		draw_line(p[0], p[4], border, border_w, true)
+		draw_line(p[1], p[2], Color(border, 0.45), 1.0, true)
+		draw_line(p[2], p[3], Color(border, 0.45), 1.0, true)
+
+func _draw_crystal(r: Rect2, fill: Color, _text_color: Color, border: Color, border_w: float) -> void:
+	if r.size.x < 8.0:
+		return
+	var p: PackedVector2Array
+	if index % 2 == 0:
+		p = PackedVector2Array([
+			Vector2(r.position.x, r.position.y + 3.0),
+			Vector2(r.end.x, r.position.y),
+			Vector2(r.end.x - r.size.x * 0.03, r.end.y),
+			Vector2(r.position.x + r.size.x * 0.04, r.end.y - 3.0),
+		])
+	else:
+		p = PackedVector2Array([
+			Vector2(r.position.x + r.size.x * 0.03, r.position.y),
+			Vector2(r.end.x - r.size.x * 0.02, r.position.y + 3.0),
+			Vector2(r.end.x, r.end.y - 3.0),
+			Vector2(r.position.x, r.end.y),
+		])
+	if style.choice_shadow_color.a > 0.0:
+		var shifted := PackedVector2Array()
+		for point in p:
+			shifted.append(point + style.choice_shadow_offset)
+		draw_colored_polygon(shifted, style.choice_shadow_color)
+	draw_colored_polygon(p, fill)
+	if border_w > 0.0:
+		draw_line(p[0], p[3], border, border_w, true)
+		draw_line(p[0], p[1], Color(border, 0.55), 1.0, true)
+		draw_line(p[1], p[2], Color(border, 0.25), 1.0, true)
+		if selected:
+			draw_line(p[1], p[2], Color(0.0, 0.831, 1.0, 0.75), 2.0, true)
+
+func _draw_filament(r: Rect2, text_color: Color) -> void:
+	var font := _font if _font != null else style.resolve_body_font()
+	var fs := style.choice_font_size
+	var center := r.size.y * 0.5
+	var active := selected or hovered
+	if not active:
+		return
+	var alpha := 1.0 if selected else 0.45
+	var gold := Color(style.choice_accent_color, alpha)
+	var text_size := font.get_string_size(button.text if button != null else "", HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+	var side_room := (r.size.x - text_size.x) * 0.5
+	if side_room > 58.0:
+		var left_text := "── ✦"
+		var right_text := "✦ ──"
+		var lw := font.get_string_size(left_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+		var rw := font.get_string_size(right_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+		draw_string(font, Vector2(r.size.x * 0.5 - text_size.x * 0.5 - lw - 12.0, center + 5.0), left_text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 13, gold)
+		draw_string(font, Vector2(r.size.x * 0.5 + text_size.x * 0.5 + 12.0, center + 5.0), right_text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 13, gold)
+	_draw_taper_underline(r, gold, alpha)
+
+func _draw_taper_underline(r: Rect2, color: Color, alpha: float) -> void:
+	var steps := 20
+	var start := r.size.x * 0.18
+	var end := r.size.x * 0.82
+	var y := r.end.y - 4.0
+	for i in steps:
+		var t := float(i) / float(steps - 1)
+		var a := sin(t * PI) * alpha * 0.8
+		var p1 := Vector2(start + (end - start) * t, y)
+		var p2 := Vector2(start + (end - start) * float(i + 1) / float(steps), y)
+		draw_line(p1, p2, Color(color, a), 1.0)
+
 func _draw_marker(r: Rect2, text_color: Color) -> void:
 	if style.choice_marker == "none":
 		return
@@ -290,6 +417,9 @@ func _draw_marker(r: Rect2, text_color: Color) -> void:
 			marker = "✖" if selected else "+"
 		"seal":
 			marker = "印"
+		"heart":
+			_draw_heart_marker(r, text_color)
+			return
 		_:
 			marker = style.choice_marker_glyph
 	if marker.strip_edges() == "":
@@ -309,3 +439,21 @@ func _draw_marker(r: Rect2, text_color: Color) -> void:
 	if _font == null:
 		_font = style.resolve_body_font()
 	draw_string(_font, Vector2(x, y), marker, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, mcolor)
+
+
+func _draw_heart_marker(r: Rect2, text_color: Color) -> void:
+	var c := Color(style.choice_accent_color, 0.9)
+	if selected:
+		c = text_color
+	elif hovered:
+		c = style.choice_hover_text_color
+	var cx := r.position.x + 14.0
+	var cy := r.size.y * 0.5 - 1.0
+	var s := 5.0
+	draw_circle(Vector2(cx - s * 0.55, cy - s * 0.25), s * 0.62, c)
+	draw_circle(Vector2(cx + s * 0.55, cy - s * 0.25), s * 0.62, c)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(cx - s * 1.12, cy - s * 0.18),
+		Vector2(cx + s * 1.12, cy - s * 0.18),
+		Vector2(cx, cy + s * 1.15),
+	]), c)

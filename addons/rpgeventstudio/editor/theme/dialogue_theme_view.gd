@@ -35,27 +35,28 @@ const SECTIONS := [
 		{"prop": "panel_right", "label": "theme.panel.right", "type": "float", "min": 0, "max": 1, "step": 0.01},
 		{"prop": "panel_top", "label": "theme.panel.top", "type": "float", "min": 0, "max": 1, "step": 0.01},
 		{"prop": "panel_bottom", "label": "theme.panel.bottom", "type": "float", "min": 0, "max": 1, "step": 0.01},
-		{"prop": "content_margin_left", "label": "theme.panel.margin_left", "type": "int", "min": 0, "max": 80, "step": 1},
-		{"prop": "content_margin_right", "label": "theme.panel.margin_right", "type": "int", "min": 0, "max": 80, "step": 1},
-		{"prop": "content_margin_top", "label": "theme.panel.margin_top", "type": "int", "min": 0, "max": 80, "step": 1},
-		{"prop": "content_margin_bottom", "label": "theme.panel.margin_bottom", "type": "int", "min": 0, "max": 80, "step": 1},
+		{"prop": "content_margin_left", "label": "theme.panel.margin_left", "type": "int", "min": 0, "max": 160, "step": 1},
+		{"prop": "content_margin_right", "label": "theme.panel.margin_right", "type": "int", "min": 0, "max": 160, "step": 1},
+		{"prop": "content_margin_top", "label": "theme.panel.margin_top", "type": "int", "min": 0, "max": 160, "step": 1},
+		{"prop": "content_margin_bottom", "label": "theme.panel.margin_bottom", "type": "int", "min": 0, "max": 160, "step": 1},
 		{"prop": "text_min_height", "label": "theme.text.min_height", "type": "int", "min": 32, "max": 300, "step": 1},
-		{"prop": "panel_shape", "label": "theme.panel.shape", "type": "option", "options": ["theme.opt.rect", "theme.opt.notched", "theme.opt.slant", "theme.opt.cinema"], "values": ["rect", "notched", "slant", "cinema"]},
+		{"prop": "panel_shape", "label": "theme.panel.shape", "type": "option", "options": ["theme.opt.rect", "theme.opt.notched", "theme.opt.slant", "theme.opt.cinema", "theme.opt.octagon", "theme.opt.shard"], "values": ["rect", "notched", "slant", "cinema", "octagon", "shard"]},
 		{"prop": "panel_notch_size", "label": "theme.panel.notch", "type": "int", "min": 0, "max": 32, "step": 1},
 		{"prop": "panel_slant_size", "label": "theme.panel.slant", "type": "int", "min": 0, "max": 32, "step": 1},
-		{"prop": "frame_style", "label": "theme.panel.frame", "type": "option", "options": ["theme.opt.frame_plain", "theme.opt.frame_double", "theme.opt.frame_ornament", "theme.opt.frame_stitch", "theme.opt.frame_blade", "theme.opt.frame_hairline", "theme.opt.frame_armor"], "values": ["plain", "double", "ornament", "stitch", "blade", "hairline", "armor"]},
+		{"prop": "frame_style", "label": "theme.panel.frame", "type": "option", "options": ["theme.opt.frame_plain", "theme.opt.frame_double", "theme.opt.frame_ornament", "theme.opt.frame_stitch", "theme.opt.frame_blade", "theme.opt.frame_hairline", "theme.opt.frame_armor", "theme.opt.frame_lace", "theme.opt.frame_tapered"], "values": ["plain", "double", "ornament", "stitch", "blade", "hairline", "armor", "lace", "tapered"]},
 		{"prop": "frame_inner_color", "label": "theme.panel.frame_color", "type": "color"},
 		{"prop": "frame_inner_gap", "label": "theme.panel.frame_gap", "type": "int", "min": 0, "max": 24, "step": 1},
 		{"prop": "frame_inner_width", "label": "theme.panel.frame_width", "type": "int", "min": 0, "max": 8, "step": 1},
 		{"prop": "frame_inner_dash", "label": "theme.panel.frame_dash", "type": "bool"},
-		{"prop": "corner_ornament", "label": "theme.panel.ornament", "type": "option", "options": ["theme.opt.none", "theme.opt.ornament_star", "theme.opt.ornament_cross", "theme.opt.ornament_tape", "theme.opt.ornament_seal", "theme.opt.ornament_blade"], "values": ["none", "star", "cross", "tape", "seal", "blade"]},
+		{"prop": "corner_ornament", "label": "theme.panel.ornament", "type": "option", "options": ["theme.opt.none", "theme.opt.ornament_star", "theme.opt.ornament_cross", "theme.opt.ornament_tape", "theme.opt.ornament_seal", "theme.opt.ornament_blade", "theme.opt.ornament_astrolabe", "theme.opt.ornament_butterfly"], "values": ["none", "star", "cross", "tape", "seal", "blade", "astrolabe", "butterfly"]},
 		{"prop": "corner_ornament_color", "label": "theme.panel.ornament_color", "type": "color"},
 		{"prop": "corner_glyph", "label": "theme.panel.ornament_glyph", "type": "text"},
 		{"prop": "corner_ornament_size", "label": "theme.panel.ornament_size", "type": "int", "min": 0, "max": 48, "step": 1},
+		{"prop": "ornament_rotation_speed", "label": "theme.panel.ornament_speed", "type": "float", "min": 0, "max": 30, "step": 0.1},
 		{"prop": "panel_gradient", "label": "theme.panel.gradient", "type": "bool"},
 		{"prop": "panel_gradient_top", "label": "theme.panel.gradient_top", "type": "color"},
 		{"prop": "panel_gradient_bottom", "label": "theme.panel.gradient_bottom", "type": "color"},
-		{"prop": "pattern_style", "label": "theme.panel.pattern", "type": "option", "options": ["theme.opt.none", "theme.opt.pattern_notebook", "theme.opt.pattern_dots", "theme.opt.pattern_grid", "theme.opt.pattern_slash", "theme.opt.pattern_rays"], "values": ["none", "notebook", "dots", "grid", "slash", "rays"]},
+		{"prop": "pattern_style", "label": "theme.panel.pattern", "type": "option", "options": ["theme.opt.none", "theme.opt.pattern_notebook", "theme.opt.pattern_dots", "theme.opt.pattern_grid", "theme.opt.pattern_slash", "theme.opt.pattern_rays", "theme.opt.pattern_constellation"], "values": ["none", "notebook", "dots", "grid", "slash", "rays", "constellation"]},
 		{"prop": "pattern_color", "label": "theme.panel.pattern_color", "type": "color"},
 		{"prop": "pattern_spacing", "label": "theme.panel.pattern_spacing", "type": "int", "min": 4, "max": 64, "step": 1},
 		{"prop": "hard_shadow_color", "label": "theme.panel.hard_shadow", "type": "color"},
@@ -70,6 +71,7 @@ const SECTIONS := [
 		{"prop": "font_path", "label": "theme.font", "type": "font"},
 		{"prop": "font_style", "label": "theme.text.family", "type": "option", "options": ["theme.opt.sans", "theme.opt.serif", "theme.opt.mono"], "values": ["sans", "serif", "mono"]},
 		{"prop": "body_font_flavor", "label": "theme.text.body_family", "type": "option", "options": ["theme.opt.sans", "theme.opt.serif", "theme.opt.font_rounded"], "values": ["sans", "serif", "rounded"]},
+		{"prop": "text_align", "label": "theme.text.align", "type": "option", "options": ["theme.opt.text_left", "theme.opt.text_center"], "values": ["left", "center"]},
 		{"prop": "font_size", "label": "theme.font_size", "type": "int", "min": 8, "max": 96, "step": 1},
 		{"prop": "text_color", "label": "theme.text.color", "type": "color"},
 		{"prop": "text_font_size", "label": "theme.text.size", "type": "int", "min": 8, "max": 96, "step": 1},
@@ -99,22 +101,23 @@ const SECTIONS := [
 		{"prop": "choice_border_width", "label": "theme.choice.border_width", "type": "int", "min": 0, "max": 12, "step": 1},
 		{"prop": "choice_corner_radius", "label": "theme.choice.corner", "type": "int", "min": 0, "max": 20, "step": 1},
 		{"prop": "choice_panel_style", "label": "theme.choice.panel_style", "type": "option", "options": ["theme.opt.choice_panel", "theme.opt.choice_bare"], "values": ["panel", "bare"]},
-		{"prop": "choice_style", "label": "theme.choice.shape", "type": "option", "options": ["theme.opt.rect", "theme.opt.pill", "theme.opt.skew", "theme.opt.note", "theme.opt.bar", "theme.opt.notch", "theme.opt.wing"], "values": ["rect", "pill", "skew", "note", "bar", "notch", "wing"]},
+		{"prop": "choice_style", "label": "theme.choice.shape", "type": "option", "options": ["theme.opt.rect", "theme.opt.pill", "theme.opt.skew", "theme.opt.note", "theme.opt.bar", "theme.opt.notch", "theme.opt.wing", "theme.opt.spindle", "theme.opt.swallowtail", "theme.opt.crystal", "theme.opt.filament"], "values": ["rect", "pill", "skew", "note", "bar", "notch", "wing", "spindle", "swallowtail", "crystal", "filament"]},
 		{"prop": "choice_skew_degrees", "label": "theme.choice.skew", "type": "int", "min": 0, "max": 20, "step": 1},
 		{"prop": "choice_selected_shift", "label": "theme.choice.shift", "type": "int", "min": 0, "max": 20, "step": 1},
 		{"prop": "choice_hover_bg", "label": "theme.choice.hover_bg", "type": "color"},
 		{"prop": "choice_hover_text_color", "label": "theme.choice.hover_text", "type": "color"},
 		{"prop": "choice_accent_color", "label": "theme.choice.accent", "type": "color"},
 		{"prop": "choice_selected_border_color", "label": "theme.choice.selected_border", "type": "color"},
-		{"prop": "choice_marker", "label": "theme.choice.marker", "type": "option", "options": ["theme.opt.none", "theme.opt.marker_number", "theme.opt.marker_glyph", "theme.opt.marker_crosshair", "theme.opt.marker_seal"], "values": ["none", "number", "glyph", "crosshair", "seal"]},
+		{"prop": "choice_marker", "label": "theme.choice.marker", "type": "option", "options": ["theme.opt.none", "theme.opt.marker_number", "theme.opt.marker_glyph", "theme.opt.marker_crosshair", "theme.opt.marker_seal", "theme.opt.marker_heart"], "values": ["none", "number", "glyph", "crosshair", "seal", "heart"]},
 		{"prop": "choice_marker_glyph", "label": "theme.choice.marker_glyph", "type": "text"},
 		{"prop": "choice_marker_width", "label": "theme.choice.marker_width", "type": "int", "min": 0, "max": 32, "step": 1},
 		{"prop": "choice_marker_size", "label": "theme.choice.marker_size", "type": "int", "min": 8, "max": 32, "step": 1},
 		{"prop": "choice_shadow_color", "label": "theme.choice.shadow", "type": "color"},
 		{"prop": "choice_shadow_offset", "label": "theme.choice.shadow_offset", "type": "vec2"},
+		{"prop": "choice_gap", "label": "theme.choice.gap", "type": "int", "min": 0, "max": 40, "step": 1},
 	]},
 	{"title": "theme.section.nameplate", "fields": [
-		{"prop": "nameplate_style", "label": "theme.nameplate.style", "type": "option", "options": ["theme.opt.inline", "theme.opt.float", "theme.opt.capsule", "theme.opt.parallelogram", "theme.opt.wood", "theme.opt.blood", "theme.opt.column"], "values": ["inline", "float", "capsule", "parallelogram", "wood", "blood", "column"]},
+		{"prop": "nameplate_style", "label": "theme.nameplate.style", "type": "option", "options": ["theme.opt.inline", "theme.opt.float", "theme.opt.capsule", "theme.opt.parallelogram", "theme.opt.wood", "theme.opt.blood", "theme.opt.column", "theme.opt.ribbon", "theme.opt.header", "theme.opt.blade", "theme.opt.poetic"], "values": ["inline", "float", "capsule", "parallelogram", "wood", "blood", "column", "ribbon", "header", "blade", "poetic"]},
 		{"prop": "nameplate_bg", "label": "theme.nameplate.bg", "type": "color"},
 		{"prop": "nameplate_border", "label": "theme.nameplate.border", "type": "color"},
 		{"prop": "nameplate_border_width", "label": "theme.nameplate.border_width", "type": "int", "min": 0, "max": 8, "step": 1},
@@ -132,6 +135,7 @@ const SECTIONS := [
 		{"prop": "nameplate_column_width", "label": "theme.nameplate.column_width", "type": "int", "min": 40, "max": 180, "step": 1},
 		{"prop": "nameplate_divider", "label": "theme.nameplate.divider", "type": "bool"},
 		{"prop": "nameplate_divider_color", "label": "theme.nameplate.divider_color", "type": "color"},
+		{"prop": "nameplate_width_ratio", "label": "theme.nameplate.width_ratio", "type": "float", "min": 0, "max": 1, "step": 0.01},
 	]},
 	{"title": "theme.section.portrait", "fields": [
 		{"prop": "portrait_style", "label": "theme.portrait.style", "type": "option", "options": ["theme.opt.square", "theme.opt.rounded", "theme.opt.capsule", "theme.opt.circle", "theme.opt.octagon", "theme.opt.polaroid", "theme.opt.angular", "theme.opt.blood"], "values": ["square", "rounded", "capsule", "circle", "octagon", "polaroid", "angular", "blood"]},
@@ -417,7 +421,12 @@ func _build_preset_row() -> void:
 	_preset_select.add_item(L10n.ui("theme.preset.custom"))
 	_preset_select.set_item_metadata(0, "")
 	for meta in DialogueThemePresets.PRESETS:
-		var prefix := L10n.ui("theme.preset.series1") if int(meta.get("series", 1)) == 1 else L10n.ui("theme.preset.series2")
+		var series := int(meta.get("series", 1))
+		var prefix := L10n.ui("theme.preset.series1")
+		if series == 2:
+			prefix = L10n.ui("theme.preset.series2")
+		elif series == 4:
+			prefix = L10n.ui("theme.preset.series4")
 		_preset_select.add_item("%s · %s" % [prefix, str(meta.get("title", ""))])
 		_preset_select.set_item_metadata(_preset_select.item_count - 1, str(meta.get("id", "")))
 	_preset_select.item_selected.connect(_on_preset_selected)

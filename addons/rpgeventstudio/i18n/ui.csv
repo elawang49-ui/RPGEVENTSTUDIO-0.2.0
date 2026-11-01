@@ -1014,9 +1014,31 @@ theme.opt.column,左栏式,Column
 theme.opt.square,方形,Square
 theme.opt.rounded,圆角,Rounded
 theme.opt.circle,圆形,Circle
-theme.opt.octagon,八角,Octagon
 theme.opt.polaroid,拍立得,Polaroid
 theme.opt.angular,斜切,Angular
 theme.opt.left,左,Left
 theme.opt.right,右,Right
 theme.portrait.ornament,框体角标,Frame Ornament
+theme.preset.series4,第四轮,Round 4
+theme.panel.ornament_speed,角饰动画速度,Ornament Animation Speed
+theme.text.align,正文对齐,Text Alignment
+theme.choice.gap,与对话框间距,Gap Above Dialogue
+theme.nameplate.width_ratio,铭牌宽度占比,Nameplate Width Ratio
+theme.opt.octagon,八角,Octagon
+theme.opt.shard,碎晶斜切,Shard
+theme.opt.frame_lace,蕾丝花边,Lace
+theme.opt.frame_tapered,渐隐金丝,Tapered Hairline
+theme.opt.ornament_astrolabe,星盘,Astrolabe
+theme.opt.ornament_butterfly,冥蝶,Butterfly
+theme.opt.text_left,左对齐,Left
+theme.opt.text_center,居中,Center
+theme.opt.spindle,星梭,Spindle
+theme.opt.swallowtail,燕尾丝带,Swallowtail
+theme.opt.crystal,碎晶,Crystal
+theme.opt.filament,金丝,Filament
+theme.opt.marker_heart,爱心,Heart
+theme.opt.ribbon,缎带,Ribbon
+theme.opt.header,内嵌页眉,Header
+theme.opt.blade,刀片,Blade
+theme.opt.poetic,诗集月相,Poetic
+theme.opt.pattern_constellation,星座连线,Constellation
