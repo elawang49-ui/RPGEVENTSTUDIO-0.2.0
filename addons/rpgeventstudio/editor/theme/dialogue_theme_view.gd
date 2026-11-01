@@ -187,12 +187,24 @@ func _build() -> void:
 	preview_title.text = L10n.ui("theme.preview")
 	preview_title.add_theme_font_size_override("font_size", 12)
 	preview_side.add_child(preview_title)
+	var sample_row := HBoxContainer.new()
+	preview_side.add_child(sample_row)
+	_sample = OptionButton.new()
+	for key in ["theme.preview.text", "theme.preview.bbcode", "theme.preview.multiline", "theme.preview.choices"]:
+		_sample.add_item(L10n.ui(key))
+	_sample.item_selected.connect(func(_index: int) -> void: _play_preview())
+	sample_row.add_child(_sample)
+	var replay := Button.new()
+	replay.text = L10n.ui("theme.preview.replay")
+	replay.pressed.connect(_play_preview)
+	sample_row.add_child(replay)
+
 
 	var preview_panel := PanelContainer.new()
 	preview_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# 固定预览高度：编辑器主屏本身可能很高，预览若跟着拉伸，对话框会落到可视区外。
-	preview_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	preview_panel.custom_minimum_size = Vector2(320, 480)
+	preview_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	preview_panel.custom_minimum_size = Vector2(240, 240)
 	var preview_style := StyleBoxFlat.new()
 	preview_style.bg_color = Color(0.08, 0.09, 0.12)
 	preview_style.set_corner_radius_all(4)
@@ -222,18 +234,6 @@ func _build() -> void:
 	_preview.input = null
 	_preview.blocked = true
 	_preview_viewport.add_child(_preview)
-
-	var sample_row := HBoxContainer.new()
-	preview_side.add_child(sample_row)
-	_sample = OptionButton.new()
-	for key in ["theme.preview.text", "theme.preview.bbcode", "theme.preview.multiline", "theme.preview.choices"]:
-		_sample.add_item(L10n.ui(key))
-	_sample.item_selected.connect(func(_index: int) -> void: _play_preview())
-	sample_row.add_child(_sample)
-	var replay := Button.new()
-	replay.text = L10n.ui("theme.preview.replay")
-	replay.pressed.connect(_play_preview)
-	sample_row.add_child(replay)
 
 	var settings := VBoxContainer.new()
 	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -284,7 +284,6 @@ func _update_responsive_layout() -> void:
 	var viewport_h := get_viewport_rect().size.y
 	if viewport_h > 1.0:
 		available_h = minf(available_h, viewport_h)
-	var preview_h := clampf(available_h - 280.0, 240.0, 480.0)
 	var compact := available_h < 700.0
 	var side_by_side := available >= 540.0
 	if _preview_toggle != null:
@@ -299,7 +298,7 @@ func _update_responsive_layout() -> void:
 			_settings_box.visible = not _preview_only
 		if _preview_only:
 			if _preview_panel != null:
-				_preview_panel.custom_minimum_size = Vector2(240, clampf(available_h - 230.0, 240.0, 620.0))
+				_preview_panel.custom_minimum_size = Vector2(240, 240)
 			_preview_side.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		else:
 			_settings_scroll.custom_minimum_size = Vector2(0, 220)
@@ -315,7 +314,7 @@ func _update_responsive_layout() -> void:
 			if _settings_box != null:
 				_settings_box.custom_minimum_size = Vector2(260, 0)
 			if _preview_panel != null:
-				_preview_panel.custom_minimum_size = Vector2(240, preview_h)
+				_preview_panel.custom_minimum_size = Vector2(240, 240)
 		else:
 			_preview_side.custom_minimum_size = Vector2(0, 300)
 			_preview_side.size_flags_vertical = Control.SIZE_FILL
@@ -323,7 +322,7 @@ func _update_responsive_layout() -> void:
 			if _settings_box != null:
 				_settings_box.custom_minimum_size = Vector2(0, 0)
 			if _preview_panel != null:
-				_preview_panel.custom_minimum_size = Vector2(320, 300)
+				_preview_panel.custom_minimum_size = Vector2(240, 240)
 	call_deferred("_sync_preview_size")
 
 ## 预览 SubViewport 跟随真实容器尺寸，避免固定 960×540 被拉伸成灰边/错比例。

@@ -29,6 +29,8 @@ var _last_activated: Dictionary = {}
 func _ready() -> void:
 	_build()
 	_show_hint()
+	resized.connect(_apply_column_widths)
+	call_deferred("_apply_column_widths")
 
 # ── 界面 ─────────────────────────────────────────────────
 
@@ -90,6 +92,7 @@ func _build() -> void:
 	_tree.item_activated.connect(_on_item_activated)
 	add_child(_tree)
 
+
 	_details = RichTextLabel.new()
 	_details.bbcode_enabled = true
 	_details.scroll_active = true
@@ -102,6 +105,15 @@ func _build() -> void:
 	_status.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_status.add_theme_color_override("font_color", Color(0.65, 0.68, 0.74))
 	add_child(_status)
+
+## 窄窗口收窄「类别/位置」列，把宽度让给问题描述；宽窗口恢复原比例。
+func _apply_column_widths() -> void:
+	if _tree == null or size.x <= 1.0:
+		return
+	var narrow := size.x < 700.0
+	_tree.set_column_custom_minimum_width(0, 56 if narrow else 64)
+	_tree.set_column_custom_minimum_width(1, 52 if narrow else 84)
+	_tree.set_column_custom_minimum_width(3, 112 if narrow else 0)
 
 func _show_hint() -> void:
 	_summary.text = ""
