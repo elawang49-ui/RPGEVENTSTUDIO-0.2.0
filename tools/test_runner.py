@@ -42,15 +42,16 @@ GLOBAL_ALLOWED_ERRORS = [
 ]
 
 # 已知的、与功能无关的引擎诊断；按套件显式列出，不按套件整体忽略。
-# 注意：gvl 这三类不是「预期负向测试」，是编辑器 Undo/GraphFrame 清理诊断；
-# 分页专项报告会单独列为待清理项，不能当作负向测试通过依据。
-SUITE_ALLOWED_ERRORS = {
-    "gvl": [
-        "UndoRedo history mismatch",
-        "Child is not a child of this node",
-        "Required object \"rp_child\" is null",
-    ],
-}
+# 历史备注：gvl 套件曾放行三类编辑器 Undo/GraphFrame 诊断（UndoRedo history mismatch、
+# Child is not a child of this node、Required object "rp_child" is null）。
+# 测试可信度专项（fix/test-credibility）已定位并根治：
+#   1) mismatch —— level_graph_view 每个撤销动作 create_action(..., _graph) 后现在都
+#      force_fixed_history()（图资源落在全局历史 0，而新 new 的内建资源被解析到场景历史）；
+#   2) move_child —— GraphEdit 对 GraphFrame 排队延迟 move_child（graph_edit.cpp:558/723），
+#      插件改用 _retire_view（改名 + queue_free），延迟调用执行时视图仍是子节点；
+#   3) rp_child —— 4.6+ 引擎内部渲染代理空值诊断（godotengine/godot#113797 同族），
+#      上述修复后连续多次全量运行均未复现，不再放行；若复现会直接 FAIL 并暴露现场。
+SUITE_ALLOWED_ERRORS = {}
 
 HEADLESS_SUITES = [
     ("run", ["--script", "res://tests/run.gd"], {}, 180),
