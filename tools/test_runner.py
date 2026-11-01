@@ -71,6 +71,8 @@ HEADLESS_SUITES = [
     ("graph_lifecycle_test", ["--script", "res://tests/graph_lifecycle_test.gd"], {}, 120),
     ("presenter_lifecycle_test", ["--script", "res://tests/presenter_lifecycle_test.gd"], {}, 180),
     ("input_coexistence_test", ["--script", "res://tests/input_coexistence_test.gd"], {}, 120),
+    ("story_insert_choice_test", ["--script", "res://tests/story_insert_choice_test.gd"], {}, 120),
+    ("theme_reload_test", ["--script", "res://tests/theme_reload_test.gd"], {}, 120),
 ]
 
 EDITOR_SUITES = [

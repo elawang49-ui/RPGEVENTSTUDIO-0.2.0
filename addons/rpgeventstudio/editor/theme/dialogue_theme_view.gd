@@ -567,7 +567,9 @@ func _restore_defaults() -> void:
 
 func _load_theme() -> RpgEventStudioTheme:
 	if ResourceLoader.exists(theme_path):
-		var loaded := load(theme_path)
+		# CACHE_MODE_REPLACE：编辑器保存写的是内存实例，缓存里留的是同一个（可能已改动的）
+		# 对象；「重新加载」必须强制读盘，才能拿到磁盘上的外部修改。
+		var loaded := ResourceLoader.load(theme_path, "", ResourceLoader.CACHE_MODE_REPLACE)
 		if loaded is RpgEventStudioTheme:
 			return loaded
 	return RpgEventStudioTheme.new()
