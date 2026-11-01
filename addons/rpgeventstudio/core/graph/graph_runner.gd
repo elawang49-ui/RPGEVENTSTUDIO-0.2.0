@@ -8,6 +8,8 @@ signal node_activated(node_id: StringName, cause: Dictionary)
 signal node_state_changed(node_id: StringName, state: int)
 signal stage_changed(level_id: StringName, stage_id: String)
 signal finished(graph_id: StringName, result: int)
+## 停止广播：宿主释放 / 手动停止时发出，运行时用来把图从 graphs 里注销。
+signal stopped(graph_runner: GraphRunner)
 
 enum Result { COMPLETED, STOPPED, FAILED }
 enum NodeState { UNVISITED, RUNNING, DONE, FAILED }
@@ -33,6 +35,7 @@ var _merge: Dictionary = {}      ## node_id -> {count, fired}
 var _activations := 0
 var _stop := false
 var _connected := false
+var _owns_write_observer := false   ## trace 转发观察者是 start() 自己装上的（宿主没有观察者时）
 
 # ── 生命周期 ─────────────────────────────────────────────
 
@@ -43,6 +46,7 @@ func start() -> void:
 		var trace_ref: RuntimeTrace = trace
 		state.write_observer = func(key: String, old_value: Variant, new_value: Variant, existed: bool) -> void:
 			trace_ref.state_changed(key, old_value, new_value, existed)
+		_owns_write_observer = true
 	_stop = false
 	running = true
 	_activations = 0
@@ -70,11 +74,19 @@ func start() -> void:
 	_activate.call_deferred(entry.node_id, {"kind": "start"})
 
 func stop() -> void:
+	if _stop:
+		# 幂等：重复 stop 不重复断开、不重复广播
+		return
 	_stop = true
 	running = false
 	if _connected and state != null:
 		state.changed.disconnect(_on_state_changed)
 		_connected = false
+	if _owns_write_observer and state != null:
+		# start() 自己装上的 trace 转发观察者，停止时一并摘掉
+		state.write_observer = Callable()
+		_owns_write_observer = false
+	stopped.emit(self)
 
 func reset() -> void:
 	stop()

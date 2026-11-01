@@ -33,6 +33,8 @@ var level_prefix: String = "School"
 
 ## 正在运行的关卡图（进入关卡时由 LevelGraphRunner2D 注册）
 var graphs: Array = []
+## 每个注册图对应的编辑器转发连接（图停止随注销一并断开）
+var _graph_forwards: Dictionary = {}
 
 var _sfx_player: AudioStreamPlayer
 
@@ -258,12 +260,32 @@ func register_graph(graph_runner: GraphRunner) -> void:
 		graphs.append(graph_runner)
 		# 把执行进度发给编辑器（只在从编辑器启动时生效，导出后没有成本）
 		var graph_id := String(graph_runner.graph.graph_id) if graph_runner.graph != null else ""
-		graph_runner.node_state_changed.connect(func(node_id: StringName, state: int) -> void:
+		var node_forward: Callable = func(node_id: StringName, state: int) -> void:
 			_debug_send("node", [graph_id, String(node_id), state])
-		)
-		graph_runner.stage_changed.connect(func(_level_id: StringName, stage: String) -> void:
+		var stage_forward: Callable = func(_level_id: StringName, stage: String) -> void:
 			_debug_send("stage", [graph_id, stage])
-		)
+		graph_runner.node_state_changed.connect(node_forward)
+		graph_runner.stage_changed.connect(stage_forward)
+		_graph_forwards[graph_runner] = {"node": node_forward, "stage": stage_forward}
+		# 图停止时（关卡场景释放 / 手动 stop_graph）自动注销
+		graph_runner.stopped.connect(_on_graph_stopped)
+
+## 图停止广播：从 graphs 注销，转发与广播连接一并清掉。
+func _on_graph_stopped(graph_runner: GraphRunner) -> void:
+	_unregister_graph(graph_runner)
+
+func _unregister_graph(graph_runner: GraphRunner) -> void:
+	if graph_runner == null:
+		return
+	graphs.erase(graph_runner)
+	var forwards: Dictionary = _graph_forwards.get(graph_runner, {})
+	_graph_forwards.erase(graph_runner)
+	if forwards.has("node") and graph_runner.node_state_changed.is_connected(forwards["node"]):
+		graph_runner.node_state_changed.disconnect(forwards["node"])
+	if forwards.has("stage") and graph_runner.stage_changed.is_connected(forwards["stage"]):
+		graph_runner.stage_changed.disconnect(forwards["stage"])
+	if graph_runner.stopped.is_connected(_on_graph_stopped):
+		graph_runner.stopped.disconnect(_on_graph_stopped)
 
 func _debug_send(kind: String, payload: Array) -> void:
 	if EngineDebugger.is_active():
