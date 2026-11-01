@@ -5,7 +5,8 @@ extends SceneTree
 ##
 ## 覆盖：新旧状态识别、已登记排除、重复合并、动态引用边界、类型推断与冲突、
 ## @@level 作用域标记、批量登记、跳过已有、取消不落盘、写入失败回滚、
-## 旧事件/关卡图兼容、对话框勾选/批量/编辑/登记全流程。
+## 旧事件/关卡图兼容、对话框勾选/批量/编辑/登记全流程、
+## 弹窗 Tree 隐藏根结构与平级行（第 2 行起批量/搜索可用性）。
 
 const FIXTURE_DIR := "res://tests/fixtures/bulk_scan"
 const TEST_DIR := "res://.godot/bulk_register_test"
@@ -31,6 +32,7 @@ func _run() -> void:
 	_test_write_failure_rollback()
 	_test_old_samples_compatible()
 	await _test_dialog_flow()
+	await _test_dialog_tree_rows()
 	_report()
 	quit(0 if _failures.is_empty() else 1)
 
@@ -304,6 +306,96 @@ func _test_dialog_flow() -> void:
 	_check(reloaded != null and reloaded.find("School.Fame") != null and reloaded.find("School.Fame").type == "int",
 		"批量类型应写入")
 	_check(reloaded != null and reloaded.find("Existing.Old") != null, "原有定义保持不变")
+	dialog.queue_free()
+	await process_frame
+
+# ── 12. 弹窗 Tree 结构：隐藏根 + 平级行（第 2 行起批量/搜索可用性） ──
+
+## 合成扫描报告：类型全部可推断且无冲突，5 个条目默认勾选，便于验证批量反选。
+func _dialog_report(keys: Array) -> Dictionary:
+	var candidates: Array = []
+	for key in keys:
+		candidates.append({
+			"key": String(key),
+			"inferred_type": "bool",
+			"type_conflict": false,
+			"scoped": false,
+			"nonstandard": false,
+			"uses": 1,
+			"kinds": ["cmd.set_switch"],
+			"locations": [],
+		})
+	return {"candidates": candidates, "stats": {}, "dynamic_refs": [], "errors": []}
+
+func _test_dialog_tree_rows() -> void:
+	var dialog := StateBulkRegisterDialog.new()
+	dialog.catalog_path = TEST_DIR + "/catalog_tree.tres"
+	root.add_child(dialog)
+	await process_frame
+
+	var keys := ["alpha.flag", "beta.flag", "gamma.flag", "delta.flag", "epsilon.flag"]
+	dialog.call("_apply_report", _dialog_report(keys))
+
+	var tree: Tree = dialog.get("_tree")
+	_check(bool(tree.hide_root), "弹窗应采用隐藏根模式（hide_root）")
+	var hidden_root := tree.get_root()
+	_check(hidden_root != null, "rebuild 后存在树根")
+	if hidden_root == null:
+		dialog.queue_free()
+		await process_frame
+		return
+	_check(String(hidden_root.get_text(1)) == "", "树根是隐藏占位行，不应携带首行数据")
+	_check(hidden_root.get_child_count() == 5,
+		"5 个条目应全部平级挂在根下（实际 %d 个子节点）" % hidden_root.get_child_count())
+	var rows: Array = []
+	var child := hidden_root.get_first_child()
+	while child != null:
+		rows.append(child)
+		child = child.get_next()
+	var row_keys := PackedStringArray()
+	for row in rows:
+		row_keys.append(String(row.get_metadata(0)))
+	_check(", ".join(row_keys) == ", ".join(PackedStringArray(keys)),
+		"平级行顺序应与条目一致（实际 %s）" % ", ".join(row_keys))
+	var all_nested := true
+	for row in rows:
+		if row.get_parent() != hidden_root:
+			all_nested = false
+	_check(all_nested, "每一行都应是根的直接子节点")
+	var row1: TreeItem = rows[0] if rows.size() > 0 else null
+
+	var row2: TreeItem = dialog.call("_row_item", "beta.flag")
+	var row5: TreeItem = dialog.call("_row_item", "epsilon.flag")
+	_check(row2 != null, "_row_item 应能找到第 2 行")
+	_check(row5 != null, "_row_item 应能找到第 5 行")
+	_check(row2 != null and rows.size() > 1 and row2 == rows[1], "_row_item 找到的第 2 行应与平级行链一致")
+
+	# 搜索过滤：关键词只命中第 3 行
+	var search: LineEdit = dialog.get("_search")
+	search.text = "gamma.flag"
+	dialog.call("_apply_row_visibility")
+	var row3: TreeItem = dialog.call("_row_item", "gamma.flag")
+	_check(row3 != null and row3.visible, "搜索命中第 3 行应保持可见")
+	_check(row1 != null and not row1.visible, "搜索未命中第 1 行应隐藏")
+	_check(row2 == null or not row2.visible, "搜索未命中第 2 行应隐藏（修复前过滤错乱点）")
+	var row4: TreeItem = dialog.call("_row_item", "delta.flag")
+	_check(row4 != null and not row4.visible, "搜索未命中第 4 行应隐藏")
+
+	# 清空搜索恢复全部行
+	search.text = ""
+	dialog.call("_apply_row_visibility")
+	_check(row1 != null and row1.visible and (row2 == null or row2.visible),
+		"清空搜索后各行应恢复可见")
+
+	# 批量反选：条目状态与行复选框都必须真实变更
+	dialog.call("_on_select_invert")
+	var entries: Dictionary = dialog.get("_entries")
+	_check(not bool(entries.get("beta.flag", {"checked": true})["checked"]), "反选后第 2 行条目应为未勾选")
+	_check(row2 != null and not row2.is_checked(0), "反选后第 2 行复选框应同步取消（修复前静默无效）")
+	_check(row5 != null and not row5.is_checked(0), "反选后第 5 行复选框应同步取消")
+	dialog.call("_on_select_invert")
+	_check(row2 != null and row2.is_checked(0), "再次反选后第 2 行复选框应恢复勾选")
+
 	dialog.queue_free()
 	await process_frame
 

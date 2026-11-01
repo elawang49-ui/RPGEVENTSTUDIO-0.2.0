@@ -109,6 +109,51 @@ static func write_resource(resource: Resource, path: String, expected_script: Sc
 	result["ok"] = true
 	return result
 
+## 只读文件头（至多 max_bytes 字节），并保证返回内容是合法 UTF-8：
+## 打开 → 读至多 max_bytes → 关闭，性能语义与直接 get_buffer 相同。
+## 若第 max_bytes 字节恰好切进多字节字符，直接 get_string_from_utf8 会把残缺的
+## 尾巴替换成 U+FFFD 乱码（某些引擎版本甚至返回空串），导致头部判断不可靠。
+## 规则：从缓冲区末尾回退至多 3 个「续字节」（(b & 0xC0) == 0x80），
+## 找到疑似被切断序列的首字节后校验其声明的序列长度——完整则整体保留，
+## 不完整（或首字节本身非法）则连同续字节一起丢弃，再交 get_string_from_utf8。
+## 文件不存在或读不到内容时返回空串。
+static func read_head(path: String, max_bytes: int) -> String:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return ""
+	var buffer := file.get_buffer(max_bytes)
+	file.close()
+	var size := int(buffer.size())
+	var cut := size
+	var back := 0
+	while back < 3 and cut > 0 and (int(buffer[cut - 1]) & 0xC0) == 0x80:
+		cut -= 1
+		back += 1
+	if cut > 0:
+		# 回退后 buffer[cut - 1] 是尾部序列的首字节（back 为其后续续字节数）
+		var need := _utf8_sequence_length(int(buffer[cut - 1]))
+		if need > 1:
+			if back + 1 >= need:
+				cut = size   # 序列在缓冲区内完整，整体保留
+			else:
+				cut -= 1     # 序列被切短，连同首字节一起丢弃
+		# need <= 1：ASCII 或非法首字节，保持 cut（残缺/垃圾交由解析兜底）
+	if cut <= 0:
+		return ""
+	return buffer.slice(0, cut).get_string_from_utf8()
+
+## UTF-8 首字节声明的序列总字节数；0 表示该字节不能作为合法首字节（续字节或非法高位）。
+static func _utf8_sequence_length(lead: int) -> int:
+	if lead < 0x80:
+		return 1
+	if (lead & 0xE0) == 0xC0:
+		return 2
+	if (lead & 0xF0) == 0xE0:
+		return 3
+	if (lead & 0xF8) == 0xF0:
+		return 4
+	return 0
+
 static func _write_raw(path: String, content: String) -> bool:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:

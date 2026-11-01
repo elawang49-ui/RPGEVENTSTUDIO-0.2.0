@@ -110,12 +110,9 @@ func _scan(dir_path: String) -> void:
 	dir.list_dir_end()
 
 func _collect(path: String) -> void:
-	# 先读文件头判断类型，避免把工程里所有 .tres 都实例化一遍
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return
-	var head := file.get_buffer(240).get_string_from_utf8()
-	file.close()
+	# 先读文件头判断类型，避免把工程里所有 .tres 都实例化一遍；
+	# 头部读取走 SafeFile.read_head，第 240 字节切进多字节字符时不会产生乱码/空串
+	var head := SafeFile.read_head(path, 240)
 	if not (head.contains("EventDefinition") or head.contains("LevelGraph")):
 		return
 	var resource := load(path)

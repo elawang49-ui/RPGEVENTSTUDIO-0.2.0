@@ -303,12 +303,8 @@ static func _excluded(path: String, excludes: PackedStringArray) -> bool:
 	return false
 
 static func _head(path: String) -> String:
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return ""
-	var text := file.get_buffer(240).get_string_from_utf8()
-	file.close()
-	return text
+	# 走 SafeFile.read_head：第 240 字节切进多字节字符时仍返回干净的合法 UTF-8 前缀
+	return SafeFile.read_head(path, 240)
 
 static func _push(issues: Array, seen: Dictionary, code: String, severity: int, category: String,
 		path: String, message_key: String, params: Dictionary, hint_key: String,
