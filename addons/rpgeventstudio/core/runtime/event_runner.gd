@@ -312,27 +312,42 @@ func _execute_call(ctx: EventContext) -> int:
 	return CmdResult.CONTINUE
 
 func _run_nested_event(parent: EventContext, target: EventDefinition, call_args: Dictionary) -> void:
-	var page_index := target.get_active_page(state)
 	var child_trace_id := trace.new_trace_id() if trace != null else 0
+	var nested_source := {"kind": "nested", "parent_event_id": String(parent.event_id)}
+	# 闸门 1（对齐顶层 start）：同事件正在运行（顶层或嵌套）→ 按重入丢弃。
+	if _active.has(target.event_id):
+		if trace != null:
+			trace.record_ignored(child_trace_id, target, "reentry",
+				{"running_instance": int(_active[target.event_id])}, nested_source)
+		return
+	var page_index := target.get_active_page(state)
 	if page_index < 0:
 		if trace != null:
-			trace.record_rejected(child_trace_id, target, [], diagnose(target, []),
-				{"kind": "nested", "parent_event_id": String(parent.event_id)})
+			trace.record_rejected(child_trace_id, target, [], diagnose(target, []), nested_source)
 		return
+	# 闸门 2（对齐顶层 start）：repeat_policy 不允许 → 忽略。
+	# 沿用顶层「启动时计数」的现状（once 在启动瞬间烧毁），已知取舍，不在本轮改。
+	var page: EventPage = target.pages[page_index]
+	if not _should_run(target, page_index, page):
+		if trace != null:
+			trace.record_ignored(child_trace_id, target, "repeat_policy",
+				{"policy": page.repeat_policy, "page_index": page_index}, nested_source)
+		return
+
 	var child := EventContext.new()
 	child.host = host
 	child.state = state
 	child.bus = bus
 	child.presenter = parent.presenter
 	child.definition = target
-	child.page = target.pages[page_index]
+	child.page = page
 	child.event_id = target.event_id
 	child.args = call_args
 	child.depth = parent.depth + 1
 	child.instance_id = _next_instance_id
 	child.page_index = page_index
 	child.parent_trace_id = parent.trace_id
-	child.source = {"kind": "nested", "parent_event_id": String(parent.event_id)}
+	child.source = nested_source
 	child.trace = trace
 	child.trace_id = child_trace_id
 	if trace != null:
@@ -341,23 +356,47 @@ func _run_nested_event(parent: EventContext, target: EventDefinition, call_args:
 			child.parent_trace_id, [], child.trace_pages, child.source)
 		trace.enter_context(child.trace_id, child.event_id)
 	_next_instance_id += 1
-	var started_ms := Time.get_ticks_msec()
+	# 嵌套事件同样占用重入闸门（运行期间同事件的其他启动一律拒绝）；
+	# 但不进 _running_instances，保持 cancel_all 只覆盖顶层实例的语义面 ——
+	# 父级取消经 _attach_child 级联到嵌套子级（Batch 1 设计）。
+	_active[child.event_id] = child.instance_id
 	# 嵌套事件有独立上下文且不在 _running_instances 里：登记到父级，
 	# 父级被取消（如展示层离树）时随级联一起取消，避免子级独自等待、父级收不了尾。
+	# 先登记再广播 event_started：监听者若同步取消父级，子级也能被级联到。
 	parent._attach_child(child)
+	bus.event_started.emit(child.event_id, child.instance_id)
+	var started_ms := Time.get_ticks_msec()
 	var code := await _execute_list(child, child.page.commands)
 	parent._detach_child(child)
+	_active.erase(child.event_id)
+
+	var result := Result.COMPLETED
+	var fail_reason := ""
+	if child.cancelled:
+		result = Result.CANCELLED
+	elif code == CmdResult.ABORT:
+		result = Result.FAILED
+		fail_reason = L10n.game("diag.command_failed")
+	var report := {
+		"event_id": child.event_id,
+		"instance_id": child.instance_id,
+		"result": result,
+		"reason": child.cancel_reason if result == Result.CANCELLED else fail_reason,
+		"duration_ms": Time.get_ticks_msec() - started_ms,
+		# 嵌套标注：depth/source 是相对顶层报告的附加字段，外部监听者可借此
+		# 区分嵌套完成与顶层完成。顶层报告结构不变。
+		"depth": child.depth,
+		"source": nested_source.duplicate(),
+	}
 	if trace != null:
-		var result := Result.COMPLETED
-		var reason := ""
-		if child.cancelled:
-			result = Result.CANCELLED
-			reason = child.cancel_reason
-		elif code == CmdResult.ABORT:
-			result = Result.FAILED
-			reason = L10n.game("diag.command_failed")
-		trace.end_event(child.trace_id, result, reason, Time.get_ticks_msec() - started_ms)
+		trace.end_event(child.trace_id, result, str(report["reason"]), int(report["duration_ms"]))
 		trace.exit_context(child.trace_id)
+	# 与顶层 _drive 对齐：结束（含取消/失败）都发 event_finished。
+	# 对图等待者（graph._wait_event 按 event_id 匹配）的影响：嵌套完成信号只可能
+	# 在同事件「未在顶层运行」时发出（重入闸门保证），而图等待的正是它刚启动的
+	# 顶层实例，因此不会把图等待者提前放行；即便图在嵌套实例运行期间启动同一事件
+	# 被闸门拒绝，嵌套实例的完成信号也能如实放行等待（事件确实结束了）。
+	bus.event_finished.emit(report)
 
 func _next_frame() -> void:
 	var tree := host.get_tree() if host != null and host.is_inside_tree() else null

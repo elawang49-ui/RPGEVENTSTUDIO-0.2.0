@@ -15,7 +15,10 @@ enum Result { COMPLETED, STOPPED, FAILED }
 enum NodeState { UNVISITED, RUNNING, DONE, FAILED }
 
 const MAX_ACTIVATIONS := 4000
-const EVENT_WAIT_FRAMES := 60 * 120
+
+## 图事件节点等待事件结束的超时（真实时间秒）。可按图注入：
+## 长对话事件可调大；0 表示不等待（事件启动后立即放行 done 分支）。
+var event_wait_timeout := 120.0
 
 var graph: LevelGraph
 var state: StateStore
@@ -263,13 +266,20 @@ func _wait_event(event_id: StringName) -> void:
 			done["value"] = true
 	bus.event_finished.connect(handler)
 
-	var frames := 0
-	while not bool(done["value"]) and not _stop and frames < EVENT_WAIT_FRAMES:
+	# 按真实时间（Time.get_ticks_msec）判超时，不按帧计数：
+	# 240Hz 显示器上按帧计数会让 2 分钟缩水成 30 秒，长对话被提前判超时推进。
+	var deadline_ms := Time.get_ticks_msec() + int(maxf(event_wait_timeout, 0.0) * 1000.0)
+	var timed_out := false
+	while not bool(done["value"]) and not _stop:
 		if host == null or not host.is_inside_tree():
 			break
+		if Time.get_ticks_msec() >= deadline_ms:
+			timed_out = true
+			break
 		await host.get_tree().process_frame
-		frames += 1
 	bus.event_finished.disconnect(handler)
+	if timed_out:
+		push_warning("[RPGEventStudio] 关卡图等待事件超时（%.1fs）：%s，按 done 分支继续" % [event_wait_timeout, String(event_id)])
 
 # ── 状态监视 ─────────────────────────────────────────────
 

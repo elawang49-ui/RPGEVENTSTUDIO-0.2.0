@@ -71,6 +71,7 @@ HEADLESS_SUITES = [
     ("graph_lifecycle_test", ["--script", "res://tests/graph_lifecycle_test.gd"], {}, 120),
     ("presenter_lifecycle_test", ["--script", "res://tests/presenter_lifecycle_test.gd"], {}, 180),
     ("input_coexistence_test", ["--script", "res://tests/input_coexistence_test.gd"], {}, 120),
+    ("nested_event_semantics_test", ["--script", "res://tests/nested_event_semantics_test.gd"], {}, 180),
 ]
 
 EDITOR_SUITES = [
