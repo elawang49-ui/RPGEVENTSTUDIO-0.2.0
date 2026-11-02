@@ -40,7 +40,10 @@ func _run() -> void:
 	var librarian_refs: Array = refs.get(librarian_path, [])
 	_check(not librarian_refs.is_empty(), "能查到事件被哪些场景对象引用")
 	if not librarian_refs.is_empty():
-		_check(str(librarian_refs[0].get("node", "")).contains("Librarian/EventInteractor"), "引用里带具体节点路径")
+		_check(_has_librarian_node(librarian_refs), "引用里带具体节点路径")
+		var reversed_refs := librarian_refs.duplicate()
+		reversed_refs.reverse()
+		_check(_has_librarian_node(reversed_refs), "引用遍历顺序不影响节点路径检查")
 
 	var hint_path := "res://addons/rpgeventstudio/samples/events/basement_cutscene.tres"
 	var hint_refs: Array = refs.get(hint_path, [])
@@ -162,3 +165,9 @@ func _check(condition: bool, message: String) -> void:
 func _report() -> void:
 	print("")
 	print("──── 事件列表测试：%d 项，失败 %d 项 ────" % [_checks, _failures.size()])
+
+func _has_librarian_node(refs: Array) -> bool:
+	for entry in refs:
+		if str(entry.get("node", "")).contains("Librarian/EventInteractor"):
+			return true
+	return false
