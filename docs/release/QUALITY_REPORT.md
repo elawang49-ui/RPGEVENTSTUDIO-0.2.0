@@ -1,5 +1,7 @@
 # RPGEVENTSTUDIO 0.2.0-rc1 工程交付报告
 
+本报告记录发布前本地验收；随后已将发布分支上传至 [GitHub](https://github.com/elawang49-ui/RPGEVENTSTUDIO-0.2.0)。远程 CI 状态以仓库 Actions 为准。
+
 日期：2026-11-02（Asia/Shanghai）。运行环境：macOS，Godot `4.7.2.stable.official.ed1daf0bf`。
 
 代码验收基准：`833ea41`，分支 `release/0.2.0-rc1`。最终归档提交只增加报告和日志，不再改插件代码。建议版本号为 **0.2.0-rc1**；这是可安装的发布候选，不把尚未执行的跨平台 GUI / 远程 CI 验收冒充为正式发布完成。

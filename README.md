@@ -251,19 +251,19 @@ python3 tools/test_runner.py --all        # headless + 编辑器 + 故障注入
 python3 tools/test_runner.py --faults     # 证明异常/中断/缺汇总不会假绿
 ```
 
-headless 套件（15 个，合计 923 项检查）：
+headless 套件（22 个，合计 1259 项检查）：
 
 ```bash
 python3 tools/test_runner.py --headless
 ```
 
-编辑器自测（6 个，合计 176 项检查）：
+编辑器自测（6 个，合计 228 项检查）：
 
 ```bash
 python3 tools/test_runner.py --editor
 ```
 
-直接跑单个脚本仍可用，例如 `Godot --headless --path . --script res://tests/run.gd`（353 项）。
+直接跑单个脚本仍可用，例如 `Godot --headless --path . --script res://tests/run.gd`（355 项）。
 测试运行器会校验：最终汇总、SCRIPT ERROR/ERROR、CASE 完成标记、检查数与
 `tools/test_counts.json` 快照一致。不同套件之间存在重复覆盖，检查项总数不等于独立用例数。
 
