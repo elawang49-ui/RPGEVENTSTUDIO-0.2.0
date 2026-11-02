@@ -911,6 +911,7 @@ func _change_param(command: EventCommand, name: String, value: Variant) -> void:
 		UndoRedo.MERGE_ENDS,
 		_current_page()
 	)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_apply_param", command, name, value)
 	undo.add_undo_method(self, "_apply_param", command, name, old_value)
 	undo.commit_action(false)
@@ -956,21 +957,35 @@ func _on_page_selected(index: int) -> void:
 func _on_add_page() -> void:
 	if _definition == null:
 		return
-	_definition.pages.append(EventPage.new())
-	_page_index = _definition.pages.size() - 1
-	_definition.emit_changed()
-	_selected = null
-	_reset_insert_target()
-	_refresh_all()
+	var pages := _definition.pages.duplicate()
+	pages.append(EventPage.new())
+	_commit_pages(pages, pages.size() - 1)
 
 func _on_remove_page() -> void:
 	if _definition == null or _definition.pages.size() <= 1:
 		return
-	_definition.pages.remove_at(_page_index)
-	_page_index = clampi(_page_index, 0, _definition.pages.size() - 1)
+	var pages := _definition.pages.duplicate()
+	pages.remove_at(_page_index)
+	_commit_pages(pages, mini(_page_index, pages.size() - 1))
+
+func _commit_pages(pages: Array, selected: int) -> void:
+	var undo := _undo_redo()
+	if undo == null:
+		_apply_pages(_definition, pages, selected)
+		return
+	undo.create_action(L10n.ui("editor.path.page", {"page": selected + 1}), UndoRedo.MERGE_DISABLE, _definition)
+	undo.force_fixed_history()
+	undo.add_do_method(self, "_apply_pages", _definition, pages, selected)
+	undo.add_undo_method(self, "_apply_pages", _definition, _definition.pages.duplicate(), _page_index)
+	undo.commit_action()
+
+func _apply_pages(definition: EventDefinition, pages: Array, selected: int) -> void:
+	definition.pages.assign(pages)
+	definition.emit_changed()
+	if definition != _definition:
+		return
+	_page_index = clampi(selected, 0, maxi(0, pages.size() - 1))
 	_selected = null
-	_definition.emit_changed()
-	_reset_insert_target()
 	_refresh_all()
 
 func _on_trigger_selected(index: int) -> void:
@@ -1033,6 +1048,7 @@ func _commit_insert(list: Array, index: int, command: EventCommand) -> void:
 		list.insert(index, command)
 		return
 	undo.create_action(L10n.ui("editor.undo.add"), UndoRedo.MERGE_DISABLE, _current_page())
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_insert", list, index, command)
 	undo.add_undo_method(self, "_do_remove", list, index)
 	undo.add_do_reference(command)
@@ -1165,6 +1181,7 @@ func _cross_move(from_list: Array, from_index: int, to_list: Array, to_index: in
 		return
 
 	undo.create_action(L10n.ui("editor.undo.branch"), UndoRedo.MERGE_DISABLE, _current_page())
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_cross_move", from_list, from_index, to_list, to_index)
 	undo.add_undo_method(self, "_do_cross_move", to_list, to_index, from_list, from_index)
 	undo.commit_action()
@@ -1190,7 +1207,11 @@ func _on_paste() -> void:
 	var target_list: Array = _insert_list if _insert_list != null else page.commands
 	var insert_at: int = clampi(_insert_index, 0, target_list.size())
 	# 剪切后再粘贴 = 移动（保留同一个对象）；将来若加「复制」，再走 duplicate
-	var command: EventCommand = _clipboard if _clipboard_is_cut else (_clipboard.duplicate(true) as EventCommand)
+	var restored := false
+	for existing_page in _definition.pages:
+		if _contains_command(existing_page.commands, _clipboard):
+			restored = true
+	var command: EventCommand = _clipboard if _clipboard_is_cut and not restored else _clipboard.duplicate_command()
 	_commit_insert(target_list, insert_at, command)
 	if _clipboard_is_cut:
 		_clipboard = null
@@ -1199,6 +1220,14 @@ func _on_paste() -> void:
 	if _contexts.has(command):
 		_select(command)
 	_update_toolbar_state()
+
+func _contains_command(commands: Array, target: EventCommand) -> bool:
+	for command in commands:
+		if command == target:
+			return true
+		if command != null and (_contains_command(command.children, target) or _contains_command(command.else_children, target)):
+			return true
+	return false
 
 func _undo_redo() -> EditorUndoRedoManager:
 	if not Engine.is_editor_hint():

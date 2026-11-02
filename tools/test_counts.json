@@ -23,10 +23,10 @@
     "theme_reload_test": 10
   },
   "editor": {
-    "editor": 19,
+    "editor": 27,
     "map": 51,
     "gvl": 72,
-    "story": 20,
+    "story": 35,
     "audit": 14,
     "trace": 8
   }

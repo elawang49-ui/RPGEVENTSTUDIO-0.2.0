@@ -41,6 +41,8 @@ func start(_dock_panel: Control) -> void:
 	_test_branch_add_and_undo(panel, page)
 	_test_cross_branch_and_undo(panel, page)
 
+	_test_cut_undo_paste(panel, page)
+	_test_page_undo(panel, definition)
 	panel.queue_free()
 	_finish()
 
@@ -132,6 +134,39 @@ func _test_cross_branch_and_undo(panel: Control, page: EventPage) -> void:
 	_check(if_command.children.size() == then_before, "撤销移分支：源分支还原")
 	_check(if_command.else_children.size() == else_before, "撤销移分支：目标分支还原")
 	_check(if_command.children[0] == moved, "撤销移分支：对象回到原位")
+
+func _test_cut_undo_paste(panel: Control, page: EventPage) -> void:
+	var before := page.commands.size()
+	var target := page.commands[0]
+	panel.call("_on_command_row_pressed", target)
+	panel.call("_on_cut")
+	_history(page).undo()
+	panel.call("_on_paste")
+	_check(page.commands.size() == before + 1, "剪切撤销后粘贴新增副本")
+	var identities := {}
+	for command in page.commands:
+		identities[command] = true
+	_check(identities.size() == page.commands.size(), "剪切撤销粘贴不重复插入同一实例")
+	_history(page).undo()
+	_check(page.commands.size() == before and page.commands[0] == target, "撤销粘贴保留原实例")
+
+func _test_page_undo(panel: Control, definition: EventDefinition) -> void:
+	var manager := EditorInterface.get_editor_undo_redo()
+	var history := manager.get_history_undo_redo(manager.get_object_history_id(definition))
+	var before := definition.pages.duplicate()
+	panel.call("_on_add_page")
+	_check(definition.pages.size() == before.size() + 1, "新增事件页")
+	history.undo()
+	_check(definition.pages == before, "撤销新增页保留原页实例")
+	history.redo()
+	_check(definition.pages.size() == before.size() + 1, "重做新增页")
+	if definition.pages.size() == before.size() + 1:
+		panel.call("_on_remove_page")
+		history.undo()
+		_check(definition.pages.size() == before.size() + 1, "撤销删除页")
+		history.redo()
+		_check(definition.pages == before, "重做删除页")
+	panel.call("_on_page_selected", 0)
 
 # ── 工具 ─────────────────────────────────────────────────
 

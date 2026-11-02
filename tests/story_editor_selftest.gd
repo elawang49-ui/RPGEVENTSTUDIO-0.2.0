@@ -39,6 +39,8 @@ func start(_plugin: EditorPlugin, story_view: Control) -> void:
 	_test_insert_and_undo(panel, definition)
 	_test_text_edit_and_undo(panel, definition)
 	_test_choice_add_and_undo(panel, definition)
+	_test_block_undo(panel)
+	_test_page_undo(panel, definition)
 	_test_save_reload(panel, definition)
 	_test_roster(panel)
 
@@ -116,7 +118,7 @@ func _test_save_reload(_panel: Control, definition: EventDefinition) -> void:
 	var path := "res://.godot/story_selftest_event.tres"
 	definition.take_over_path(path)
 	_check(ResourceSaver.save(definition, path) == OK, "剧情视图编辑后应能保存")
-	var loaded := load(path) as EventDefinition
+	var loaded := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as EventDefinition
 	_check(loaded != null and _signature(loaded.pages[0]) == signature, "保存→关闭→重新打开内容一致")
 	DirAccess.remove_absolute(path)
 	definition.resource_path = ""
@@ -244,7 +246,7 @@ func _append_signature(parts: PackedStringArray, list: Array) -> void:
 	for command in list:
 		if command == null:
 			continue
-		parts.append("%s|%s|%s" % [String(command.type), command.params, command.enabled])
+		parts.append("%s|%s|%s" % [String(command.type), JSON.stringify(command.params, "", true), command.enabled])
 		_append_signature(parts, command.children)
 		_append_signature(parts, command.else_children)
 
@@ -271,3 +273,54 @@ func _finish() -> void:
 	for failure in _failures:
 		print("  ✗ ", failure)
 	get_tree().quit(0 if _failures.is_empty() else 1)
+
+func _test_block_undo(panel: Control) -> void:
+	var definition := _demo_definition()
+	panel.call("open_definition", definition, null)
+	var page := definition.pages[0]
+	var original := page.commands.duplicate()
+	var doc: StoryDocument = panel.get("_document")
+	doc.delete_item(_choice_item(panel))
+	_check(page.commands.size() == original.size() - 3, "整块删除三个指令")
+	_history(page).undo()
+	_check(page.commands == original, "整块删除撤销恢复原实例")
+	_history(page).redo()
+	_check(page.commands.size() == original.size() - 3, "整块删除重做")
+	_history(page).undo()
+	doc = panel.get("_document")
+	doc.duplicate_item(_choice_item(panel))
+	_check(page.commands.size() == original.size() + 3, "整块复制")
+	_history(page).undo()
+	_check(page.commands == original, "整块复制撤销")
+	_history(page).redo()
+	_check(page.commands[5] != original[2], "整块复制重做使用独立资源")
+	_history(page).undo()
+	doc = panel.get("_document")
+	doc.move_item(_choice_item(panel), 1)
+	_check(page.commands[2] == original[5], "整块移动跨越后一个条件")
+	_history(page).undo()
+	_check(page.commands == original, "整块移动撤销")
+	# Bypass resource cache: actual disk round trip, including branches.
+	var path := "res://.godot/story_block_roundtrip.tres"
+	_check(ResourceSaver.save(definition, path) == OK, "撤销后保存选项结构")
+	var loaded := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as EventDefinition
+	_check(loaded != definition and _signature(loaded.pages[0]) == _signature(page), "绕开缓存重载完整选项结构")
+	DirAccess.remove_absolute(path)
+
+func _test_page_undo(panel: Control, definition: EventDefinition) -> void:
+	panel.call("open_definition", definition, null)
+	var manager := EditorInterface.get_editor_undo_redo()
+	var history := manager.get_history_undo_redo(manager.get_object_history_id(definition))
+	var original := definition.pages.duplicate()
+	panel.call("_on_add_page")
+	_check(definition.pages.size() == original.size() + 1, "Story 新增页")
+	history.undo()
+	_check(definition.pages == original, "Story 撤销新增页")
+	history.redo()
+	_check(definition.pages.size() == original.size() + 1, "Story 重做新增页")
+	panel.call("_on_remove_page")
+	history.undo()
+	_check(definition.pages.size() == original.size() + 1, "Story 撤销删除页")
+	history.redo()
+	_check(definition.pages == original, "Story 重做删除页")
+	panel.call("_on_page_selected", 0)

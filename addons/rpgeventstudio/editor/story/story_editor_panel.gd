@@ -1143,19 +1143,35 @@ func _on_page_selected(index: int) -> void:
 func _on_add_page() -> void:
 	if _definition == null:
 		return
-	_definition.pages.append(EventPage.new())
-	_page_index = _definition.pages.size() - 1
-	_definition.emit_changed()
-	_selected_command = null
-	_refresh_all()
+	var pages := _definition.pages.duplicate()
+	pages.append(EventPage.new())
+	_commit_pages(pages, pages.size() - 1)
 
 func _on_remove_page() -> void:
 	if _definition == null or _definition.pages.size() <= 1:
 		return
-	_definition.pages.remove_at(_page_index)
-	_page_index = clampi(_page_index, 0, _definition.pages.size() - 1)
+	var pages := _definition.pages.duplicate()
+	pages.remove_at(_page_index)
+	_commit_pages(pages, mini(_page_index, pages.size() - 1))
+
+func _commit_pages(pages: Array, selected: int) -> void:
+	var undo := _undo_redo()
+	if undo == null:
+		_apply_pages(_definition, pages, selected)
+		return
+	undo.create_action(L10n.ui("editor.path.page", {"page": selected + 1}), UndoRedo.MERGE_DISABLE, _definition)
+	undo.force_fixed_history()
+	undo.add_do_method(self, "_apply_pages", _definition, pages, selected)
+	undo.add_undo_method(self, "_apply_pages", _definition, _definition.pages.duplicate(), _page_index)
+	undo.commit_action()
+
+func _apply_pages(definition: EventDefinition, pages: Array, selected: int) -> void:
+	definition.pages.assign(pages)
+	definition.emit_changed()
+	if definition != _definition:
+		return
+	_page_index = clampi(selected, 0, maxi(0, pages.size() - 1))
 	_selected_command = null
-	_definition.emit_changed()
 	_refresh_all()
 
 func _on_open_file_pressed() -> void:
