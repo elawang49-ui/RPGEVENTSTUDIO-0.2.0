@@ -1,0 +1,8 @@
+PACKAGE: /Users/elawang/Godot/deliverables/RPGEVENTSTUDIO-0.2.0-rc2/rpgeventstudio-0.2.0-rc2.zip af8806e84eeae760922b9369f79d551ea2c72004374ebd599d5630f39e145ebc
+Evidence directory: /var/folders/3n/jzsl_qss4w78sk79z9x23ylw0000gn/T/rpges-release-980kpcbw
+{"name": "blank-import", "ok": true, "exit_code": 0, "diagnostics": [], "summary": []}
+{"name": "blank-run", "ok": true, "exit_code": 0, "diagnostics": [], "summary": ["检查项：8，失败：0", "BLANK RESULT: PASS (failures=0)"]}
+{"name": "blank-fault", "ok": true, "exit_code": 1, "diagnostics": [], "summary": ["检查项：9，失败：1", "BLANK RESULT: FAIL (failures=1)"]}
+{"name": "prototype-import", "ok": true, "exit_code": 0, "diagnostics": [], "summary": []}
+{"name": "prototype-smoke", "ok": true, "exit_code": 0, "diagnostics": [], "summary": ["检查项：8，失败：0", "BLANK RESULT: PASS (failures=0)"]}
+RELEASE CHECK: PASS /var/folders/3n/jzsl_qss4w78sk79z9x23ylw0000gn/T/rpges-release-980kpcbw

@@ -1,0 +1,7 @@
+Evidence directory: /var/folders/3n/jzsl_qss4w78sk79z9x23ylw0000gn/T/rpges-release-km53tyej
+{"name": "blank-import", "ok": true, "exit_code": 0, "diagnostics": [], "summary": []}
+{"name": "blank-run", "ok": true, "exit_code": 0, "diagnostics": [], "summary": ["检查项：8，失败：0", "BLANK RESULT: PASS (failures=0)"]}
+{"name": "blank-fault", "ok": true, "exit_code": 1, "diagnostics": [], "summary": ["检查项：9，失败：1", "BLANK RESULT: FAIL (failures=1)"]}
+{"name": "school-import", "ok": true, "exit_code": 0, "diagnostics": [], "summary": []}
+{"name": "school-adapter", "ok": true, "exit_code": 0, "diagnostics": [], "summary": ["──── 叙事适配器测试：119 项，失败 0 项 ────"]}
+RELEASE CHECK: PASS /var/folders/3n/jzsl_qss4w78sk79z9x23ylw0000gn/T/rpges-release-km53tyej

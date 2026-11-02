@@ -1,0 +1,325 @@
+﻿2026-11-02T07:40:44.9822088Z Current runner version: '2.338.2'
+2026-11-02T07:40:44.9846701Z ##[group]Runner Image Provisioner
+2026-11-02T07:40:44.9847618Z Hosted Compute Agent
+2026-11-02T07:40:44.9848313Z Version: 20261021.618
+2026-11-02T07:40:44.9848946Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-11-02T07:40:44.9849705Z Build Date: 2026-10-21T00:45:21Z
+2026-11-02T07:40:44.9850398Z Worker ID: {9b761527-9add-4431-8ea8-bc1dbbe1376a}
+2026-11-02T07:40:44.9851134Z Region: westus2
+2026-11-02T07:40:44.9851727Z Cloud: Azure
+2026-11-02T07:40:44.9852267Z ##[endgroup]
+2026-11-02T07:40:44.9853795Z ##[group]Operating System
+2026-11-02T07:40:44.9854632Z Ubuntu
+2026-11-02T07:40:44.9855200Z 26.04.1
+2026-11-02T07:40:44.9855774Z LTS
+2026-11-02T07:40:44.9856291Z ##[endgroup]
+2026-11-02T07:40:44.9857186Z ##[group]Runner Image
+2026-11-02T07:40:44.9857884Z Image: ubuntu-26.04
+2026-11-02T07:40:44.9858488Z Version: 20261025.179.1
+2026-11-02T07:40:44.9859826Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261025.179/images/ubuntu/Ubuntu2604-Readme.md
+2026-11-02T07:40:44.9861354Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261025.179
+2026-11-02T07:40:44.9862395Z ##[endgroup]
+2026-11-02T07:40:44.9863483Z ##[group]GITHUB_TOKEN Permissions
+2026-11-02T07:40:44.9865808Z Contents: read
+2026-11-02T07:40:44.9866645Z Metadata: read
+2026-11-02T07:40:44.9867303Z ##[endgroup]
+2026-11-02T07:40:44.9869430Z Secret source: Actions
+2026-11-02T07:40:44.9870754Z Cache mode: write
+2026-11-02T07:40:44.9871477Z Prepare workflow directory
+2026-11-02T07:40:45.0328746Z Prepare all required actions
+2026-11-02T07:40:45.0375725Z Getting action download info
+2026-11-02T07:40:45.3522778Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-11-02T07:40:45.4786781Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-11-02T07:40:45.5387654Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-11-02T07:40:45.7224079Z Complete job name: godot
+2026-11-02T07:40:45.8083706Z ##[group]Run actions/checkout@v4
+2026-11-02T07:40:45.8084801Z with:
+2026-11-02T07:40:45.8085310Z   repository: elawang49-ui/RPGEVENTSTUDIO-0.2.0
+2026-11-02T07:40:45.8090038Z   token: ***
+2026-11-02T07:40:45.8090484Z   ssh-strict: true
+2026-11-02T07:40:45.8090922Z   ssh-user: git
+2026-11-02T07:40:45.8091366Z   persist-credentials: true
+2026-11-02T07:40:45.8091843Z   clean: true
+2026-11-02T07:40:45.8092281Z   sparse-checkout-cone-mode: true
+2026-11-02T07:40:45.8092801Z   fetch-depth: 1
+2026-11-02T07:40:45.8093233Z   fetch-tags: false
+2026-11-02T07:40:45.8093666Z   show-progress: true
+2026-11-02T07:40:45.8094105Z   lfs: false
+2026-11-02T07:40:45.8094511Z   submodules: false
+2026-11-02T07:40:45.8094949Z   set-safe-directory: true
+2026-11-02T07:40:45.8095452Z   allow-unsafe-pr-checkout: false
+2026-11-02T07:40:45.8096729Z env:
+2026-11-02T07:40:45.8097288Z   GODOT_BIN: /tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+2026-11-02T07:40:45.8097949Z ##[endgroup]
+2026-11-02T07:40:46.1455605Z Syncing repository: elawang49-ui/RPGEVENTSTUDIO-0.2.0
+2026-11-02T07:40:46.1458988Z ##[group]Getting Git version info
+2026-11-02T07:40:46.1460583Z Working directory is '/home/runner/work/RPGEVENTSTUDIO-0.2.0/RPGEVENTSTUDIO-0.2.0'
+2026-11-02T07:40:46.1462868Z [command]/usr/bin/git version
+2026-11-02T07:40:46.1467856Z git version 2.56.0
+2026-11-02T07:40:46.1489736Z ##[endgroup]
+2026-11-02T07:40:46.1504292Z Temporarily overriding HOME='/home/runner/work/_temp/16063467-20af-4540-8a3a-0905783b7a81' before making global git config changes
+2026-11-02T07:40:46.1506253Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-02T07:40:46.1511910Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/RPGEVENTSTUDIO-0.2.0/RPGEVENTSTUDIO-0.2.0
+2026-11-02T07:40:46.1622343Z Deleting the contents of '/home/runner/work/RPGEVENTSTUDIO-0.2.0/RPGEVENTSTUDIO-0.2.0'
+2026-11-02T07:40:46.1625833Z ##[group]Initializing the repository
+2026-11-02T07:40:46.1632290Z [command]/usr/bin/git init /home/runner/work/RPGEVENTSTUDIO-0.2.0/RPGEVENTSTUDIO-0.2.0
+2026-11-02T07:40:46.1751293Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-02T07:40:46.1752460Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-02T07:40:46.1753591Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-02T07:40:46.1754417Z hint: call:
+2026-11-02T07:40:46.1754852Z hint:
+2026-11-02T07:40:46.1755405Z hint: 	git config --global init.defaultBranch <name>
+2026-11-02T07:40:46.1756070Z hint:
+2026-11-02T07:40:46.1757547Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-02T07:40:46.1758703Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-02T07:40:46.1759565Z hint:
+2026-11-02T07:40:46.1760289Z hint: 	git branch -m <name>
+2026-11-02T07:40:46.1760811Z hint:
+2026-11-02T07:40:46.1761524Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-02T07:40:46.1770282Z Initialized empty Git repository in /home/runner/work/RPGEVENTSTUDIO-0.2.0/RPGEVENTSTUDIO-0.2.0/.git/
+2026-11-02T07:40:46.1784552Z [command]/usr/bin/git remote add origin https://github.com/elawang49-ui/RPGEVENTSTUDIO-0.2.0
+2026-11-02T07:40:46.1844091Z ##[endgroup]
+2026-11-02T07:40:46.1845312Z ##[group]Disabling automatic garbage collection
+2026-11-02T07:40:46.1847054Z [command]/usr/bin/git config --local gc.auto 0
+2026-11-02T07:40:46.1882987Z ##[endgroup]
+2026-11-02T07:40:46.1884120Z ##[group]Setting up auth
+2026-11-02T07:40:46.1890223Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-02T07:40:46.1928580Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-02T07:40:46.2444790Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-02T07:40:46.2480338Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-02T07:40:46.2751962Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-02T07:40:46.2790286Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-02T07:40:46.3061954Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-02T07:40:46.3101173Z ##[endgroup]
+2026-11-02T07:40:46.3101996Z ##[group]Fetching the repository
+2026-11-02T07:40:46.3111418Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +bd201bd4963c1e8575f5aa3c2af101db5643faf6:refs/remotes/origin/release/0.2.0-rc1
+2026-11-02T07:40:46.8454461Z From https://github.com/elawang49-ui/RPGEVENTSTUDIO-0.2.0
+2026-11-02T07:40:46.8478216Z  * [new ref]         bd201bd4963c1e8575f5aa3c2af101db5643faf6 -> origin/release/0.2.0-rc1
+2026-11-02T07:40:46.8490047Z ##[endgroup]
+2026-11-02T07:40:46.8491597Z ##[group]Determining the checkout info
+2026-11-02T07:40:46.8493178Z ##[endgroup]
+2026-11-02T07:40:46.8494125Z [command]/usr/bin/git sparse-checkout disable
+2026-11-02T07:40:46.8533166Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-02T07:40:46.8573157Z ##[group]Checking out the ref
+2026-11-02T07:40:46.8574462Z [command]/usr/bin/git checkout --progress --force -B release/0.2.0-rc1 refs/remotes/origin/release/0.2.0-rc1
+2026-11-02T07:40:46.9830494Z Switched to a new branch 'release/0.2.0-rc1'
+2026-11-02T07:40:46.9835769Z branch 'release/0.2.0-rc1' set up to track 'origin/release/0.2.0-rc1'.
+2026-11-02T07:40:46.9847854Z ##[endgroup]
+2026-11-02T07:40:46.9894982Z [command]/usr/bin/git log -1 --format=%H
+2026-11-02T07:40:46.9921197Z bd201bd4963c1e8575f5aa3c2af101db5643faf6
+2026-11-02T07:40:47.0303765Z ##[group]Run actions/setup-python@v5
+2026-11-02T07:40:47.0305070Z with:
+2026-11-02T07:40:47.0306074Z   python-version: 3.11
+2026-11-02T07:40:47.0307338Z   check-latest: false
+2026-11-02T07:40:47.0317513Z   token: ***
+2026-11-02T07:40:47.0318573Z   update-environment: true
+2026-11-02T07:40:47.0319728Z   allow-prereleases: false
+2026-11-02T07:40:47.0320845Z   freethreaded: false
+2026-11-02T07:40:47.0321863Z env:
+2026-11-02T07:40:47.0322955Z   GODOT_BIN: /tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+2026-11-02T07:40:47.0324299Z ##[endgroup]
+2026-11-02T07:40:47.1812060Z ##[group]Installed versions
+2026-11-02T07:40:47.1958801Z (node:2676) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-02T07:40:47.1961305Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-02T07:40:47.1966223Z Successfully set up CPython (3.11.17)
+2026-11-02T07:40:47.1968952Z ##[endgroup]
+2026-11-02T07:40:47.2142457Z ##[group]Run mkdir -p /tmp/godot
+2026-11-02T07:40:47.2143160Z [36;1mmkdir -p /tmp/godot[0m
+2026-11-02T07:40:47.2144690Z [36;1mcurl --fail --location --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip[0m
+2026-11-02T07:40:47.2146913Z [36;1mecho 'cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4  /tmp/godot.zip' | sha256sum --check[0m
+2026-11-02T07:40:47.2148122Z [36;1munzip /tmp/godot.zip -d /tmp/godot[0m
+2026-11-02T07:40:47.2148757Z [36;1mchmod +x "$GODOT_BIN"[0m
+2026-11-02T07:40:47.2149322Z [36;1m"$GODOT_BIN" --version[0m
+2026-11-02T07:40:47.2208814Z shell: /usr/bin/bash -e {0}
+2026-11-02T07:40:47.2209382Z env:
+2026-11-02T07:40:47.2209937Z   GODOT_BIN: /tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+2026-11-02T07:40:47.2210769Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:40:47.2211741Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-11-02T07:40:47.2212684Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:40:47.2213520Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:40:47.2214310Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:40:47.2215521Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-11-02T07:40:47.2216797Z ##[endgroup]
+2026-11-02T07:40:47.2428417Z   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+2026-11-02T07:40:47.2429530Z                                  Dload  Upload  Total   Spent   Left   Speed
+2026-11-02T07:40:47.2430124Z 
+2026-11-02T07:40:47.3619887Z   0      0   0      0   0      0      0      0                              0
+2026-11-02T07:40:47.3620881Z   0      0   0      0   0      0      0      0                              0
+2026-11-02T07:40:47.3621592Z   0      0   0      0   0      0      0      0                              0
+2026-11-02T07:40:47.3622238Z 
+2026-11-02T07:40:47.6655308Z   0      0   0      0   0      0      0      0                              0
+2026-11-02T07:40:47.6656148Z 100 74.25M 100 74.25M   0      0 175.5M      0                              0
+2026-11-02T07:40:47.6657355Z 100 74.25M 100 74.25M   0      0 175.5M      0                              0
+2026-11-02T07:40:47.6658096Z 100 74.25M 100 74.25M   0      0 175.5M      0                              0
+2026-11-02T07:40:47.7325662Z /tmp/godot.zip: OK
+2026-11-02T07:40:47.7487405Z Archive:  /tmp/godot.zip
+2026-11-02T07:40:48.7394254Z   inflating: /tmp/godot/Godot_v4.7.2-stable_linux.x86_64  
+2026-11-02T07:40:48.8570678Z 4.7.2.stable.official.ed1daf0bf
+2026-11-02T07:40:48.8640731Z ##[group]Run python3 -u tools/test_runner.py --all
+2026-11-02T07:40:48.8641160Z [36;1mpython3 -u tools/test_runner.py --all[0m
+2026-11-02T07:40:48.8672490Z shell: /usr/bin/bash -e {0}
+2026-11-02T07:40:48.8672763Z env:
+2026-11-02T07:40:48.8673025Z   GODOT_BIN: /tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+2026-11-02T07:40:48.8673626Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:40:48.8674055Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-11-02T07:40:48.8674509Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:40:48.8674891Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:40:48.8675272Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:40:48.8675678Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-11-02T07:40:48.8676014Z ##[endgroup]
+2026-11-02T07:41:00.6676068Z [PASS] import 11.3s
+2026-11-02T07:41:00.6677234Z == headless 套件 ==
+2026-11-02T07:41:02.5003636Z [PASS] runtime_release_test            1.8s checks=74
+2026-11-02T07:41:02.5004258Z    ALLOWED   ENGINE_EXIT ERROR: 3 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:06.0088389Z [PASS] run                             3.5s checks=355 cases=32/32
+2026-11-02T07:41:06.0090215Z    ALLOWED   EXPECTED[EXPECTED_ERROR_BEGIN presenter-protocol] ERROR: [RPGEventStudio] 自定义 presenter 缺少协议方法：<Object#192535332746>
+2026-11-02T07:41:06.0091969Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:07.4690574Z [PASS] runtime_trace_test              1.5s checks=63
+2026-11-02T07:41:07.4691245Z    ALLOWED   EXPECTED[EXPECTED_ERROR_BEGIN missing-common] ERROR: Cannot open file 'res://.godot/nope.tres'.
+2026-11-02T07:41:07.4692029Z    ALLOWED   EXPECTED[EXPECTED_ERROR_BEGIN missing-common] ERROR: Failed loading resource: res://.godot/nope.tres.
+2026-11-02T07:41:07.4693857Z    ALLOWED   EXPECTED[EXPECTED_ERROR_BEGIN missing-common] ERROR: [RPGEventStudio] 找不到公共事件：res://.godot/nope.tres
+2026-11-02T07:41:07.4695073Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:08.0007037Z [PASS] trace_ui_test                   0.5s checks=21
+2026-11-02T07:41:08.0008145Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:17.1798098Z [PASS] dialogue_layout_test            9.2s checks=16
+2026-11-02T07:41:17.1799344Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:27.7543214Z [PASS] dialogue_pagination_test       10.6s checks=190
+2026-11-02T07:41:27.7543893Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:28.2865501Z [PASS] story_audit_test                0.5s checks=24
+2026-11-02T07:41:28.2866761Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:29.0049062Z [PASS] state_bulk_register_test        0.7s checks=116
+2026-11-02T07:41:29.0049778Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:29.8159215Z [PASS] graph_editor_smoke              0.8s checks=19
+2026-11-02T07:41:29.8160243Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:31.3713276Z [PASS] ui_smoke                        1.6s checks=56
+2026-11-02T07:41:31.3713857Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:40.1787670Z [PASS] integration_demo                8.8s checks=37
+2026-11-02T07:41:40.1788357Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:40.7091289Z [PASS] safe_write_test                 0.5s checks=36
+2026-11-02T07:41:40.7092765Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:41.2390382Z [PASS] event_list_smoke                0.5s checks=14
+2026-11-02T07:41:41.2391241Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:42.4207403Z [PASS] tutorial_flow                   1.2s checks=14
+2026-11-02T07:41:42.4208373Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:43.8816967Z [PASS] interaction_test                1.5s checks=29
+2026-11-02T07:41:43.8817667Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:44.3194856Z [PASS] node_ref_test                   0.4s checks=12
+2026-11-02T07:41:44.3195992Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:45.2220342Z [PASS] graph_lifecycle_test            0.9s checks=32
+2026-11-02T07:41:45.2220946Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:45.9378778Z [PASS] presenter_lifecycle_test        0.7s checks=48
+2026-11-02T07:41:45.9379653Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:46.3774811Z [PASS] input_coexistence_test          0.4s checks=35
+2026-11-02T07:41:47.3730967Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:47.3731927Z [PASS] nested_event_semantics_test     1.0s checks=31
+2026-11-02T07:41:47.3733180Z    ALLOWED   EXPECTED[EXPECTED_ERROR_BEGIN recursion-limit] ERROR: [RPGEventStudio] 调用层数过深（8），疑似递归
+2026-11-02T07:41:47.3734624Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:48.8355458Z [PASS] story_insert_choice_test        1.5s checks=55
+2026-11-02T07:41:48.8356771Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:49.7390727Z [PASS] theme_reload_test               0.9s checks=10
+2026-11-02T07:41:49.7391307Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:49.7391985Z 合计检查项：1287
+2026-11-02T07:41:49.7392208Z == 编辑器套件 ==
+2026-11-02T07:41:54.9630043Z [PASS] editor                          5.2s checks=44
+2026-11-02T07:41:54.9631002Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:41:59.6259313Z [PASS] map                             4.7s checks=51
+2026-11-02T07:41:59.6259981Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:42:03.9182212Z [PASS] gvl                             4.3s checks=72
+2026-11-02T07:42:03.9183375Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:42:09.7907117Z [PASS] story                           5.9s checks=39
+2026-11-02T07:42:09.7907820Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:42:13.8937388Z [PASS] audit                           4.1s checks=14
+2026-11-02T07:42:13.8937977Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:42:20.1364893Z [PASS] trace                           6.2s checks=8
+2026-11-02T07:42:20.1365943Z    ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+2026-11-02T07:42:20.1367496Z 合计检查项：228
+2026-11-02T07:42:20.1367928Z == 故障注入自检 ==
+2026-11-02T07:42:23.6475100Z   ✓ run.gd 注入 type（期望 FAIL，实际 FAIL）
+2026-11-02T07:42:27.1571029Z   ✓ run.gd 注入 null（期望 FAIL，实际 FAIL）
+2026-11-02T07:42:30.6709095Z   ✓ run.gd 注入 skip（期望 FAIL，实际 FAIL）
+2026-11-02T07:42:34.1816711Z   ✓ run.gd 预期负向错误（期望 PASS，实际 PASS）
+2026-11-02T07:42:34.6185096Z   ✓ fault_no_summary.gd（期望 FAIL，实际 FAIL）
+2026-11-02T07:42:35.0567994Z   ✓ fault_early_quit.gd（期望 FAIL，实际 FAIL）
+2026-11-02T07:42:50.0788385Z   ✓ fault_type_error.gd（期望 FAIL，实际 FAIL）
+2026-11-02T07:43:05.1000961Z   ✓ fault_null.gd（期望 FAIL，实际 FAIL）
+2026-11-02T07:43:05.5374750Z   ✓ fault_assert_fail.gd（期望 FAIL，实际 FAIL）
+2026-11-02T07:43:05.9753936Z   ✓ fault_subtest_abort.gd（期望 FAIL，实际 FAIL）
+2026-11-02T07:43:06.6916693Z   ✓ fault_event_handler.gd（期望 FAIL，实际 FAIL）
+2026-11-02T07:43:06.8466048Z   ✓ 脚本解析失败（期望 FAIL，实际 FAIL）
+2026-11-02T07:43:06.8466814Z 故障注入自检：PASS
+2026-11-02T07:43:06.8467038Z 
+2026-11-02T07:43:06.8467266Z RUNNER RESULT: PASS
+2026-11-02T07:43:06.8552924Z ##[group]Run python3 -u tools/release_check.py --package build
+2026-11-02T07:43:06.8553395Z [36;1mpython3 -u tools/release_check.py --package build[0m
+2026-11-02T07:43:06.8583299Z shell: /usr/bin/bash -e {0}
+2026-11-02T07:43:06.8583551Z env:
+2026-11-02T07:43:06.8583801Z   GODOT_BIN: /tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+2026-11-02T07:43:06.8584187Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:43:06.8584612Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-11-02T07:43:06.8585033Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:43:06.8585400Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:43:06.8585769Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:43:06.8586162Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-11-02T07:43:06.8586767Z ##[endgroup]
+2026-11-02T07:43:07.0420484Z PACKAGE: /home/runner/work/RPGEVENTSTUDIO-0.2.0/RPGEVENTSTUDIO-0.2.0/build/rpgeventstudio-0.2.0-rc2.zip bf7fa67a6735cb25683a8ce488dbad869daa4772c83d9a3b1874952d4178d45e
+2026-11-02T07:43:07.0421868Z Evidence directory: /tmp/rpges-release-vvgx7rx_
+2026-11-02T07:43:10.8433980Z {"name": "blank-import", "ok": true, "exit_code": 0, "diagnostics": [], "summary": []}
+2026-11-02T07:43:11.2808213Z {"name": "blank-run", "ok": true, "exit_code": 0, "diagnostics": [], "summary": ["检查项：8，失败：0", "BLANK RESULT: PASS (failures=0)"]}
+2026-11-02T07:43:11.7185991Z {"name": "blank-fault", "ok": true, "exit_code": 1, "diagnostics": [], "summary": ["检查项：9，失败：1", "BLANK RESULT: FAIL (failures=1)"]}
+2026-11-02T07:43:11.7187184Z RELEASE CHECK: PASS /tmp/rpges-release-vvgx7rx_
+2026-11-02T07:43:11.7332970Z ##[group]Run actions/upload-artifact@v4
+2026-11-02T07:43:11.7333279Z with:
+2026-11-02T07:43:11.7333489Z   name: rpgeventstudio-quality
+2026-11-02T07:43:11.7333748Z   include-hidden-files: true
+2026-11-02T07:43:11.7334051Z   path: .godot/test-results/*.log
+build/*.zip
+build/*.sha256
+
+2026-11-02T07:43:11.7334385Z   if-no-files-found: warn
+2026-11-02T07:43:11.7334620Z   compression-level: 6
+2026-11-02T07:43:11.7334829Z   overwrite: false
+2026-11-02T07:43:11.7335027Z env:
+2026-11-02T07:43:11.7335261Z   GODOT_BIN: /tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+2026-11-02T07:43:11.7335628Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:43:11.7336050Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-11-02T07:43:11.7336764Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:43:11.7337279Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:43:11.7337691Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-11-02T07:43:11.7338071Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-11-02T07:43:11.7338395Z ##[endgroup]
+2026-11-02T07:43:11.9043989Z (node:3222) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-02T07:43:11.9044851Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-02T07:43:11.9168940Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-11-02T07:43:11.9178167Z The least common ancestor is /home/runner/work/RPGEVENTSTUDIO-0.2.0/RPGEVENTSTUDIO-0.2.0. This will be the root directory of the artifact
+2026-11-02T07:43:11.9178863Z With the provided path, there will be 30 files uploaded
+2026-11-02T07:43:11.9179552Z Artifact name is valid!
+2026-11-02T07:43:11.9180078Z Root directory input is valid!
+2026-11-02T07:43:12.3425915Z Beginning upload of artifact content to blob storage
+2026-11-02T07:43:12.4162813Z (node:3222) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-11-02T07:43:12.9826162Z Uploaded bytes 310930
+2026-11-02T07:43:13.0635775Z Finished uploading artifact content to blob storage!
+2026-11-02T07:43:13.0637839Z SHA256 digest of uploaded artifact zip is 3a89052461064b46c693c7a9bc9b10b1616e738acfca6a830ae756d04b1deec6
+2026-11-02T07:43:13.0639419Z Finalizing artifact upload
+2026-11-02T07:43:13.5723658Z Artifact rpgeventstudio-quality.zip successfully finalized. Artifact ID 13124023492
+2026-11-02T07:43:13.5725386Z Artifact rpgeventstudio-quality has been successfully uploaded! Final size is 310930 bytes. Artifact ID is 13124023492
+2026-11-02T07:43:13.5732297Z Artifact download URL: https://github.com/elawang49-ui/RPGEVENTSTUDIO-0.2.0/actions/runs/41407837667/artifacts/13124023492
+2026-11-02T07:43:13.5940481Z Post job cleanup.
+2026-11-02T07:43:13.7289808Z (node:3236) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-11-02T07:43:13.7291082Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-11-02T07:43:13.7512337Z Post job cleanup.
+2026-11-02T07:43:13.8597479Z [command]/usr/bin/git version
+2026-11-02T07:43:13.8657341Z git version 2.56.0
+2026-11-02T07:43:13.8707855Z Temporarily overriding HOME='/home/runner/work/_temp/647a58a4-166a-4535-a882-290e9fe586b3' before making global git config changes
+2026-11-02T07:43:13.8715015Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-02T07:43:13.8716655Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/RPGEVENTSTUDIO-0.2.0/RPGEVENTSTUDIO-0.2.0
+2026-11-02T07:43:13.8772361Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-02T07:43:13.8827197Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-02T07:43:13.9235578Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-02T07:43:13.9297308Z http.https://github.com/.extraheader
+2026-11-02T07:43:13.9304296Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-11-02T07:43:13.9349940Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-02T07:43:13.9760057Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-02T07:43:13.9792171Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-02T07:43:14.0222643Z Cleaning up orphan processes
+2026-11-02T07:43:14.0596322Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+
