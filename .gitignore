@@ -16,3 +16,6 @@ build/
 
 # Python tool bytecode
 __pycache__/
+
+# Rebuilt font fixture import metadata
+tests/fixtures/fonts/*.otf.import

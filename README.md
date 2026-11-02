@@ -1,4 +1,4 @@
-> **0.2.0-rc1 发布候选**：安装、第三方接入、状态事务升级规则和依赖以 [安装说明](docs/release/INSTALL.md) 为准；[发布说明草案](docs/release/RELEASE_NOTES.md)。完整验证使用 `python3 tools/test_runner.py --all`（自动首次导入）。
+> **0.2.0-rc2 发布候选**：安装、第三方接入、状态事务升级规则和依赖以 [安装说明](docs/release/INSTALL.md) 为准；[发布说明草案](docs/release/RELEASE_NOTES.md)。完整验证使用 `python3 tools/test_runner.py --all`（自动首次导入）。
 
 # Godot RPG Event Studio（RPGEVENTSTUDIO）
 

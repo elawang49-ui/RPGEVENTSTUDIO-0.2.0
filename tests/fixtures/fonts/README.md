@@ -8,7 +8,7 @@ Serif CJK SC Regular at upstream commit
 - https://github.com/notofonts/noto-cjk/blob/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Serif/OTF/SimplifiedChinese/NotoSerifCJKsc-Regular.otf
 
 Copyright notices are preserved in each font's name table. Noto Sans: © 2014-2021
-Adobe; Noto Serif: see its embedded copyright notice. Each font remains under the
+Adobe; Noto Serif: © 2017-2024 Adobe. Each font remains under the
 SIL Open Font License 1.1; full upstream licenses are OFL-Sans.txt and
 OFL-Serif.txt. The RPGEVENTSTUDIO custom license does not replace them.
 
