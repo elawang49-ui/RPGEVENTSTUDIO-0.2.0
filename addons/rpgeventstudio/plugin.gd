@@ -104,7 +104,6 @@ func _exit_tree() -> void:
 		remove_debugger_plugin(_debugger_plugin)
 		_debugger_plugin = null
 
-	_release_autoload()
 
 # ── 面板 ─────────────────────────────────────────────────
 
@@ -471,17 +470,29 @@ func _editor_settings() -> EditorSettings:
 
 # ── Autoload ─────────────────────────────────────────────
 
+func _enable_plugin() -> void:
+	_ensure_autoload()
+
+func _disable_plugin() -> void:
+	_release_autoload()
+	ProjectSettings.save.call_deferred()
+
 func _ensure_autoload() -> void:
 	var key := "autoload/" + AUTOLOAD_NAME
 	if ProjectSettings.has_setting(key):
 		return
 	add_autoload_singleton(AUTOLOAD_NAME, RUNTIME_SCRIPT)
+	ProjectSettings.save.call_deferred()
 
 func _release_autoload() -> void:
 	var key := "autoload/" + AUTOLOAD_NAME
 	if not ProjectSettings.has_setting(key):
 		return
 	var value := str(ProjectSettings.get_setting(key)).trim_prefix("*")
+	if value.begins_with("uid://"):
+		var uid := ResourceUID.text_to_id(value)
+		if ResourceUID.has_id(uid):
+			value = ResourceUID.get_id_path(uid)
 	if value == RUNTIME_SCRIPT:
 		remove_autoload_singleton(AUTOLOAD_NAME)
 

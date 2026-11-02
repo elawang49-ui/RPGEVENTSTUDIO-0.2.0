@@ -6,6 +6,7 @@ extends SceneTree
 ## 本脚本只依赖插件 addon，不依赖宿主工程。
 
 var _fails := 0
+var _checks := 0
 
 class MiniPresenter:
 	extends Node
@@ -20,6 +21,7 @@ func _init() -> void:
 	_run.call_deferred()
 
 func _check(cond: bool, msg: String) -> void:
+	_checks += 1
 	if cond: print("  ✓ ", msg)
 	else: print("  ✗ ", msg); _fails += 1
 
@@ -30,7 +32,7 @@ func _run() -> void:
 	_check(roster_saved, "角色花名册缺失时可保存（自动建目录）")
 
 	var runtime := root.get_node_or_null("RPGEventStudio")
-	_check(runtime != null, "Autoload 已注册")
+	_check(runtime is StudioRuntime, "Autoload 已注册且类型正确")
 	var theme = runtime.get("dialogue_theme") if runtime != null else null
 	_check(theme != null, "UI 主题文件缺失时使用默认主题")
 
@@ -60,7 +62,9 @@ func _run() -> void:
 
 	DirAccess.make_dir_recursive_absolute("res://events")
 	_check(ResourceSaver.save(definition, "res://events/blank_test.tres") == OK, "可以新建并保存事件资源")
-	runner.start(definition)
+	var reloaded := ResourceLoader.load("res://events/blank_test.tres", "", ResourceLoader.CACHE_MODE_IGNORE) as EventDefinition
+	_check(reloaded != null and reloaded != definition and reloaded.pages[0].commands[0].params["key"] == "Global.Blank.Flag", "事件资源绕开缓存反序列化一致")
+	runner.start(reloaded)
 	for i in 120:
 		if runner.active_count() == 0: break
 		await process_frame
@@ -75,6 +79,11 @@ func _run() -> void:
 	graph.entry_node = &"start_1"
 	_check(ResourceSaver.save(graph, "res://events/blank_graph.tres") == OK, "可以新建并保存关卡图资源")
 
+	if OS.get_environment("RPGEVENTSTUDIO_BLANK_TEST_FAULT") == "1":
+		_check(false, "expected injected failure")
+	host.queue_free()
+	await process_frame
+	print("检查项：%d，失败：%d" % [_checks, _fails])
 	print("")
 	print("BLANK RESULT: %s (failures=%d)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	quit(0 if _fails == 0 else 1)
