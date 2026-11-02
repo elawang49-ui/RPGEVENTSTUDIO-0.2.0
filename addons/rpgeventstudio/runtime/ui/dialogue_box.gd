@@ -260,8 +260,6 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	call_deferred("_reset_text_page")
 	if not _typing:
 		_finish_typing()
-	elif auto_advance > 0.0:
-		_auto_deadline = Time.get_ticks_msec() + int(auto_advance * 1000.0)
 
 func is_text_finished() -> bool:
 	return _text_done

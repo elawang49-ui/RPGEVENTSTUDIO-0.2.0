@@ -5,6 +5,7 @@ extends SceneTree
 
 const VIEW_W := 1152
 const VIEW_H := 648
+const DEFAULT_FONT_FIXTURE := "res://tests/fixtures/fonts/pagination_sans.otf"
 const FONT_FIXTURE := "res://tests/fixtures/fonts/custom_serif.tres"
 
 var _checks := 0
@@ -20,6 +21,9 @@ func _run() -> void:
 	root.size = Vector2i(VIEW_W, VIEW_H)
 	_service = InputService.new()
 	_p = DialoguePresenter.new()
+	var initial_theme := RpgEventStudioTheme.new()
+	initial_theme.font_path = DEFAULT_FONT_FIXTURE
+	_p.style = initial_theme
 	_p.input = _service
 	root.add_child(_p)
 	await process_frame
@@ -40,6 +44,7 @@ func _run() -> void:
 	await _test_mouse()
 	await _test_gamepad()
 	await _test_auto_play()
+	await _test_auto_after_typing()
 	await _test_last_page_and_choices()
 	await _test_overlap_mode()
 
@@ -214,6 +219,22 @@ func _test_auto_play() -> void:
 	_check(int(_p.get("_auto_deadline")) > deadline_before, "自动播放：翻页后重置计时")
 	_check(bool(_p.get("_panel").visible), "自动播放：翻页时保持面板")
 
+## 阅读倒计时属于展示完成后的页面，不能在打字阶段提前耗尽。
+func _test_auto_after_typing() -> void:
+	_set_theme(20, 8, 1.0)
+	_p.show_text("旁白", "逐字显示后才开始自动推进计时。", 0.2)
+	_check(int(_p.get("_auto_deadline")) == 0, "自动播放：打字开始时尚未启动阅读计时")
+	await create_timer(0.25).timeout
+	_check(bool(_p.get("_typing")), "自动播放：阅读时长经过后仍在打字")
+	_check(bool(_p.get("_panel").visible), "自动播放：打字期间保持面板")
+	_p.call("_finish_typing")
+	_check(int(_p.get("_auto_deadline")) > Time.get_ticks_msec(), "自动播放：打字完成后获得完整阅读时间")
+	await process_frame
+	_check(bool(_p.get("_waiting_confirm")), "自动播放：打字完成后的首帧仍等待阅读")
+	_check(not _p.is_text_finished(), "自动播放：不能在打字完成时立即结束事件等待")
+	await create_timer(0.28).timeout
+	_check(_p.is_text_finished(), "自动播放：阅读时间结束后正常完成")
+
 # ── 8. 最后一页与选项状态 ─────────────────────────────────
 
 func _test_last_page_and_choices() -> void:
@@ -314,6 +335,7 @@ func _check_page_bounds(title: String, start: int, end: int) -> void:
 
 func _set_theme(font_size: int, sep: int, speed: float = 4000.0) -> void:
 	var theme := RpgEventStudioTheme.new()
+	theme.font_path = DEFAULT_FONT_FIXTURE
 	theme.text_font_size = font_size
 	theme.line_separation = sep
 	theme.text_speed = speed

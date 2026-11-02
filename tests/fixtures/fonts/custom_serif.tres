@@ -1,5 +1,6 @@
-[gd_resource type="SystemFont" format=3]
+[gd_resource type="FontVariation" load_steps=2 format=3]
+
+[ext_resource type="FontFile" path="res://tests/fixtures/fonts/pagination_serif.otf" id="1"]
 
 [resource]
-font_names = PackedStringArray("Times New Roman", "Georgia")
-allow_system_fallback = true
+base_font = ExtResource("1")
