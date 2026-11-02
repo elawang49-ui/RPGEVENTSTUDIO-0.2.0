@@ -21,9 +21,12 @@ var write_observer: Callable = Callable()
 var _values: Dictionary = {}
 var _types: Dictionary = {}
 var _definitions: Dictionary = {}
-var _batching: bool = false
+var _batch_depth: int = 0
+var _write_versions: Dictionary = {}
+var _generation: int = 0
+var _notification_queue: Array = []
+var _dispatching_batch := false
 var _dirty: Dictionary = {}
-var _pending_new: Dictionary = {}
 var _pending_old: Dictionary = {}
 
 # ── 键解析 ───────────────────────────────────────────────
@@ -71,6 +74,7 @@ func type_of(key: String) -> int:
 func define(key: String, type: int, default_value: Variant) -> void:
 	if _values.has(key):
 		return
+	_write_versions[key] = int(_write_versions.get(key, 0)) + 1
 	_types[key] = type
 	_values[key] = default_value
 	_definitions[key] = {"scope": scope_of(key), "default": default_value}
@@ -89,11 +93,12 @@ func set_value(key: String, value: Variant) -> int:
 	if existed and _equal(old_value, coerced):
 		return OK
 
+	_write_versions[key] = int(_write_versions.get(key, 0)) + 1
 	# 只观察真实变化；在批处理分支之前调用，保证旧值/新值与单次写入一致。
 	if write_observer.is_valid():
 		write_observer.call(key, old_value, coerced, existed)
 
-	if _batching:
+	if _batch_depth > 0:
 		if not _dirty.has(key):
 			_dirty[key] = true
 			_pending_old[key] = old_value if existed else null
@@ -104,6 +109,8 @@ func set_value(key: String, value: Variant) -> int:
 	return OK
 
 func add(key: String, delta: Variant) -> int:
+	if delta is bool or not (delta is int or delta is float):
+		return ERR_INVALID_DATA
 	var current: Variant = get_value(key, 0)
 	if current is bool or not (current is int or current is float):
 		push_error("[RPGEventStudio] " + L10n.game("diag.state_not_number", {"key": key}))
@@ -136,25 +143,36 @@ func compare(key: String, op: String, expected: Variant) -> bool:
 # ── 事务 ─────────────────────────────────────────────────
 
 func transaction() -> void:
-	_batching = true
+	_batch_depth += 1
 
 func commit() -> void:
-	if not _batching:
+	if _batch_depth == 0:
 		return
-	_batching = false
-	if _dirty.is_empty():
-		_pending_old.clear()
+	_batch_depth -= 1
+	if _batch_depth > 0:
 		return
-	var keys: Array[String] = []
-	for key in _dirty.keys():
-		keys.append(key)
+	# Detach before notifying: listeners may open/commit the next batch.
+	var pending := _pending_old
+	var keys: Array = _dirty.keys()
 	keys.sort()
+	_dirty = {}
+	_pending_old = {}
+	if keys.is_empty():
+		return
+	var current := {}
 	for key in keys:
-		changed.emit(key, _pending_old.get(key), _values.get(key))
-	_dirty.clear()
-	_pending_old.clear()
+		current[key] = _values.get(key)
 	revision += 1
-	batch_committed.emit(PackedStringArray(keys), revision)
+	_notification_queue.append({"keys": keys, "old": pending, "new": current, "revision": revision})
+	if _dispatching_batch:
+		return
+	_dispatching_batch = true
+	while not _notification_queue.is_empty():
+		var batch: Dictionary = _notification_queue.pop_front()
+		for key in batch["keys"]:
+			changed.emit(key, batch["old"].get(key), batch["new"][key])
+		batch_committed.emit(PackedStringArray(batch["keys"]), int(batch["revision"]))
+	_dispatching_batch = false
 
 # ── 快照 ─────────────────────────────────────────────────
 
@@ -165,6 +183,11 @@ func snapshot() -> Dictionary:
 	}
 
 func restore(data: Dictionary) -> void:
+	_generation += 1
+	_batch_depth = 0
+	_dirty.clear()
+	_pending_old.clear()
+	_write_versions.clear()
 	_values = (data.get("values", {}) as Dictionary).duplicate(true)
 	_types.clear()
 	for key in _values.keys():
@@ -173,6 +196,11 @@ func restore(data: Dictionary) -> void:
 	batch_committed.emit(PackedStringArray(_values.keys()), revision)
 
 func reset() -> void:
+	_generation += 1
+	_batch_depth = 0
+	_dirty.clear()
+	_pending_old.clear()
+	_write_versions.clear()
 	_values.clear()
 	_types.clear()
 	_definitions.clear()

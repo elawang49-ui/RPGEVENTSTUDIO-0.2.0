@@ -825,10 +825,11 @@ func _test_story_document_edits() -> void:
 	items_now = document.build_items()
 	var moved_copy: EventCommand = page.commands[2]
 	var displaced: EventCommand = page.commands[3]
+	var expected_copy_index := 2 + int(items_now[3].get("consumed", 1))
 	document.move_item(items_now[2], 1)
 	_check(page.commands.size() == 6, "移动后列表长度应不变")
-	_check(page.commands[3] == moved_copy and str(page.commands[3].params.get("text", "")) == "改过的正文",
-		"下移后 commands[3] 应是原 commands[2] 的同一实例且文本正确")
+	_check(page.commands[expected_copy_index] == moved_copy and str(page.commands[expected_copy_index].params.get("text", "")) == "改过的正文",
+		"下移必须越过完整的选项块，同一台词实例应在整块之后且文本正确")
 	_check(page.commands[2] == displaced, "原 commands[3] 的内容应前移到 commands[2]")
 	items_now = document.build_items()
 	var target_item: Dictionary = items_now[1]

@@ -29,8 +29,11 @@ var command_index: int = -1
 var command_serial: int = 0
 var trace_pages: Array = []
 
+var _settling := false
 var cancelled: bool = false
 var cancel_reason: String = ""
+var _presentation_owner_id: int = 0
+var _owns_presenter := true
 
 var pending_block: Array[EventCommand] = []
 var pending_call: Dictionary = {}
@@ -96,6 +99,8 @@ func is_wait_done() -> bool:
 	return _wait_deadline_ms < 0
 
 func finish_wait() -> void:
+	if cancelled:
+		_after_wait = Callable()
 	if _after_wait.is_valid():
 		var cb := _after_wait
 		_after_wait = Callable()
@@ -108,7 +113,10 @@ func finish_wait() -> void:
 ## 演出类指令注册「被取消时怎么收尾」（停 tween、收镜头、清淡入淡出）。
 func on_cancel(hook: Callable) -> void:
 	if hook.is_valid():
-		_cancel_hooks.append(hook)
+		if cancelled:
+			hook.call()
+		else:
+			_cancel_hooks.append(hook)
 
 ## 嵌套 / 公共事件开始执行时登记，结束时注销（见 EventRunner._run_nested_event）。
 func _attach_child(child: EventContext) -> void:
@@ -118,10 +126,13 @@ func _detach_child(child: EventContext) -> void:
 	_active_children.erase(child)
 
 func cancel(reason: String = "调用方取消") -> void:
-	if cancelled:
+	if cancelled or _settling:
 		return
 	cancelled = true
 	cancel_reason = reason
+	_wait_predicate = Callable()
+	_after_wait = Callable()
+	_wait_deadline_ms = -1
 	for index in range(_cancel_hooks.size() - 1, -1, -1):
 		var hook: Callable = _cancel_hooks[index]
 		if hook.is_valid():
@@ -129,11 +140,11 @@ func cancel(reason: String = "调用方取消") -> void:
 	_cancel_hooks.clear()
 	# 嵌套 / 公共事件有独立上下文，不在 EventRunner 的运行列表里：
 	# 父级取消时必须级联，否则子级会继续等下去，父级协程收不了尾。
-	for child in _active_children:
+	for child in _active_children.duplicate():
 		if child is EventContext and not child.cancelled:
 			child.cancel(reason)
 	_active_children.clear()
-	if presenter != null and is_instance_valid(presenter) and presenter.has_method("close_all"):
+	if _owns_presenter and presenter != null and is_instance_valid(presenter) and presenter.has_method("close_all"):
 		presenter.close_all()
 
 ## 统一的场景对象解析规则（详见 docs/16）：

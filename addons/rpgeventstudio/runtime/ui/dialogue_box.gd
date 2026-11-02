@@ -45,6 +45,7 @@ var _mouse_click := false
 var _choice_result := -1
 var _choice_index := -1
 var _choice_buttons: Array[Button] = []
+var _paused_at := -1
 var _panel_tween: Tween
 var _choices_tween: Tween
 
@@ -57,6 +58,7 @@ var shown_texts: PackedStringArray = []
 func _ready() -> void:
 	if Engine.is_editor_hint() and not editor_preview:
 		return
+	process_mode = Node.PROCESS_MODE_PAUSABLE
 	layer = 20
 	if style == null:
 		style = RpgEventStudioTheme.new()
@@ -66,6 +68,16 @@ func _ready() -> void:
 	_choices_panel.hide()
 	if not get_viewport().size_changed.is_connected(_on_viewport_resized):
 		get_viewport().size_changed.connect(_on_viewport_resized)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PAUSED:
+		_paused_at = Time.get_ticks_msec()
+	elif what == NOTIFICATION_UNPAUSED and _paused_at >= 0:
+		var elapsed := Time.get_ticks_msec() - _paused_at
+		if _auto_deadline > 0:
+			_auto_deadline += elapsed
+		_input_cooldown += elapsed
+		_paused_at = -1
 
 func _build_ui() -> void:
 	_theme_root = Theme.new()
@@ -313,6 +325,8 @@ func get_choice() -> int:
 	return _choice_result
 
 func _on_choice_pressed(index: int) -> void:
+	if _choice_result >= 0 or not _choices_panel.visible or get_tree().paused:
+		return
 	_choice_result = index
 	_hide_choices_panel_with_animation()
 	_text_done = true
@@ -451,6 +465,8 @@ func _process(delta: float) -> void:
 	_mouse_click = false
 
 func _finish_typing() -> void:
+	if _auto_duration > 0.0 and _auto_deadline == 0:
+		_auto_deadline = Time.get_ticks_msec() + int(_auto_duration * 1000.0)
 	_typing = false
 	_text_label.visible_characters = -1
 	_waiting_confirm = true

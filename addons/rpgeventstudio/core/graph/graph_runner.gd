@@ -51,6 +51,8 @@ func start() -> void:
 			trace_ref.state_changed(key, old_value, new_value, existed)
 		_owns_write_observer = true
 	_stop = false
+	if is_instance_valid(host) and not host.tree_exiting.is_connected(stop):
+		host.tree_exiting.connect(stop)
 	running = true
 	_activations = 0
 	node_states.clear()
@@ -89,6 +91,8 @@ func stop() -> void:
 		# start() 自己装上的 trace 转发观察者，停止时一并摘掉
 		state.write_observer = Callable()
 		_owns_write_observer = false
+	if is_instance_valid(host) and host.tree_exiting.is_connected(stop):
+		host.tree_exiting.disconnect(stop)
 	stopped.emit(self)
 
 func reset() -> void:
@@ -100,6 +104,10 @@ func reset() -> void:
 # ── 执行 ─────────────────────────────────────────────────
 
 func _activate(node_id: StringName, cause: Dictionary) -> void:
+	# Keep the coroutine owner alive until a stopped await has unwound.
+	var lifetime: RefCounted = self
+	while not _stop and is_instance_valid(host) and host.is_inside_tree() and host.get_tree().paused:
+		await host.get_tree().process_frame
 	if _stop:
 		return
 	var node := graph.node_by_id(node_id)
@@ -109,8 +117,7 @@ func _activate(node_id: StringName, cause: Dictionary) -> void:
 	_activations += 1
 	if _activations > MAX_ACTIVATIONS:
 		push_error("[RPGEventStudio] 关卡图传播次数异常，已中止（疑似死循环）")
-		_stop = true
-		running = false
+		stop()
 		return
 
 	_set_node_state(node_id, NodeState.RUNNING)
@@ -144,6 +151,8 @@ func _activate(node_id: StringName, cause: Dictionary) -> void:
 		_:
 			push_warning("[RPGEventStudio] 未知的关卡图节点类型：%s" % node.type)
 
+	if _stop or not is_instance_valid(lifetime):
+		return
 	_set_node_state(node_id, NodeState.DONE)
 	if trace != null:
 		trace.graph_node(_graph_id(), String(node_id), node.type, "exit", NodeState.DONE, cause)
@@ -249,20 +258,36 @@ func _activate_event(node: LevelNode, cause: Dictionary) -> void:
 			"event_path": path,
 			"trigger": trigger,
 		})
+	# Listen before invoking the host: a custom starter may complete synchronously.
+	var completed: Array = []
+	var capture := func(report: Dictionary) -> void:
+		if StringName(report.get("event_id", &"")) == definition.event_id:
+			completed.append(report)
+	if bus != null:
+		bus.event_finished.connect(capture)
+	var serial: int = bus._start_serial if bus != null else -1
 	if event_starter.is_valid():
 		event_starter.call(definition, {}, trigger_filter)
 	elif trace != null:
 		trace.take_pending_source()
-	if wait:
-		await _wait_event(definition.event_id)
+	var receipt: Dictionary = bus._last_start if bus != null and bus._start_serial != serial else {}
+	var accepted := event_starter.is_valid() and bool(receipt.get("accepted", true))
+	if wait and accepted:
+		await _wait_event(definition.event_id, int(receipt.get("instance_id", -1)), completed)
+	if bus != null:
+		bus.event_finished.disconnect(capture)
 	await _propagate(node, "done", cause)
 
-func _wait_event(event_id: StringName) -> void:
+func _wait_event(event_id: StringName, instance_id: int = -1, completed: Array = []) -> void:
 	if bus == null:
 		return
+	var lifetime: RefCounted = self
 	var done := {"value": false}
+	for report in completed:
+		if instance_id < 0 or int(report.get("instance_id", -1)) == instance_id:
+			done["value"] = true
 	var handler := func(report: Dictionary) -> void:
-		if StringName(report.get("event_id", &"")) == event_id:
+		if StringName(report.get("event_id", &"")) == event_id and (instance_id < 0 or int(report.get("instance_id", -1)) == instance_id):
 			done["value"] = true
 	bus.event_finished.connect(handler)
 
@@ -271,14 +296,20 @@ func _wait_event(event_id: StringName) -> void:
 	var deadline_ms := Time.get_ticks_msec() + int(maxf(event_wait_timeout, 0.0) * 1000.0)
 	var timed_out := false
 	while not bool(done["value"]) and not _stop:
-		if host == null or not host.is_inside_tree():
+		if not is_instance_valid(host) or not host.is_inside_tree():
 			break
+		var paused_at := Time.get_ticks_msec()
+		while not _stop and is_instance_valid(host) and host.is_inside_tree() and host.get_tree().paused:
+			await host.get_tree().process_frame
+		if _stop or not is_instance_valid(host) or not host.is_inside_tree():
+			break
+		deadline_ms += Time.get_ticks_msec() - paused_at
 		if Time.get_ticks_msec() >= deadline_ms:
 			timed_out = true
 			break
 		await host.get_tree().process_frame
 	bus.event_finished.disconnect(handler)
-	if timed_out:
+	if timed_out and is_instance_valid(lifetime):
 		push_warning("[RPGEventStudio] 关卡图等待事件超时（%.1fs）：%s，按 done 分支继续" % [event_wait_timeout, String(event_id)])
 
 # ── 状态监视 ─────────────────────────────────────────────

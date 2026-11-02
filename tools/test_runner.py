@@ -54,6 +54,7 @@ GLOBAL_ALLOWED_ERRORS = [
 SUITE_ALLOWED_ERRORS = {}
 
 HEADLESS_SUITES = [
+    ("runtime_release_test", ["--script", "res://tests/runtime_release_test.gd"], {}, 120),
     ("run", ["--script", "res://tests/run.gd"], {}, 180),
     ("runtime_trace_test", ["--script", "res://tests/runtime_trace_test.gd"], {}, 180),
     ("trace_ui_test", ["--script", "res://tests/trace_ui_test.gd"], {}, 120),
@@ -94,7 +95,7 @@ def godot_binary() -> str:
     found = shutil.which("godot") or shutil.which("godot4")
     if found:
         return found
-    fallback = "/Users/elawang/Downloads/Godot.app/Contents/MacOS/Godot"
+    fallback = "/Applications/Godot.app/Contents/MacOS/Godot"
     if os.path.exists(fallback):
         return fallback
     raise SystemExit("找不到 Godot 可执行文件：设置 GODOT_BIN 或加入 PATH")
@@ -228,6 +229,13 @@ def run_suites(suites, counts_section, check_counts=True):
     total_checks = 0
     for name, args, env_extra, timeout in suites:
         code, output, elapsed = run_godot(args, env_extra, timeout)
+        log_dir = os.path.join(ROOT, ".godot", "test-results")
+        os.makedirs(log_dir, exist_ok=True)
+        with open(os.path.join(log_dir, name + ".log"), "w", encoding="utf-8") as log:
+            log.write(output)
+        if check_counts and name not in counts:
+            print("[FAIL] 套件缺少 test_counts 注册：" + name)
+            all_ok = False
         expected = counts.get(name) if check_counts else None
         ok, reasons, checks, cases, allowed = validate(
             name, output, code, expected_count=expected, check_cases=(name == "run")
@@ -248,9 +256,25 @@ def run_faults():
     all_ok = True
 
     def check_fault(title, args, env_extra, expect_ok, suite="fault"):
-        code, output, elapsed = run_godot(args, env_extra, 120)
+        code, output, elapsed = run_godot(args, env_extra, 15)
         ok, reasons, checks, cases, allowed = validate(suite, output, code)
         matched = ok == expect_ok
+        # Negative controls must reach their intended fault, not merely fail to load.
+        if not expect_ok:
+            intended = None
+            if title in ("fault_type_error.gd", "fault_null.gd", "fault_subtest_abort.gd"):
+                intended = "SCRIPT ERROR" in output and "Parse Error" not in output
+            elif title.startswith("run.gd 注入"):
+                intended = "CASE_INCOMPLETE" in output and "CASES：" in output
+            elif title == "脚本解析失败":
+                intended = "Parse Error" in output
+            elif title == "fault_assert_fail.gd":
+                intended = "检查项：1，失败：1" in output
+            elif title in ("fault_no_summary.gd", "fault_early_quit.gd"):
+                intended = code == 0 and not SUMMARY_PATTERNS[0].search(output)
+            if intended is False:
+                matched = False
+                reasons.append("未观察到该故障的预期证据")
         label = "%s（期望 %s，实际 %s）" % (title, "PASS" if expect_ok else "FAIL", "PASS" if ok else "FAIL")
         if matched:
             print("  ✓", label)
@@ -322,6 +346,15 @@ def main():
     if not any([args.headless, args.editor, args.faults, args.all]):
         args.all = True
 
+    # Fresh clones have neither the global class cache nor imported translations.
+    code, output, elapsed = run_godot(["--editor", "--import"], {}, 240)
+    errors = [line for line in output.splitlines()
+              if "SCRIPT ERROR" in line or (re.match(r"^\s*ERROR:", line)
+              and not any(msg in line for msg in GLOBAL_ALLOWED_ERRORS))]
+    print("[%s] import %.1fs" % ("PASS" if code == 0 and not errors else "FAIL", elapsed))
+    if code != 0 or errors:
+        print(output[-8000:])
+        return 1
     ok = True
     if args.all or args.headless:
         print("== headless 套件 ==")

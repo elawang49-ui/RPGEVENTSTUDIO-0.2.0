@@ -36,10 +36,12 @@ var graphs: Array = []
 ## 每个注册图对应的编辑器转发连接（图停止随注销一并断开）
 var _graph_forwards: Dictionary = {}
 
+var _scene_scope: Node = null
+var _scene_bind_queued := false
 var _sfx_player: AudioStreamPlayer
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_ALWAYS
+	process_mode = Node.PROCESS_MODE_PAUSABLE
 
 	# 语言：先注册翻译，再应用玩家上次选择的语言
 	L10n.register_runtime_translations()
@@ -95,6 +97,36 @@ func _ready() -> void:
 	_sfx_player = AudioStreamPlayer.new()
 	_sfx_player.name = "SfxPlayer"
 	add_child(_sfx_player)
+	get_tree().scene_changed.connect(_bind_scene_scope)
+	get_tree().node_added.connect(_queue_scene_bind)
+	_bind_scene_scope.call_deferred()
+
+func _queue_scene_bind(_node: Node) -> void:
+	if _scene_bind_queued or (is_instance_valid(_scene_scope) and _scene_scope == get_tree().current_scene):
+		return
+	_scene_bind_queued = true
+	_bind_scene_scope.call_deferred()
+
+func _bind_scene_scope() -> void:
+	_scene_bind_queued = false
+	if not is_inside_tree():
+		return
+	var scene := get_tree().current_scene
+	if scene == _scene_scope:
+		return
+	if is_instance_valid(_scene_scope):
+		if _scene_scope.tree_exiting.is_connected(_on_scene_scope_exiting):
+			_scene_scope.tree_exiting.disconnect(_on_scene_scope_exiting)
+		_on_scene_scope_exiting()
+	_scene_scope = scene
+	if is_instance_valid(scene):
+		scene.tree_exiting.connect(_on_scene_scope_exiting)
+
+func _on_scene_scope_exiting() -> void:
+	cancel_all("scene scope ended")
+	for graph in graphs.duplicate():
+		graph.stop()
+	last_rejections.clear()
 
 # ── 事件 API（游戏脚本可以直接用） ───────────────────────
 
@@ -400,6 +432,8 @@ func play_sfx(path: String, volume_db: float = 0.0) -> void:
 		_sfx_player.play()
 
 func _exit_tree() -> void:
+	for graph in graphs.duplicate():
+		graph.stop()
 	# 游戏关闭 / 运行时被释放：先让等待中的事件结束，再收掉两套 UI。
 	if runner != null:
 		runner.cancel_all("运行时退出")

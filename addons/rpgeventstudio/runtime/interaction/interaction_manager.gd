@@ -9,7 +9,7 @@ var active: EventInteractor2D = null
 var _player: Node2D = null
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_ALWAYS
+	process_mode = Node.PROCESS_MODE_PAUSABLE
 
 func _process(_delta: float) -> void:
 	var target := resolve_target()
@@ -23,6 +23,8 @@ func _process(_delta: float) -> void:
 
 ## 供输入与测试共用：返回当前应该交互的对象。
 func resolve_target() -> EventInteractor2D:
+	if is_inside_tree() and get_tree().paused:
+		return null
 	if runtime != null:
 		if runtime.has_method("is_ui_blocking") and bool(runtime.call("is_ui_blocking")):
 			return null

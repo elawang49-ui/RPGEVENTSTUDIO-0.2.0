@@ -20,7 +20,8 @@
     "input_coexistence_test": 35,
     "nested_event_semantics_test": 31,
     "story_insert_choice_test": 45,
-    "theme_reload_test": 10
+    "theme_reload_test": 10,
+    "runtime_release_test": 65
   },
   "editor": {
     "editor": 27,

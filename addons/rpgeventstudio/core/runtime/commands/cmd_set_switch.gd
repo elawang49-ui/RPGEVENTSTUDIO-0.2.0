@@ -8,5 +8,4 @@ func execute(ctx: EventContext) -> int:
 	if key.strip_edges() == "":
 		ctx.log(L10n.game("diag.no_key"))
 		return CmdResult.CONTINUE
-	ctx.set_state(key, bool(ctx.get_param("value", true)))
-	return CmdResult.CONTINUE
+	return CmdResult.CONTINUE if ctx.set_state(key, bool(ctx.get_param("value", true))) == OK else CmdResult.ABORT

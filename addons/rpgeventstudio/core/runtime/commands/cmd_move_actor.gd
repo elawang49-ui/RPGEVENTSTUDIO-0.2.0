@@ -26,5 +26,10 @@ func execute(ctx: EventContext) -> int:
 
 	if not bool(ctx.get_param("wait", true)):
 		return CmdResult.CONTINUE
-	ctx.wait_until(func() -> bool: return finished[0])
+	ctx.wait_until(func() -> bool:
+		if not is_instance_valid(actor):
+			ctx.cancel("scene object released")
+			return true
+		return finished[0]
+	)
 	return CmdResult.WAIT

@@ -11,5 +11,4 @@ func execute(ctx: EventContext) -> int:
 	var value: Variant = ctx.get_param("value", 0)
 	if value is String:
 		value = ValueParser.parse(value)
-	ctx.set_state(key, value)
-	return CmdResult.CONTINUE
+	return CmdResult.CONTINUE if ctx.set_state(key, value) == OK else CmdResult.ABORT
