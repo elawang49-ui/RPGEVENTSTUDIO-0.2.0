@@ -1,93 +1,25 @@
-# tests/
+# 测试
 
-自建极简测试，**不引入任何第三方插件**（需求 §16：不依赖第三方商业插件）。
-
-## 约定
-
-- 入口：`run.gd`，`extends SceneTree`，用 `--headless --script` 运行。
-- 用 `quit(code)` 返回结果；非 0 即失败，可直接接入 CI 或 pre-commit。
-- 用例命名：`test_<被测模块>.gd`，每个用例一个方法 `test_<行为>`，失败打印期望/实际。
-- 运行时测试一律使用 Mock：`MockPresenter`（记录 UI 调用）、`MockAdapter`（道具/任务）、`MockClock`（跳过真实等待）。
-- 夹具：`fixtures/*.tres`（最小事件、两页条件事件、非法引用事件）。
-
-## 运行
+使用标准 Godot 4.7.2，不依赖第三方测试框架。
 
 ```bash
+export GODOT_BIN=/path/to/Godot
+python3 tools/test_runner.py --all
+```
+
+运行器先完成首次导入，生成全局类名缓存和翻译资源，再运行22个 headless套件、6个真实编辑器套件和11个故障注入控制。精确检查数登记在 `tools/test_counts.json`；每个原有套件保留，新增检查只增加数量。完整输出在 `.godot/test-results/`。只有退出码、汇总、断言数量、CASE完成度与诊断检查全部通过才算通过。
+
+手动跑单一 GDScript 前先执行：
+
+```bash
+godot --headless --editor --path . --import
 godot --headless --path . --script res://tests/run.gd
 ```
 
-## 计划覆盖
+新增 runtime_release_test 覆盖共享状态批处理重入、会话回滚/冲突、once预留、父子清理、Presenter所有权、暂停、场景退出及图等待闸门。Story专项覆盖顺序/嵌套选项整体操作。编辑器套件执行真实UndoRedo、面板同步、关闭面板后撤销、保存绕开缓存重载和插件禁用/启用。
 
-| 里程碑 | 用例 |
-| --- | --- |
-| M1 | `.tres` 往返序列化、`uid://` 引用跨路径解析、schema 迁移、校验器误报/漏报 |
-| M3 | runner 顺序/条件/等待/取消、三态结果、自动事件不重复触发、公共事件递归上限、并行预算 |
-| M5 | 未触发原因求值、状态快照恢复 |
+安装包和独立宿主验证使用 `tools/release_check.py`，详见 tools/README.md。开发自测会写夹具和临时数据，必须在开发工作区或工具创建的隔离副本运行，不能把测试工具放进正在使用玩家存档的正式宿主执行。
 
-Godot 无内置断言框架，`tests/framework/assert.gd` 提供 `assert_eq / assert_true / assert_signal / assert_awaits`。
+11个故障注入包含运行中类型/空引用异常、未完成测试、预期负向错误、缺汇总、提前退出、失败断言、子测试中断和解析失败。运行器同时核对注入的实际错误证据，防止“任何失败都算注入成功”。刻意中断且不会自行退出的脚本在15秒内被测试工具终止，并被判为失败控制，不会占用数分钟。
 
-## 地图事件（编辑器内自测）
-
-```bash
-RPGEVENTSTUDIO_MAP_SELFTEST=1 godot --headless --editor --path . --quit-after 3000
-```
-
-真实打开 `samples/scenes/map_events_demo.tscn`，验证地图事件总览、选中同步、双击打开事件、
-放置与 Undo/Redo、失效引用、定位按钮。
-
-## UI 主题（编辑器内自测 + 跨进程）
-
-```bash
-# 主题页、预览、保存/重载/恢复默认、自定义 UI 只读模式
-RPGEVENTSTUDIO_MAP_SELFTEST=1 godot --headless --editor --path . --quit-after 3000
-
-# 主题资源跨进程加载
-THEME_PERSIST_MODE=create godot --headless --path . --script res://tools/check_theme_persist.gd
-THEME_PERSIST_MODE=verify godot --headless --path . --script res://tools/check_theme_persist.gd
-THEME_PERSIST_MODE=cleanup godot --headless --path . --script res://tools/check_theme_persist.gd
-```
-
-## 剧情资源审计
-
-```bash
-# 全工程审计核心（夹具：空事件/重复 ID/断裂引用/缺失公共事件/未登记状态/图错误）
-godot --headless --path . --script res://tests/story_audit_test.gd
-
-# 真实编辑器里的审计面板：扫描、筛选、双击定位、只读性
-RPGEVENTSTUDIO_AUDIT_SELFTEST=1 godot --headless --editor --path .
-```
-
-## 加固后的测试入口（推荐）
-
-```bash
-python3 tools/test_runner.py --all       # headless + 编辑器 + 故障注入
-python3 tools/test_runner.py --headless  # 11 个 headless 套件
-python3 tools/test_runner.py --editor    # 5 个编辑器自测
-python3 tools/test_runner.py --faults    # 证明异常/中断/缺汇总都会 FAIL
-```
-
-与直接跑 `godot --script` 的区别：
-
-- 必须有最终汇总（`检查项：N，失败：M` / `RESULT:`），否则 FAIL；
-- `SCRIPT ERROR`（含 Parse Error）和 `ERROR:` 默认 FAIL，只有
-  `EXPECTED_ERROR_BEGIN/END` 区间或 `tools/test_runner.py` 中逐条列出的已知引擎诊断放行；
-- `tests/run.gd` 的每个测试函数都有 `CASE_BEGIN/CASE_END`；运行时异常导致函数中断时
-  会出现 `CASE_INCOMPLETE` 并计入失败；
-- 每个套件的检查项数量与 `tools/test_counts.json` 对照，测试注册遗漏会直接 FAIL；
-- `RPGEVENTSTUDIO_TEST_FAULT=type|null|skip|expected_error` 用于故障注入自检。
-
-## 运行时剧情追踪
-
-```bash
-# 核心：事件/页面/指令/条件/状态/公共事件/图/AND/OR/取消/失败/容量/JSON/行为一致性
-godot --headless --path . --script res://tests/runtime_trace_test.gd
-
-# F2 追踪视图：渲染、过滤、详情、JSON 导出
-godot --headless --path . --script res://tests/trace_ui_test.gd
-
-# 编辑器内同一视图 + 截图
-RPGEVENTSTUDIO_TRACE_SELFTEST=1 godot --editor --path .
-```
-
-F2 运行时面板：`RPG_EVENT_STUDIO_TRACE=0/1` 控制记录，
-`RPG_EVENT_STUDIO_TRACE_CAPACITY` 控制环形缓冲容量（默认 2000）。
+没有新增引擎错误白名单或套件豁免。沿用基线的退出期 resources-in-use 规则，不能将其解释为“Godot退出零诊断”。

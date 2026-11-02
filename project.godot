@@ -16,7 +16,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [autoload]
 
-RPGEventStudio="*res://addons/rpgeventstudio/runtime/autoload/studio_runtime.gd"
+RPGEventStudio="*uid://ccnmqjeiaoo2v"
 
 [editor_plugins]
 

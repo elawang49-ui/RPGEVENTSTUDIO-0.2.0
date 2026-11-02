@@ -13,3 +13,6 @@ build/
 
 # 安全写入产生的一代备份
 *.bak
+
+# Python tool bytecode
+__pycache__/

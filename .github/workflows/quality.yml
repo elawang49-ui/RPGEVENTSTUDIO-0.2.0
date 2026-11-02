@@ -1,0 +1,39 @@
+name: Plugin quality
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  godot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GODOT_BIN: /tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned Godot 4.7.2
+        run: |
+          mkdir -p /tmp/godot
+          curl --fail --location --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          echo 'cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4  /tmp/godot.zip' | sha256sum --check
+          unzip /tmp/godot.zip -d /tmp/godot
+          chmod +x "$GODOT_BIN"
+          "$GODOT_BIN" --version
+      - name: Fresh checkout import, runtime, editor and fault injection
+        run: python3 -u tools/test_runner.py --all
+      - name: Build and install ZIP in blank project
+        run: python3 -u tools/release_check.py --package build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rpgeventstudio-quality
+          include-hidden-files: true
+          path: |
+            .godot/test-results/*.log
+            build/*.zip
+            build/*.sha256

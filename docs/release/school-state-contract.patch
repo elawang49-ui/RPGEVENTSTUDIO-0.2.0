@@ -1,0 +1,16 @@
+--- a/tools/test_narrative_adapter.gd
++++ b/tools/test_narrative_adapter.gd
+@@ -272,11 +272,12 @@
+ 	_check(branch, "选择结果驱动条件分支走「是」")
+ 	_check(_count_opened("分支-B") == 1, "分支文本只显示一次")
+ 	_check(str(narrative.get("last_parsed_text")) == "分支-B", "分支文本 BBCode 正确渲染")
+-	_check(int(runtime.call("get_state", "Local.adapter_choice_probe.choice", -1)) == 1, "@@self.choice 写入 1")
++	_check(int(runtime.call("get_state", "Local.adapter_choice_probe.choice", -1)) == -1, "事件成功前 choice 不发布到宿主")
+ 	_check(await _drive_text(300), "分支文字可以正常关闭")
+ 	var report := await _wait_report(&"adapter_choice_probe", before, 8000)
+ 	_check(not report.is_empty(), "选项事件完成信号已触发")
+ 	_check(int(report.get("result", -1)) == EventRunner.Result.COMPLETED, "选项事件正常完成")
++	_check(int(runtime.call("get_state", "Local.adapter_choice_probe.choice", -1)) == 1, "成功后 choice 正式写入 1")
+ 
+ # ── 原叙事接管（不误关别人的 UI） ───────────────────────
+ 
