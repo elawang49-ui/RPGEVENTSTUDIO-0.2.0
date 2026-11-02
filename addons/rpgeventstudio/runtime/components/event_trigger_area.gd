@@ -21,6 +21,8 @@ func _ready() -> void:
 	_player = get_tree().get_first_node_in_group("player") as Node2D
 
 func _process(_delta: float) -> void:
+	if is_instance_valid(_runtime) and _runtime.has_method("is_ui_blocking") and bool(_runtime.call("is_ui_blocking")):
+		return
 	if _player == null or not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as Node2D
 		if _player == null:

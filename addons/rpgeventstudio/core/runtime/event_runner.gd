@@ -121,6 +121,13 @@ func is_busy(event_id: StringName) -> bool:
 func active_count() -> int:
 	return _running_instances.size()
 
+## Internal interaction gate: background state work does not own player input.
+func _blocks_interaction() -> bool:
+	for ctx in _running_instances:
+		if not ctx.cancelled and (ctx.page.trigger != "parallel" or ctx._owns_presenter):
+			return true
+	return false
+
 func cancel_all(reason: String = "场景切换") -> void:
 	for ctx in _running_instances.duplicate():
 		if ctx is EventContext and not ctx.cancelled:

@@ -33,6 +33,7 @@ func _run() -> void:
 	await _test_tie_is_stable(librarian, door)
 	await _test_no_target(drawer)
 	await _test_mouse(librarian)
+	await _test_parallel_and_tool_gates(librarian)
 
 	_report()
 	quit(0 if _failures.is_empty() else 1)
@@ -192,3 +193,34 @@ func _check(condition: bool, message: String) -> void:
 func _report() -> void:
 	print("")
 	print("──── 交互目标测试：%d 项，失败 %d 项 ────" % [_checks, _failures.size()])
+
+func _test_parallel_and_tool_gates(librarian: Node) -> void:
+	await _wait_idle()
+	var definition := EventDefinition.new(); definition.event_id = &"background_probe"
+	var page := definition.add_page(); page.trigger = "parallel"
+	var wait := CommandRegistry.create_command(&"wait"); wait.params["seconds"] = 5.0
+	page.commands = [wait]
+	_runtime.call("start_event", definition); await _frames(3)
+	_check(_runtime.get("runner").active_count() > 0, "后台parallel真实等待中")
+	_check(librarian.can_interact(), "不展示UI的parallel等待不占玩家交互锁")
+	_move_player(librarian.global_position); await _frames(2)
+	_check(_manager.resolve_target() != null, "后台parallel时仍可解析玩家交互目标")
+	_runtime.call("cancel_all"); await _wait_idle()
+	page.commands = [CommandRegistry.create_command(&"show_text")]
+	page.commands[0].params["text"] = "Parallel presentation"
+	_runtime.call("start_event", definition); await _frames(3)
+	_check(not librarian.can_interact(), "parallel取得展示层后正常阻塞交互")
+	_runtime.call("cancel_all"); await _wait_idle()
+	for kind in ["auto", "area"]:
+		var event := EventDefinition.new(); event.event_id = StringName("tool_gate_" + kind)
+		var p := event.add_page(); p.trigger = "autorun" if kind == "auto" else "region_enter"
+		var setter := CommandRegistry.create_command(&"set_switch"); setter.params = {"key": "ToolGate." + kind, "value": true}; p.commands = [setter]
+		_runtime.call("open_input_settings")
+		var trigger: Node = EventAutoRun2D.new() if kind == "auto" else EventTriggerArea2D.new()
+		trigger.set("event", event)
+		if kind == "area": trigger.set("radius", 100000.0)
+		_scene.add_child(trigger); await _frames(4)
+		_check(not _runtime.get("state").get_bool("ToolGate." + kind), "工具面板打开时延后自动/区域触发：" + kind)
+		_runtime.call("close_input_settings"); await _frames(5)
+		_check(_runtime.get("state").get_bool("ToolGate." + kind), "关闭工具面板后保留触发沿：" + kind)
+		trigger.queue_free(); await _frames(1)

@@ -19,6 +19,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if event == null or _runtime == null:
 		return
+	if _runtime.has_method("is_ui_blocking") and bool(_runtime.call("is_ui_blocking")):
+		return
 	var triggers: Array = []
 	if is_parallel:
 		triggers.append(&"parallel")

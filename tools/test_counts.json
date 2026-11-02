@@ -9,7 +9,7 @@
     "safe_write_test": 36,
     "event_list_smoke": 13,
     "tutorial_flow": 14,
-    "interaction_test": 21,
+    "interaction_test": 29,
     "node_ref_test": 12,
     "runtime_trace_test": 63,
     "trace_ui_test": 21,

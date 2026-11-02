@@ -118,7 +118,7 @@ func can_interact() -> bool:
 	if _runtime.has_method("is_ui_blocking") and bool(_runtime.call("is_ui_blocking")):
 		return false
 	var runner: EventRunner = _runtime.get("runner")
-	if runner != null and runner.active_count() > 0:
+	if runner != null and runner._blocks_interaction():
 		return false
 	return true
 

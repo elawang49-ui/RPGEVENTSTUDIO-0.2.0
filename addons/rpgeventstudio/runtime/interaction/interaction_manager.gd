@@ -29,7 +29,7 @@ func resolve_target() -> EventInteractor2D:
 		if runtime.has_method("is_ui_blocking") and bool(runtime.call("is_ui_blocking")):
 			return null
 		var runner: EventRunner = runtime.get("runner")
-		if runner != null and runner.active_count() > 0:
+		if runner != null and runner._blocks_interaction():
 			return null
 
 	_player = _resolve_player()
