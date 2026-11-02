@@ -292,6 +292,8 @@ func _queue_flush() -> void:
 		_save_timer.start()
 
 func _exit_tree() -> void:
+	# Persist pending input without rebuilding a panel that is leaving the tree.
+	_pending_saved_key = ""
 	if _save_timer != null and not _save_timer.is_stopped():
 		_flush()
 

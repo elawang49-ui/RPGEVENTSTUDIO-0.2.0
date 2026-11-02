@@ -28,6 +28,7 @@ func _run() -> void:
 	await _test_line_selection_still_index_plus_one(panel)
 
 	_test_choice_block_operations()
+	_test_reference_copy()
 	panel.queue_free()
 	await process_frame
 	_report()
@@ -247,3 +248,12 @@ func _test_choice_block_operations() -> void:
 		page.commands.assign(originals)
 		doc.choice_add_option(doc.build_items()[1], "C")
 		_check(show.params["options"] == ["A", "B"], "重建选项块不能修改供撤销使用的原命令")
+
+func _test_reference_copy() -> void:
+	var asset := CommonEvent.new()
+	var original := EventCommand.new()
+	original.params = {"target": asset, "nested": [{"text": "original"}]}
+	var copy := original.duplicate_command()
+	_check(copy.params["target"] == asset, "复制命令保留外部资源引用，不复制公共事件定义")
+	copy.params["nested"][0]["text"] = "changed"
+	_check(original.params["nested"][0]["text"] == "original", "复制命令深拷贝嵌套参数容器")
