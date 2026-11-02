@@ -5,6 +5,9 @@ extends StateStore
 var _base: StateStore
 var _base_versions: Dictionary
 var _base_generation: int
+var _read_all := false
+var _replacing := false
+var _reset_requested := false
 var _reads: Dictionary = {}
 var _writes: Dictionary = {}
 var _repeat_records: Dictionary = {}
@@ -53,12 +56,39 @@ func set_value(key: String, value: Variant) -> int:
 		_write_contexts[key] = _write_context.duplicate()
 	return result
 
+func snapshot() -> Dictionary:
+	_read_all = true
+	return super.snapshot()
+
+func dump() -> String:
+	_read_all = true
+	return super.dump()
+
+func restore(data: Dictionary) -> void:
+	_read_all = true
+	_replacing = true
+	super.restore(data)
+
+func reset() -> void:
+	_read_all = true
+	_replacing = true
+	_reset_requested = true
+	super.reset()
+
 func _publish(trace: RuntimeTrace = null) -> String:
 	if _base._generation != _base_generation:
 		return "state conflict: store restored or reset during event"
+	if _read_all and _base._write_versions != _base_versions:
+		return "state conflict: snapshot changed during event"
 	for key in _reads:
 		if _base._write_versions.get(key, 0) != _base_versions.get(key, 0):
 			return "state conflict: " + str(key)
+	if _replacing:
+		if _reset_requested:
+			_base.reset()
+		_base._definitions = _definitions.duplicate(true)
+		_base.restore(super.snapshot())
+		return ""
 	# Validate every write before publishing any value.
 	for key in _writes:
 		var value: Variant = _values.get(key)

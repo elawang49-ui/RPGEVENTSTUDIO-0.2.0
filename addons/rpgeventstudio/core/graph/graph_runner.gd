@@ -38,6 +38,7 @@ var _merge: Dictionary = {}      ## node_id -> {count, fired}
 var _activations := 0
 var _stop := false
 var _connected := false
+var _pending_monitor_refresh: Dictionary = {}
 var _owns_write_observer := false   ## trace 转发观察者是 start() 自己装上的（宿主没有观察者时）
 
 # ── 生命周期 ─────────────────────────────────────────────
@@ -64,6 +65,7 @@ func start() -> void:
 			_set_node_state(node.node_id, NodeState.UNVISITED)
 	if not _connected:
 		state.changed.connect(_on_state_changed)
+		state.batch_committed.connect(_on_batch_committed)
 		_connected = true
 
 	# 监视型条件从关卡开始就盯着状态，不靠入边触发
@@ -86,6 +88,7 @@ func stop() -> void:
 	running = false
 	if _connected and state != null:
 		state.changed.disconnect(_on_state_changed)
+		state.batch_committed.disconnect(_on_batch_committed)
 		_connected = false
 	if _owns_write_observer and state != null:
 		# start() 自己装上的 trace 转发观察者，停止时一并摘掉
@@ -333,9 +336,21 @@ func _on_state_changed(key: String, _old_value: Variant, _new_value: Variant) ->
 		return
 	for node_id in _monitors.keys():
 		if str(_monitors[node_id].get("key", "")) == key:
-			_refresh_condition.call_deferred(node_id)
+			_queue_condition(node_id)
+
+func _on_batch_committed(_keys: PackedStringArray, _revision: int) -> void:
+	# restore() intentionally publishes a batch without per-key changed signals.
+	for node_id in _monitors:
+		_queue_condition(node_id)
+
+func _queue_condition(node_id: StringName) -> void:
+	if _stop or _pending_monitor_refresh.has(node_id):
+		return
+	_pending_monitor_refresh[node_id] = true
+	_refresh_condition.call_deferred(node_id)
 
 func _refresh_condition(node_id: StringName) -> void:
+	_pending_monitor_refresh.erase(node_id)
 	if _stop or not _monitors.has(node_id):
 		return
 	var node := graph.node_by_id(node_id)

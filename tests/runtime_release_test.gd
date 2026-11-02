@@ -21,6 +21,18 @@ class CleanupCommand:
 		var counter: Array = ctx.params["counter"]
 		ctx.on_cancel(func(): counter[0] += 1)
 		return CmdResult.CONTINUE
+class StoreLifecycleCommand:
+	extends CommandHandler
+	func execute(ctx: EventContext) -> int:
+		match str(ctx.params.get("mode", "")):
+			"restore": ctx.state.restore({"revision": 3, "values": {"Restored": 9}})
+			"reset": ctx.state.reset()
+			"snapshot":
+				var data := ctx.state.snapshot()
+				ctx.set_state("Derived", data["values"].get("ReadOnly", 0))
+		ctx.set_state("AfterLifecycle", 1)
+		ctx.wait_seconds(float(ctx.params.get("wait", 0.0)))
+		return CmdResult.WAIT
 class CallCommand:
 	extends CommandHandler
 	func execute(ctx: EventContext) -> int:
@@ -32,6 +44,7 @@ func _run():
 	CommandRegistry._register(&"release_fail", "fail", CommandRegistry.CAT_FLOW, [], FailCommand.new())
 	CommandRegistry._register(&"release_call", "call", CommandRegistry.CAT_FLOW, [], CallCommand.new())
 	CommandRegistry._register(&"release_cleanup", "cleanup", CommandRegistry.CAT_FLOW, [], CleanupCommand.new())
+	CommandRegistry._register(&"release_store_lifecycle", "store", CommandRegistry.CAT_STATE, [], StoreLifecycleCommand.new())
 	_test_batching()
 	await _test_cancel_once()
 	await _test_conflict()
@@ -41,6 +54,8 @@ func _run():
 	await _test_graph_gates()
 	await _test_lifecycle_edges()
 	await _test_runtime_scene_scope()
+	await _test_store_lifecycle()
+	await _test_graph_restore()
 	print("检查项：%d，失败：%d" % [_checks, _failures.size()])
 	for failure in _failures: print("  ✗ ", failure)
 	quit(0 if _failures.is_empty() else 1)
@@ -257,3 +272,34 @@ func _wait_text_finished(ui: DialoguePresenter) -> void:
 	var deadline := Time.get_ticks_msec() + 1000
 	while not ui.is_text_finished() and Time.get_ticks_msec() < deadline:
 		await process_frame
+
+func _test_store_lifecycle():
+	var f := _fixture(); var r: EventRunner = f.runner
+	r.state.set_value("ReadOnly", 1)
+	r.start(_event("snapshot_reader", [_cmd(&"release_store_lifecycle", {"mode": "snapshot", "wait": 0.05})])); await _frames()
+	r.state.set_value("ReadOnly", 2); await _idle(r)
+	_check(f.reports[-1].result == EventRunner.Result.FAILED and not r.state.has("Derived"), "snapshot reads participate in conflict detection")
+	r.start(_event("restore", [_cmd(&"release_store_lifecycle", {"mode": "restore"})])); await _idle(r)
+	_check(not r.state.has("ReadOnly") and r.state.get_int("Restored") == 9 and r.state.get_int("AfterLifecycle") == 1, "session restore publishes its complete replacement atomically")
+	r.state.set_value("ResetOld", 7)
+	r.start(_event("reset", [_cmd(&"release_store_lifecycle", {"mode": "reset"})])); await _idle(r)
+	_check(not r.state.has("Restored") and not r.state.has("ResetOld") and r.state.get_int("AfterLifecycle") == 1, "session reset retains subsequent writes and removes old state")
+	r.start(_event("cancel_restore", [_cmd(&"release_store_lifecycle", {"mode": "restore", "wait": 2.0})])); await _frames()
+	r.cancel_all(); await _idle(r)
+	_check(not r.state.has("Restored") and r.state.get_int("AfterLifecycle") == 1, "cancelled session restore cannot change host state")
+	f.host.queue_free(); await _frames(1)
+
+func _test_graph_restore():
+	var f := _fixture(); var r: EventRunner = f.runner
+	r.state.set_value("Monitor", false)
+	var graph := LevelGraph.new()
+	var start := LevelNode.new(); start.node_id = &"start"; start.type = "start"
+	var condition := LevelNode.new(); condition.node_id = &"watch"; condition.type = "condition"; condition.params = {"key": "Monitor", "op": "==", "value": true, "monitor": true}
+	var action := LevelNode.new(); action.node_id = &"action"; action.type = "action"; action.params = {"key": "Observed", "value": 1}
+	graph.nodes = [start, condition, action]; graph.entry_node = &"start"
+	var edge := LevelConnection.new(); edge.from_node = &"watch"; edge.from_port = "true"; edge.to_node = &"action"; graph.connections = [edge]
+	var g := GraphRunner.new(); g.host = f.host; g.state = r.state; g.bus = r.bus; g.graph = graph
+	g.start(); await _frames()
+	r.state.restore({"values": {"Monitor": true}}); await _frames()
+	_check(r.state.get_int("Observed") == 1, "graph monitor reevaluates host snapshot restore")
+	g.stop(); f.host.queue_free(); await _frames(1)

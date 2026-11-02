@@ -32,6 +32,7 @@ RPGEventStudio.start_event(definition)
 - once 只有顶层会话成功后才消耗；嵌套 once 在父会话结束前预留，避免另一事件重复执行。取消/失败允许重试。
 - 提交是同步终态边界；收到正式 changed/batch_committed 后，提交已成立。监听器此时发出的取消不能撤销已发布批次。
 - 事务只涵盖 StateStore。外部道具、任务、节点等副作用由适配器及 `ctx.on_cancel()` 清理负责。
+- 会话视图的 snapshot/dump 读取也参加冲突检测；在事件内调用 restore/reset 会先修改本会话，只有成功时才发布完整替换，取消仍然丢弃。宿主直接使用共享 StateStore 的原有生命周期行为保持不变。
 - 存档仍使用既有 `snapshot()/restore()`，格式没有改变；执行中的会话不进入存档。不要依赖 `ctx.state == RPGEventStudio.state` 的对象身份。
 
 School 的旧测试有一项在剧情中途读取 choice；需要更新为“中途仍不可见、成功结束后等于选择值”。附带 `school-state-contract.patch` 只修改测试契约并新增完成后的断言，不修改游戏流程。GamePrototype 当前没有主场景；本次验证覆盖项目导入和真实事件运行，不能据此声称完成了整款游戏的端到端验收。
