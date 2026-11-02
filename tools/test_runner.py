@@ -77,6 +77,7 @@ HEADLESS_SUITES = [
     ("nested_event_semantics_test", ["--script", "res://tests/nested_event_semantics_test.gd"], {}, 180),
     ("story_insert_choice_test", ["--script", "res://tests/story_insert_choice_test.gd"], {}, 120),
     ("theme_reload_test", ["--script", "res://tests/theme_reload_test.gd"], {}, 120),
+    ("host_command_test", ["--script", "res://tests/host_command_test.gd"], {}, 120),
 ]
 
 EDITOR_SUITES = [

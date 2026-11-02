@@ -15,6 +15,8 @@ static var _specs: Dictionary = {}
 static var _order: Array[StringName] = []
 static var _handlers: Dictionary = {}
 static var _built := false
+## 宿主通过 register_host_command 注册的指令 id：用于保护内置指令不被覆盖。
+static var _host_types: Dictionary = {}
 
 # ── 查询 ─────────────────────────────────────────────────
 
@@ -99,6 +101,46 @@ static func ensure_built() -> void:
 		{"name": "wait", "label_key": "param.wait_done", "type": "bool", "default": true},
 	], CmdFade.new())
 
+# ── 宿主扩展（通用能力） ─────────────────────────────────
+
+## 宿主工程注册自定义指令：插件核心不预置任何宿主内容，宿主内容留在宿主工程。
+##
+## spec 字段（全部可选，params 建议提供）：
+##   name_key:     界面显示名的翻译键；缺失时回退 fallback_name，再缺失显示 type
+##   fallback_name: 显示名兜底文本（宿主没注入词条也能看懂）
+##   category:     自定义分类字符串（编辑器「添加指令」菜单按它分组）
+##   params:       与内置指令相同的参数 schema（name/label_key/type/default/hint）
+##   block:        是否是带 children/else_children 的块指令（如 if）
+##   summary:      列表摘要模板，可用 {参数名} 占位符
+##
+## 规则：
+##   - 内置指令不可覆盖（返回 ERR_ALREADY_EXISTS，handler/spec 保持原样）；
+##   - 同名宿主指令先到先得，重复注册同样拒绝；
+##   - 建议在宿主启动时（autoload _ready 或首次用到前）注册一次。
+static func register_host_command(type: StringName, spec: Dictionary, p_handler: CommandHandler) -> int:
+	ensure_built()
+	if type == &"" or p_handler == null:
+		return ERR_INVALID_PARAMETER
+	if _handlers.has(type):
+		# 内置指令或已注册的宿主指令都不可覆盖：先到先得，保护已有事件不受影响。
+		return ERR_ALREADY_EXISTS
+	var normalized := {
+		"name_key": str(spec.get("name_key", "")),
+		"fallback_name": str(spec.get("fallback_name", "")),
+		"category": str(spec.get("category", CAT_OTHER)),
+		"params": spec.get("params", []),
+		"block": bool(spec.get("block", false)),
+		"summary": str(spec.get("summary", "")),
+	}
+	_specs[type] = normalized
+	_order.append(type)
+	_handlers[type] = p_handler
+	_host_types[type] = true
+	return OK
+
+static func is_host_command(type: StringName) -> bool:
+	return _host_types.has(type)
+
 # ── 供编辑器使用 ─────────────────────────────────────────
 
 static func all_types() -> Array[StringName]:
@@ -111,7 +153,15 @@ static func spec(type: StringName) -> Dictionary:
 
 static func display_name(type: StringName) -> String:
 	var s := spec(type)
-	return L10n.ui(str(s.get("name_key", str(type))))
+	var name_key := str(s.get("name_key", ""))
+	var fallback := str(s.get("fallback_name", ""))
+	if name_key == "":
+		return str(type) if fallback == "" else fallback
+	var text := L10n.ui(name_key)
+	# L10n 缺键时返回键名本身：宿主没注入词条时退到 fallback_name，再退到 type。
+	if text == name_key:
+		return fallback if fallback != "" else name_key
+	return text
 
 static func category_label(category: String) -> String:
 	return L10n.ui(category)
@@ -180,6 +230,13 @@ static func summary(command: EventCommand) -> String:
 			return "%s：%s" % [title, _basename(command.params.get("common_path", ""))]
 		&"play_sfx":
 			return "%s：%s" % [title, _basename(command.params.get("sound_path", ""))]
+	# 宿主指令：spec.summary 提供 {参数名} 模板；没有模板时退回显示名。
+	var template := str(spec(command.type).get("summary", ""))
+	if template != "":
+		var rendered := template
+		for key in command.params.keys():
+			rendered = rendered.replace("{%s}" % str(key), _one_line(command.params.get(key, "")))
+		return "%s：%s" % [title, rendered]
 	return title
 
 static func handler(type: StringName) -> CommandHandler:

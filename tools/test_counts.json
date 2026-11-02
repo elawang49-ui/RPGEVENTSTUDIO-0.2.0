@@ -22,7 +22,8 @@
     "nested_event_semantics_test": 31,
     "story_insert_choice_test": 55,
     "theme_reload_test": 10,
-    "runtime_release_test": 74
+    "runtime_release_test": 74,
+    "host_command_test": 19
   },
   "editor": {
     "editor": 44,
