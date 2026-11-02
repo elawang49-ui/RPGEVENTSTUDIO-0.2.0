@@ -1,0 +1,126 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 夹具扫描不应有读取错误（[]）
+  ✓ 扫描应发现未登记状态 Global.Quest.RingFound
+  ✓ 扫描应发现未登记状态 Global.Quest.GraphOnly
+  ✓ 扫描应发现未登记状态 Global.Quest.Completed
+  ✓ 扫描应发现未登记状态 School.Fame
+  ✓ 扫描应发现未登记状态 School.Mood
+  ✓ 扫描应发现未登记状态 School.PlayerTitle
+  ✓ 扫描应发现未登记状态 Global.Mixed
+  ✓ 扫描应发现未登记状态 @@level.DoorOpen
+  ✓ 扫描应发现未登记状态 Local.TempFlag
+  ✓ 扫描应发现未登记状态 Global.Script.Started
+  ✓ 扫描应发现未登记状态 Global.Script.Counter
+  ✓ 扫描应发现未登记状态 Global.Script.Nickname
+  ✓ 扫描应发现未登记状态 Global.Script.Live
+  ✓ 扫描应发现未登记状态 Global.Script.Level
+  ✓ 扫描应发现未登记状态 Global.Script.Saved
+  ✓ 已登记状态 Global.Player.HasKey 应被排除
+  ✓ 跨文件引用应各自记录位置（实际 ["res://tests/fixtures/bulk_scan/legacy_event.tres", "res://tests/fixtures/bulk_scan/legacy_graph.tres"]）
+  ✓ RingFound 引用次数应为 2（实际 2）
+  ✓ 同一状态的多来源使用类型应合并（实际 ["cmd.set_switch", "graph.condition"]）
+  ✓ 场景外链事件不应让引用次数翻倍（实际 2）
+  ✓ Fame 引用次数应为 3（实际 3）
+  ✓ 应识别 3 条动态引用（实际 3）
+  ✓ 拼接与变量参数都应报告（实际 ["dynamic_concat", "dynamic_expression"]）
+  ✓ 动态拼接产物不应成为候选
+  ✓ 格式化产物不应成为候选
+  ✓ 同文件的字面量引用仍应被识别
+  ✓ 合成总表里的键应被排除
+  ✓ 未登记的键应保留
+  ✓ Fame 应推断为 int
+  ✓ Mood 应推断为 float
+  ✓ PlayerTitle 应推断为 string
+  ✓ Started 应推断为 bool
+  ✓ define TYPE_INT 应推断为 int
+  ✓ 公共事件 set_switch 应推断为 bool
+  ✓ 仅常量引用不应推断类型
+  ✓ 常量引用不应误报冲突
+  ✓ bool 与 int 混用应标记类型冲突
+  ✓ int 系使用不应误报冲突
+  ✓ @@level 键应标记动态作用域
+  ✓ 准备测试总表 res://.godot/bulk_register_test/catalog_a.tres
+  ✓ 批量登记应成功（）
+  ✓ 应新增 3 条（实际 3）
+  ✓ 登记后应能从磁盘重新读回
+  ✓ 总表应包含原有 1 条 + 新增 3 条（实际 4）
+  ✓ 新增开关定义应完整（实际 戒指已找到 / bool）
+  ✓ 新增整数定义应完整
+  ✓ 原有定义不应被批量登记改动
+  ✓ 重复登记应成功返回
+  ✓ 重复登记不应新增
+  ✓ 重复键应全部跳过
+  ✓ 全部跳过时不应写盘
+  ✓ 已有定义不应被覆盖
+  ✓ 取消场景前置：扫描有候选
+  ✓ 扫描本身不修改总表
+  ✓ 空登记应被拒绝
+  ✓ 空登记不修改总表
+  ✓ 写入失败应返回失败
+  ✓ 错误应来自临时写入（实际 save_failed:temp_path_blocked）
+  ✓ 失败时原总表文件不变
+  ✓ 失败后磁盘上没有半份状态
+  ✓ 扫描前样例可正常加载：librarian.tres
+  ✓ 扫描前样例可正常加载：key_pickup.tres
+  ✓ 扫描前样例可正常加载：locked_door.tres
+  ✓ 扫描前样例可正常加载：office_desk.tres
+  ✓ 扫描前样例可正常加载：classroom_board.tres
+  ✓ 扫描前样例可正常加载：basement_cutscene.tres
+  ✓ 扫描前样例可正常加载：school_graph.tres
+  ✓ 样例已登记状态 Global.Player.HasKey 不应出现在候选
+  ✓ 样例已登记状态 School.Classroom.ClueFound 不应出现在候选
+  ✓ 样例已登记状态 School.Office.DiaryFound 不应出现在候选
+  ✓ 样例已登记状态 School.BasementUnlocked 不应出现在候选
+  ✓ 样例已登记状态 School.ClassroomUnlocked 不应出现在候选
+  ✓ 扫描不修改样例文件：librarian.tres
+  ✓ 扫描不修改样例文件：key_pickup.tres
+  ✓ 扫描不修改样例文件：locked_door.tres
+  ✓ 扫描不修改样例文件：office_desk.tres
+  ✓ 扫描不修改样例文件：classroom_board.tres
+  ✓ 扫描不修改样例文件：basement_cutscene.tres
+  ✓ 扫描不修改样例文件：school_graph.tres
+  ✓ 样例资源应全部被扫描
+  ✓ 准备测试总表 res://.godot/bulk_register_test/catalog_dialog.tres
+  ✓ 对话框扫描应得到候选
+  ✓ 对话框扫描应排除已登记键
+  ✓ 未定类型默认不勾选
+  ✓ 类型冲突默认不勾选
+  ✓ 类型明确的候选默认勾选
+  ✓ 存在未定类型勾选项时不应写盘
+  ✓ 批量应用类型应生效
+  ✓ 登记成功应发出 registered 信号（实际 ["Global.Quest.Completed", "Global.Quest.GraphOnly", "Global.Quest.RingFound", "Global.Script.Counter", "Global.Script.Level", "Global.Script.Live", "Global.Script.Nickname", "Global.Script.Started", "Local.TempFlag", "School.Fame", "School.Mood", "School.PlayerTitle"]）
+  ✓ 登记后的候选应从列表移除
+  ✓ 对话框登记应写入总表
+  ✓ 界面编辑的显示名应写入
+  ✓ 逐行类型应生效
+  ✓ 批量类型应写入
+  ✓ 原有定义保持不变
+  ✓ 弹窗应采用隐藏根模式（hide_root）
+  ✓ rebuild 后存在树根
+  ✓ 树根是隐藏占位行，不应携带首行数据
+  ✓ 5 个条目应全部平级挂在根下（实际 5 个子节点）
+  ✓ 平级行顺序应与条目一致（实际 alpha.flag, beta.flag, gamma.flag, delta.flag, epsilon.flag）
+  ✓ 每一行都应是根的直接子节点
+  ✓ _row_item 应能找到第 2 行
+  ✓ _row_item 应能找到第 5 行
+  ✓ _row_item 找到的第 2 行应与平级行链一致
+  ✓ 搜索命中第 3 行应保持可见
+  ✓ 搜索未命中第 1 行应隐藏
+  ✓ 搜索未命中第 2 行应隐藏（修复前过滤错乱点）
+  ✓ 搜索未命中第 4 行应隐藏
+  ✗ 搜索匹配字段不区分大小写
+  ✓ 搜索关键字不区分大小写
+  ✓ 清空搜索后各行应恢复可见
+  ✓ 反选后第 2 行条目应为未勾选
+  ✓ 反选后第 2 行复选框应同步取消（修复前静默无效）
+  ✓ 反选后第 5 行复选框应同步取消
+  ✓ 再次反选后第 2 行复选框应恢复勾选
+
+──────── 批量登记测试结果 ────────
+检查项：116，失败：1
+  ✗ 搜索匹配字段不区分大小写
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

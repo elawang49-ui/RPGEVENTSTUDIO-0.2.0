@@ -1,0 +1,11 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+检查项：74，失败：4
+  ✗ snapshot reads participate in conflict detection
+  ✗ session restore publishes its complete replacement atomically
+  ✗ session reset retains subsequent writes and removes old state
+  ✗ graph monitor reevaluates host snapshot restore
+WARNING: 8 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 3 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

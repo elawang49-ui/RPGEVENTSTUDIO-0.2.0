@@ -1,0 +1,444 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CASE_BEGIN state_store
+  ✓ 默认值应为 false
+  ✓ 写入后应为 true
+  ✓ 布尔比较应成立
+  ✓ 布尔比较应不成立
+  ✓ 变量加法应得到 8
+  ✓ 快照恢复后状态应保留
+CASE_END state_store checks=6
+CASE_BEGIN page_selection
+  ✓ 没钥匙时应选第 1 页（实际 0）
+  ✓ 有钥匙时应选第 2 页（实际 1）
+  ✓ 自动事件过滤时不应选中交互页
+CASE_END page_selection checks=3
+CASE_BEGIN condition_defaults
+  ✓ 没写过的状态按 false 参与比较（== false 应成立）
+  ✓ 没写过的状态不应等于 true
+  ✓ != true 在未定义时也应成立
+CASE_END condition_defaults checks=3
+CASE_BEGIN state_catalog
+  ✓ 状态库应能保存
+  ✓ 状态库应返回显示名称
+  ✓ 已登记的状态应被识别
+  ✓ 未登记状态回退为内部标识
+  ✓ 改名后内部标识不变
+  ✓ 改名后显示新名字
+  ✓ 指令摘要应显示可读名字（实际：设置开关：办公室日记已调查 = ON）
+CASE_END state_catalog checks=7
+CASE_BEGIN event_diagnosis
+  ✓ 没触发的事件应发出诊断
+  ✓ 诊断应包含每一页
+  ✓ 诊断应包含每条条件
+  ✓ 未满足的条件应标为 false
+  ✓ 触发方式匹配时应标为 true
+  ✓ 触发方式不匹配应被诊断出来
+CASE_END event_diagnosis checks=6
+CASE_BEGIN input_service
+  ✓ 交互应有键盘绑定
+  ✓ 交互应有鼠标绑定
+  ✓ 交互应有手柄绑定
+  ✓ 重新绑定应成功
+  ✓ 改键后 K 应触发交互动作
+  ✓ 改键应替换同设备的全部旧绑定（不能残留回车/空格）
+  ✓ 重新加载后自定义按键应保留
+  ✓ 绑定到已被占用的键应被拒绝
+  ✓ 冲突应指向占用的动作
+  ✓ 允许共享后应绑定成功
+  ✓ 解除键盘绑定后应为空
+  ✓ 恢复默认后 K 不应再触发交互
+CASE_END input_service checks=12
+CASE_BEGIN input_registry
+  ✓ 注册后动作表应包含 toggle_journal
+  ✓ 注册动作应立即生效
+  ✓ 设置界面应显示注册动作
+  ✓ 重复注册不应改变绑定
+  ✓ 注册动作应与内置动作互相检测冲突
+  ✓ 未改键时补充默认键应生效
+  ✓ 补充默认键不应挤掉原有绑定
+  ✓ 用户改过的动作不应被默认键补充覆盖
+  ✓ 未改过的动作可补键
+  ✓ 旧存档里与默认不同的绑定应视为用户自定义
+  ✓ 旧存档自定义键不应被补充覆盖
+  ✓ 旧存档自定义键不应被补进默认键
+  ✓ 旧存档里保持默认的动作应能补键
+  ✓ 恢复默认后不应再标记为已改键
+  ✓ 应有独立的对话推进动作
+  ✓ 对话推进动作应有自己的翻译键
+CASE_END input_registry checks=16
+CASE_BEGIN gamepad_input
+  ✓ 手柄 A 按下应触发交互动作
+  ✓ 手柄 A 松开应释放交互动作
+  ✓ 左摇杆左推应触发左移
+  ✓ 摇杆回中应释放左移
+  ✓ 交互应可改绑到手柄 X
+  ✓ 手柄改键应保存并重载
+CASE_END gamepad_input checks=6
+CASE_BEGIN input_settings_panel
+  ✓ 按键设置面板应能打开
+  ✓ 进入改键状态
+  ✓ Esc 应取消本次改键
+  ✓ Esc 不应被绑定
+  ✓ 按下新键后应结束改键状态
+  ✓ 新按键应已生效
+  ✓ 界面应显示新的键盘绑定
+  ✓ 冲突时应显示提示
+  ✓ 冲突未确认前不应绑定
+  ✓ 取消冲突后应退出改键状态
+  ✓ 鼠标按键应能绑定
+  ✓ 恢复默认后应回到默认鼠标绑定
+  ✓ 面板应能关闭
+CASE_END input_settings_panel checks=13
+CASE_BEGIN l10n
+  ✓ 中文标题应为「事件」
+  ✓ 英文标题应为 Events
+  ✓ 英文指令名应翻译
+  ✓ 缺失的键应回退为键名本身
+  ✓ 带参数的文案应正确替换
+  ✓ 运行时语言应独立于编辑器语言
+  ✓ 运行时可切回中文
+  ✓ 中文翻译资源应存在
+  ✓ 英文翻译资源应存在
+  ✓ 运行时注入的词条应可查询
+  ✓ 注入词条应分语言
+  ✓ 运行时注入不应覆盖内置词条
+  ✓ 应能读取翻译源文件 ui.csv
+  ✓ 翻译条目应覆盖全部界面（实际 875 条）
+  ✓ 中文翻译不应缺条目：[]
+  ✓ 英文翻译不应缺条目：[]
+CASE_END l10n checks=16
+CASE_BEGIN bbcode
+  ✓ 合法 BBCode 不应报警
+  ✓ 应检测出未闭合的 [b]
+  ✓ 未闭合提示应包含标签名
+  ✓ 应检测出闭合标签不匹配
+  ✓ 不匹配时同时报告未闭合的 [b]
+  ✓ 应检测出不支持的标签
+  ✓ 不支持提示应包含标签名
+  ✓ 闭合标签带参数应被提示
+  ✓ [code] 里的标签不应被误判
+  ✓ 普通方括号不应被误判
+CASE_END bbcode checks=10
+CASE_BEGIN nested_serialization
+  ✓ 嵌套事件应能保存（错误码 0）
+  ✓ 嵌套事件应能重新读取
+  ✓ 顶层指令数量应保持
+  ✓ 第一条应是条件分歧
+  ✓ 「是」分支应有 2 条指令
+  ✓ 「否」分支应有 1 条指令
+  ✓ 「是」分支里应还能嵌套条件分歧
+  ✓ 三层嵌套的文本应保留
+  ✓ 三层嵌套的开关名应保留
+  ✓ 三层嵌套的布尔参数应保持类型
+  ✓ 「是」分支第一条文本应保留
+  ✓ 「否」分支文本应保留
+  ✓ 空分支应能正确读回
+  ✓ 旧事件资源应继续可用
+CASE_END nested_serialization checks=14
+CASE_BEGIN graph_validator
+  ✓ 空图应报「缺开始节点」且为错误
+  ✓ 多个启用开始节点应为错误
+  ✓ 禁用开始节点应为提示
+  ✓ 断裂引用应为错误
+  ✓ 错误端口应为错误
+  ✓ 连到开始节点应为错误
+  ✓ 条件/动作/阶段/事件缺参数应为错误
+  ✓ 未登记状态应为警告
+  ✓ 事件路径不存在应为错误
+  ✓ 完成标记未填应为提示
+  ✓ required 超过输入应为错误
+  ✓ 汇合无输入应为警告
+  ✓ 不可达节点应为警告
+  ✓ 无入边的监视条件不应判为不可达
+  ✓ 监视条件两个出口都没接应为警告
+  ✓ 只接 true 出口应为提示
+  ✓ 无闸门令牌环应为错误（运行时会传播到上限中止）
+  ✓ 经过 AND 汇合的循环应为提示（fired 只放行一次）
+  ✓ 带闸门的循环不应报错误
+  ✓ 监视条件互相写入对方键且取值满足对方条件时应报振荡警告
+  ✓ 监视条件写自身键的合法模式不应报振荡
+  ✓ 示例关卡图不应有错误
+CASE_END graph_validator checks=22
+CASE_BEGIN group_persistence
+  ✓ group_of 应找到所在分组
+  ✓ 带分组的关卡图应能保存
+  ✓ 重新读取后分组应保留
+  ✓ 分组名保留
+  ✓ 分组成员保留
+  ✓ 分组位置与大小保留
+  ✓ 分组颜色保留
+  ✓ 删除节点应从分组移除成员
+  ✓ 删除分组应只移除分组本身
+  ✓ 删除分组不应删除节点
+  ✓ 分组 id 生成应避开节点 id
+CASE_END group_persistence checks=11
+CASE_BEGIN story_audit
+  ✓ 审计应扫描到 6 个夹具事件
+  ✓ 审计应报告空事件
+  ✓ 审计应报告重复事件标识
+  ✓ 审计应报告断裂引用
+  ✓ 夹具中应存在错误级问题
+  ✓ 样例资源不应有审计错误
+CASE_END story_audit checks=6
+CASE_BEGIN runtime_trace
+  ✓ 追踪开启时事件正常执行
+  ✓ 主套件记录事件开始/结束
+  ✓ 主套件记录状态变化
+  ✓ 追踪 JSON 可解析
+  ✓ 关闭追踪后不产生记录
+CASE_END runtime_trace checks=5
+CASE_BEGIN story_document_mapping
+  ✓ 图书管理员第 1 页应解析为 3 个条目（实际 3）
+  ✓ 第 1 条应是台词
+  ✓ 第 2 条应是选项块
+  ✓ 第 3 条应是普通指令（end）
+  ✓ 选项块应有两个选项
+  ✓ 旧样例（单个 if + else）应识别为嵌套式（实际 nested）
+  ✓ 旧样例的选项块应判定为结构完整
+  ✓ 选项 1 分支应有 3 个条目
+  ✓ 选项 2 分支（else）应有 1 个条目
+  ✓ 选项 1 分支第一条台词应正确映射
+  ✓ 选项 2 分支台词应正确映射
+  ✓ 应解析出 4 个顶层条目
+  ✓ 两条 if 都应是条件条目
+  ✓ 条件的「是」分支应有 1 个条目
+  ✓ 条件的「否」分支应有 1 个条目
+  ✓ variable_op 应识别为状态条目
+CASE_END story_document_mapping checks=16
+CASE_BEGIN story_document_edits
+  ✓ 插入后顶层指令应有 5 条
+  ✓ 新台词应插在第 2 位
+  ✓ 原有命令对象保持不变（零重建）
+  ✓ 正文应写进原指令
+  ✓ 说话人应写进原指令
+  ✓ 复制后应有 6 条
+  ✓ 复制应得到深拷贝
+  ✓ 移动后列表长度应不变
+  ✓ 下移必须越过完整的选项块，同一台词实例应在整块之后且文本正确
+  ✓ 原 commands[3] 的内容应前移到 commands[2]
+  ✓ 删除后回到 5 条
+  ✓ 被删除的指令不再在列表里
+CASE_END story_document_edits checks=12
+CASE_BEGIN story_document_choice_ops
+  ✓ 选项文字应更新
+  ✓ 改选项文字不应改变结构
+  ✓ 结构完整的选项块应允许加选项
+  ✓ 加选项后应有 1 个 show_choices + 3 个 if + 1 个 end
+  ✓ 应改写为顺序式三个分支
+  ✓ 选项列表应有 3 项
+  ✓ 原选项 1 分支内容应原样保留
+  ✓ 原选项 2 分支（else）内容应搬移到新位置
+  ✓ 新选项分支应为空
+  ✓ 分支条件应指向 @@self.choice
+  ✓ 应能删除最后一个选项
+  ✓ 删除选项后回到 5 条
+  ✓ 选项列表应剩 2 项
+  ✓ 应能交换选项
+  ✓ 交换后第 1 个选项应是原第 2 个
+  ✓ 交换后第 1 分支内容应跟着选项走
+  ✓ 应能删除中间选项
+  ✓ 删除中间选项后其余选项顺序不变
+  ✓ 被删选项的分支应移除，新选项分支保持为空
+  ✓ 新插入的选项块应作为独立条目出现
+  ✓ 顺序式选项块应被识别（实际 sequential）
+  ✓ 顺序式选项块应结构完整
+CASE_END story_document_choice_ops checks=22
+CASE_BEGIN story_templates
+  ✓ 模板 npc_dialogue 应能生成事件
+  ✓ 模板 npc_dialogue 应至少有一页
+  ✓ 模板 npc_dialogue 应生成真实指令
+  ✓ 模板 investigate 应能生成事件
+  ✓ 模板 investigate 应至少有一页
+  ✓ 模板 investigate 应生成真实指令
+  ✓ 模板 multi_choice 应能生成事件
+  ✓ 模板 multi_choice 应至少有一页
+  ✓ 模板 multi_choice 应生成真实指令
+  ✓ 模板 condition_branch 应能生成事件
+  ✓ 模板 condition_branch 应至少有一页
+  ✓ 模板 condition_branch 应生成真实指令
+  ✓ 模板 item_get 应能生成事件
+  ✓ 模板 item_get 应至少有一页
+  ✓ 模板 item_get 应生成真实指令
+  ✓ 模板 door_lock 应能生成事件
+  ✓ 模板 door_lock 应至少有一页
+  ✓ 模板 door_lock 应生成真实指令
+  ✓ 模板 autorun 应能生成事件
+  ✓ 模板 autorun 应至少有一页
+  ✓ 模板 autorun 应生成真实指令
+  ✓ 多选项模板应有 6 条指令
+  ✓ 第 2 条应是选项
+  ✓ 多选项模板应有三个选项
+  ✓ 第 0 个分支应指向 @@self.choice == 0
+  ✓ 第 1 个分支应指向 @@self.choice == 1
+  ✓ 第 2 个分支应指向 @@self.choice == 2
+  ✓ 调查模板应有两页
+  ✓ 没调查过时应选中「首次」页（实际 1）
+  ✓ 调查过后应选中「重复」页
+  ✓ 没钥匙应选中「锁着」页
+  ✓ 有钥匙应选中「开门」页
+  ✓ 自动触发模板应是 autorun 页
+  ✓ 模板事件应能保存
+  ✓ 模板事件读回后结构一致
+CASE_END story_templates checks=35
+CASE_BEGIN story_characters
+  ✓ 应有两个角色
+  ✓ 按显示名应能找到角色
+  ✓ 重复标识应自动避开
+  ✓ 花名册应能保存
+  ✓ 花名册读回后角色数一致
+  ✓ 读回后显示名一致
+  ✓ 读回后颜色一致
+  ✓ 缺失花名册文件应返回空册
+CASE_END story_characters checks=8
+CASE_BEGIN story_preview
+  ✓ 预览应包含说话人名字
+  ✓ 预览应包含选项提示
+  ✓ 预览应列出选项
+  ✓ 预览应原样保留 BBCode（不改变原始文案）
+  ✓ 预览应汇总出不支持的标签
+  ✓ 预览应汇总出未闭合标签
+  ✓ 问题描述应包含标签名
+  ✓ 预览后原始文案不变
+CASE_END story_preview checks=8
+CASE_BEGIN graph_flow
+  ✓ 关卡开始时应进入探索阶段
+  ✓ 只完成一处时不应解锁地下室
+  ✓ 两处都完成后应自动解锁地下室
+  ✓ 解锁后应切到地下室阶段
+CASE_END graph_flow checks=4
+CASE_BEGIN graph_merge_or
+  ✓ OR 汇合应被开始节点直接触发一次
+  ✓ OR 汇合在任一条件满足时也应通过
+CASE_END graph_merge_or checks=2
+CASE_BEGIN graph_event_node
+  ✓ 事件节点应调用事件运行时
+  ✓ 事件完成后应继续往下传播
+CASE_END graph_event_node checks=2
+CASE_BEGIN give_key_flow
+  ✓ 事件应在 60 帧内结束
+  ✓ 询问钥匙后应持有钥匙
+  ✓ 应走「给钥匙」分支
+  ✓ 事件应在 60 帧内结束
+  ✓ 第二次对话内容应不同（实际：钥匙要收好，教室门就在右边。）
+CASE_END give_key_flow checks=5
+CASE_BEGIN choice_branch
+  ✓ 事件应在 60 帧内结束
+  ✓ 选择「离开」不应获得钥匙
+  ✓ 应走「离开」分支
+CASE_END choice_branch checks=3
+CASE_BEGIN cancel
+  ✓ 取消后应收到事件结束通知
+  ✓ 结果应为 CANCELLED（实际 1）
+CASE_END cancel checks=2
+CASE_BEGIN presenter_injection
+  ✓ 运行时 Autoload 可用于展示层注入测试
+  ✓ 默认展示层应是插件自带的 DialoguePresenter
+  ✓ 初始状态应使用默认展示层
+  ✓ 满足协议的对象应能注入
+  ✓ 运行时当前展示层应切到注入对象
+  ✓ 事件运行时也应使用注入对象
+  ✓ 注入后默认 UI 应隐藏
+  ✓ 注入后默认 UI 不应继续处理
+  ✓ 事件应在 90 帧内结束（injected_text）
+  ✓ 注入展示层后事件应能完成
+  ✓ 事件文本应交给注入的展示层
+EXPECTED_ERROR_BEGIN presenter-protocol
+ERROR: [RPGEventStudio] 自定义 presenter 缺少协议方法：<Object#192669550477>
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] set_presenter (res://addons/rpgeventstudio/runtime/autoload/studio_runtime.gd:164)
+       [1] _test_presenter_injection (res://tests/run.gd:1506)
+       [2] _run_runtime_event (res://tests/run.gd:1577)
+  ✓ 缺少协议方法的对象应被拒绝
+EXPECTED_ERROR_END presenter-protocol
+  ✓ 拒绝非法对象后展示层应保持不变
+  ✓ 替换前应正在显示文本
+  ✓ 运行中应允许替换展示层
+  ✓ 替换展示层应取消旧事件
+  ✓ 旧展示层应收到 close_all
+  ✓ 替换后运行时指向新展示层
+  ✓ 应能恢复默认展示层
+  ✓ 恢复后当前展示层应是默认 UI
+  ✓ 恢复后事件运行时也应回到默认 UI
+  ✓ 恢复后默认 UI 应重新工作
+  ✓ 恢复默认 UI 后事件应能完成
+  ✓ 默认 UI 应收到事件文本
+CASE_END presenter_injection checks=24
+CASE_BEGIN bbcode_presenter
+  ✓ 默认 UI 应解析 BBCode（实际：粗体 金色
+第二行）
+  ✓ 打字机总长应按可见字符计算
+  ✓ 合法文本不应记录 BBCode 问题
+  ✓ 原始 BBCode 应原样保留
+  ✓ 默认 UI 的选项提示也解析 BBCode
+WARNING: [RPGEventStudio] 未闭合的 BBCode 标签：[b]
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+     GDScript backtrace (most recent call first):
+         [0] show_text (res://addons/rpgeventstudio/runtime/ui/dialogue_box.gd:245)
+         [1] _test_bbcode_presenter (res://tests/run.gd:640)
+  ✓ 未闭合文本应记录问题供排查
+  ✓ 未闭合文本也不应被静默改写
+  ✓ BBCode 事件资源应能保存（默认 UI）
+  ✓ 读回后 BBCode 原文完整（默认 UI）
+  ✓ 保存后的 BBCode 事件在默认 UI 中能完成
+  ✓ 默认 UI 运行时渲染 BBCode
+  ✓ 默认 UI 保留原始 BBCode
+CASE_END bbcode_presenter checks=12
+CASE_BEGIN map_event
+  ✓ 地图事件测试需要示例事件资源
+  ✓ 新建地图事件默认未关联
+  ✓ 未关联时应有状态文案
+  ✓ 关联事件后状态正常
+  ✓ 能解析关联事件
+  ✓ 地图事件有类型/触发/层级文案
+  ✓ 角色下方映射为相对 z_index = -1
+  ✓ 角色同层映射为 z_index = 0
+  ✓ 角色上方映射为 z_index = 1
+  ✓ 自定义层级使用 custom_z_index
+  ✓ 交互模式挂载 EventInteractor2D
+  ✓ 交互组件拿到事件
+  ✓ 交互组件拿到交互半径
+  ✓ 进入区域挂载 EventTriggerArea2D
+  ✓ 进入区域只开启进入触发
+  ✓ 触发区域拿到半径
+  ✓ 离开区域只开启离开触发
+  ✓ 自动执行挂载 EventAutoRun2D
+  ✓ 并行执行挂载 EventAutoRun2D(is_parallel)
+  ✓ 未关联事件应产生配置警告
+  ✓ 失效路径应产生配置警告
+  ✓ 非事件资源应产生配置警告
+  ✓ 触发方式没有匹配页时应警告
+  ✓ 能扫描当前场景里的地图事件
+  ✓ 运行时交互组件已挂载
+  ✓ 交互模式能真正启动事件
+  ✓ 进入区域能真正启动事件
+  ✓ 自动执行能真正启动事件
+  ✓ 并行执行能真正启动事件
+CASE_END map_event checks=29
+CASE_BEGIN dialogue_theme
+  ✓ 主题背景色应用
+  ✓ 主题位置锚点应用
+  ✓ 主题打字速度应用
+  ✓ 主题正文字号应用
+  ✓ 主题说话人颜色应用
+  ✓ 主题转场颜色应用
+  ✓ 主题预览/运行时仍解析 BBCode
+  ✓ 出现动画创建 tween
+  ✓ 主题选项按钮创建
+  ✓ 选中项使用选中背景
+  ✓ 未选中项使用普通背景
+  ✓ 主题资源可以保存
+  ✓ 主题资源可以重新读取
+  ✓ 交互提示字号应用主题
+  ✓ 交互提示偏移应用主题
+CASE_END dialogue_theme checks=15
+
+──────── 测试结果 ────────
+检查项：355，失败：0
+CASES：预期 32，完成 32
+RESULT: PASS
+WARNING: 3 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

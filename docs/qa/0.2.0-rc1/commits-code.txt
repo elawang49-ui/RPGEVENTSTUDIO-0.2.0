@@ -1,0 +1,48 @@
+9d3dbcd16acaa52ecb3a277c5611aae76e48cd96
+2026-11-02T09:56:18+08:00 elawang49-ui
+fix(story): edit choice blocks atomically and deep-copy owned commands
+
+4a7b47f5c3bec0c66cdfe1c15942feedcba534ab
+2026-11-02T09:56:18+08:00 elawang49-ui
+fix(editor): preserve cut identity and make event page changes undoable
+
+b8ee37316d54cf8e22e543e3e792d70fa37fc735
+2026-11-02T10:23:59+08:00 elawang49-ui
+fix(runtime): commit event sessions atomically and settle cancellation safely
+
+5d3f09987175ca0359a9bfbe382b8a61eff73a59
+2026-11-02T10:23:59+08:00 elawang49-ui
+fix(editor): route resource undo safely and synchronize event editing views
+
+82b72d9e221ccd2fd4a90bcdb75ec11d84534153
+2026-11-02T10:23:59+08:00 elawang49-ui
+fix(install): persist autoload registration across editor restarts and UID paths
+
+7263f51c99365755f7aef24556e47e6fff6124cf
+2026-11-02T10:26:49+08:00 elawang49-ui
+fix(editor): flush pending state edits safely and retain asset references
+
+5375321b2c3607accea880e7196e39846b45cb5b
+2026-11-02T10:26:49+08:00 elawang49-ui
+build(release): package rc1 and add cold-install and host compatibility gates
+
+e1d304f582b51c510080ae5365c1bcf0e2f20ce5
+2026-11-02T10:32:46+08:00 elawang49-ui
+fix(runtime): reject script-faulted handlers and wait callbacks before commit
+
+611edd24d5a2477c9cdb5d3eb1a7c1d4d21bc83a
+2026-11-02T10:38:09+08:00 elawang49-ui
+fix(state): preserve snapshot lifecycle operations inside event sessions
+
+21d04606c2aa0dc224a9ff894ee59b34fb19e6c8
+2026-11-02T10:43:57+08:00 elawang49-ui
+fix(story): edit legacy string options with lossless undo and shared parsing
+
+4b06f855426c9dca0915f6d57ed461a3d7dc7aac
+2026-11-02T10:46:17+08:00 elawang49-ui
+fix(model): preserve third-party command subclasses during deep copies
+
+833ea41427dff8df3f9e9560441a6e53f7ae3835
+2026-11-02T10:52:19+08:00 elawang49-ui
+fix(interaction): keep background events and tool panels from stealing input
+

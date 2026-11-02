@@ -1,0 +1,18 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 状态库文件缺失时返回空表
+  ✓ 角色花名册缺失时可保存（自动建目录）
+  ✓ Autoload 已注册且类型正确
+  ✓ UI 主题文件缺失时使用默认主题
+  ✓ 可以新建并保存事件资源
+  ✓ 事件资源绕开缓存反序列化一致
+  ✓ 最小剧情真实执行并写入状态
+  ✓ 可以新建并保存关卡图资源
+  ✗ expected injected failure
+检查项：9，失败：1
+
+BLANK RESULT: FAIL (failures=1)
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

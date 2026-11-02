@@ -1,0 +1,18 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 主题页应能在 headless 下完成构建并载入主题
+  ✓ 初始加载应读到磁盘值 33（实际 33）
+  ✓ 保存后磁盘应是 44（实际 44）
+  ✓ 外部改写后磁盘应是 55（实际 55）
+  ✓ 重新加载应读到磁盘新值 55（实际 55）
+  ✓ 保存后磁盘应是 66（实际 66）
+  ✓ 保存后重新加载应得到相同内容 66（实际 66）
+  ✓ 运行时 Autoload 应可用于验证转发
+  ✓ 重新加载应把新主题对象转发给运行时（apply_dialogue_theme）
+  ✓ 转发给运行时的应是磁盘新值 77（实际 77）
+
+──── 主题重载测试：10 项，失败 0 项 ────
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

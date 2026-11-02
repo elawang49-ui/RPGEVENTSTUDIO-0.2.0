@@ -1,0 +1,78 @@
+== headless 套件 ==
+[PASS] run                             1.6s checks=355 cases=32/32
+   ALLOWED   EXPECTED[EXPECTED_ERROR_BEGIN presenter-protocol] ERROR: [RPGEventStudio] 自定义 presenter 缺少协议方法：<Object#190605952928>
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] runtime_trace_test              1.3s checks=63
+   ALLOWED   EXPECTED[EXPECTED_ERROR_BEGIN missing-common] ERROR: Cannot open file 'res://.godot/nope.tres'.
+   ALLOWED   EXPECTED[EXPECTED_ERROR_BEGIN missing-common] ERROR: Failed loading resource: res://.godot/nope.tres.
+   ALLOWED   EXPECTED[EXPECTED_ERROR_BEGIN missing-common] ERROR: [RPGEventStudio] 找不到公共事件：res://.godot/nope.tres
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] trace_ui_test                   0.4s checks=21
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] dialogue_layout_test            5.2s checks=16
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] dialogue_pagination_test       10.0s checks=163
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] story_audit_test                0.5s checks=24
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] state_bulk_register_test        0.6s checks=114
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] graph_editor_smoke              0.5s checks=19
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] ui_smoke                        0.5s checks=56
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] integration_demo                8.6s checks=37
+   ALLOWED   ENGINE_EXIT ERROR: 24 resources still in use at exit (run with --verbose for details).
+[PASS] safe_write_test                 0.4s checks=36
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] event_list_smoke                0.4s checks=13
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] tutorial_flow                   0.6s checks=14
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] interaction_test                0.8s checks=21
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] node_ref_test                   0.4s checks=12
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] graph_lifecycle_test            0.8s checks=32
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] presenter_lifecycle_test        0.7s checks=48
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] input_coexistence_test          0.5s checks=35
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] nested_event_semantics_test     0.8s checks=31
+   ALLOWED   EXPECTED[EXPECTED_ERROR_BEGIN recursion-limit] ERROR: [RPGEventStudio] 调用层数过深（8），疑似递归
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] story_insert_choice_test        0.6s checks=29
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] theme_reload_test               0.5s checks=10
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+合计检查项：1149
+== 编辑器套件 ==
+[PASS] editor                          3.0s checks=19
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] map                             3.4s checks=51
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] gvl                             2.8s checks=72
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] story                           3.4s checks=20
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] audit                           2.6s checks=14
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+[PASS] trace                           4.8s checks=8
+   ALLOWED   ENGINE_EXIT ERROR: 1 resources still in use at exit (run with --verbose for details).
+合计检查项：184
+== 故障注入自检 ==
+  ✓ run.gd 注入 type（期望 FAIL，实际 FAIL）
+  ✓ run.gd 注入 null（期望 FAIL，实际 FAIL）
+  ✓ run.gd 注入 skip（期望 FAIL，实际 FAIL）
+  ✓ run.gd 预期负向错误（期望 PASS，实际 PASS）
+  ✓ fault_no_summary.gd（期望 FAIL，实际 FAIL）
+  ✓ fault_early_quit.gd（期望 FAIL，实际 FAIL）
+  ✓ fault_type_error.gd（期望 FAIL，实际 FAIL）
+  ✓ fault_null.gd（期望 FAIL，实际 FAIL）
+  ✓ fault_assert_fail.gd（期望 FAIL，实际 FAIL）
+  ✓ fault_subtest_abort.gd（期望 FAIL，实际 FAIL）
+  ✓ 脚本解析失败（期望 FAIL，实际 FAIL）
+故障注入自检：PASS
+
+RUNNER RESULT: PASS

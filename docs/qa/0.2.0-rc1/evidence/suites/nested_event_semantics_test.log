@@ -1,0 +1,68 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ once 页嵌套调用只应执行一次（实际 1 次）
+  ✓ 第二次嵌套调用应记 event_ignored/repeat_policy
+  ✓ repeat_policy 忽略记录应带嵌套来源标注（实际 { "kind": "nested", "parent_event_id": "nested_once_caller" }）
+  ✓ 运行中事件嵌套调用自身应记 event_ignored/reentry
+  ✓ reentry 忽略记录应带嵌套来源标注（实际 { "kind": "nested", "parent_event_id": "nested_self" }）
+  ✓ 顶层事件仍应发 event_finished
+  ✓ 嵌套事件应发恰好一次 event_started（实际 1）
+  ✓ 嵌套事件应发恰好一次 event_finished（实际 1）
+  ✓ 嵌套事件报告应为 COMPLETED（实际 0）
+  ✓ 嵌套事件应真实执行
+  ✓ 嵌套事件报告应带 depth=1（实际 1）
+  ✓ 嵌套事件报告应带嵌套来源标注（实际 { "kind": "nested", "parent_event_id": "nested_bus_parent" }）
+  ✓ 嵌套事件 started/finished 应可按 instance_id 关联（started=2 finished=2）
+  ✓ 父事件应正在运行（等待嵌套子事件）
+  ✓ 级联取消后运行实例应在有限帧内清空
+  ✓ 父事件应以 CANCELLED 结束（实际 1）
+  ✓ 嵌套子事件应随父级取消并以 CANCELLED 结束（Batch 1 级联不回归，实际 1）
+  ✓ 嵌套子事件应带取消原因（实际 测试级联取消）
+  ✓ 离树用例父事件应正在运行
+  ✓ presenter 离树后运行实例应在有限帧内清空
+  ✓ 离树路径父事件应以 CANCELLED 结束（实际 1）
+  ✓ 离树路径嵌套子事件应以 CANCELLED 结束（实际 1）
+  ✓ 离树路径嵌套子事件应带取消原因（实际 presenter 已释放）
+EXPECTED_ERROR_BEGIN recursion-limit
+ERROR: [RPGEventStudio] 调用层数过深（8），疑似递归
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:376)
+       [1] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [2] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:394)
+       [3] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [4] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:394)
+       [5] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [6] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:394)
+       [7] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [8] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:394)
+       [9] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [10] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:394)
+       [11] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [12] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:394)
+       [13] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [14] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:394)
+       [15] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [16] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:394)
+       [17] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [18] _drive (res://addons/rpgeventstudio/core/runtime/event_runner.gd:182)
+EXPECTED_ERROR_END recursion-limit
+  ✓ 公共事件递归到上限应以 FAILED 收尾（既有行为不回归，实际 2）
+  ✓ 图等待超时应可注入真实秒数 event_wait_timeout（实际 0.3）
+WARNING: [RPGEventStudio] 关卡图等待事件超时（0.3s）：nested_graph_never，按 done 分支继续
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+     GDScript backtrace (most recent call first):
+         [0] _wait_event (res://addons/rpgeventstudio/core/graph/graph_runner.gd:316)
+  ✓ 等待超时后图应继续推进 done 分支并正常结束（seen=true result=0）
+  ✓ 图等待应至少等满注入的真实时间（实际 0.31s）
+  ✓ 图等待应按注入秒数及时放行，不按 7200 帧计数（实际 0.31s）
+  ✓ 事件完成后图应从 event_finished 提前放行并正常结束
+  ✓ 图启动的事件应真实执行完成
+  ✓ 提前放行不应等满超时时长（实际 0.01s）
+
+──── 嵌套事件语义 / 图等待超时测试结果 ────────
+检查项：31，失败：0
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

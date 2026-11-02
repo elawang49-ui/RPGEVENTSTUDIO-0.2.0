@@ -1,0 +1,27 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 示例关卡图应能加载
+  ✓ 画布节点数应与数据一致（8 / 8）
+  ✓ 示例关卡图应有 6 条连线（实际 6）
+  ✓ 添加节点后数据 +1
+  ✓ 新节点应自动选中
+  ✓ 参数应写入数据
+  ✓ 新增连线应写入数据
+  ✓ 不允许连到「开始」节点
+  ✓ 关卡图应能保存
+  ✓ 重新读取后节点数一致
+  ✓ 重新读取后连线数一致
+  ✓ 重新读取后参数保留
+  ✓ 删除后节点不存在
+  ✓ 删除节点应连带删掉它的连线
+  ✓ 示例图里应有条件和地下室阶段节点
+  ✓ 运行中的节点应显示 ▶
+  ✓ 完成的节点应显示 ✓
+  ✓ 当前阶段应显示 ●
+  ✓ 其它图的消息应被忽略
+
+──── 关卡图编辑器测试：19 项，失败 0 项 ────
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

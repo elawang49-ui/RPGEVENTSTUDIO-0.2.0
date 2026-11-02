@@ -1,0 +1,23 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 状态库能给出可读名字
+  ✓ 能新建调查事件
+  ✓ 事件里保存了 2 条指令
+  ✓ 指令里存的是内部标识
+  ✓ 列表里显示的是可读名字
+  ✓ 新关卡图自带一个开始节点
+  ✓ 连线都写进了数据（5）
+  ✓ 参数检查应通过且无错误/警告（实际：检查：0 错误 · 0 警告 · 2 提示）
+  ✓ 关卡图保存后能重新读取
+  ✓ 开始节点应把阶段设为地下室
+[RPGEventStudio][tutorial_desk] 没有可用的对话界面，跳过这段文字。
+  ✓ 调查事件应写入线索 A
+  ✓ 只有一条线索时不应解锁
+  ✓ 两条线索齐了应自动解锁
+  ✓ 解锁后阶段应切到地下室
+
+──── 教程流程验证：14 项，失败 0 项 ────
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

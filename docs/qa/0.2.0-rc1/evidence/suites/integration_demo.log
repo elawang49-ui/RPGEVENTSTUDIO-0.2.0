@@ -1,0 +1,46 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 运行时 Autoload 已加载
+  ✓ NPC 上挂着交互组件
+  ✓ 组件从路径加载到了事件资源
+  ✓ 第一次交互后应获得钥匙
+  ✓ 应播到「给钥匙」的台词
+  ✓ 第二次对话应不同（实际：钥匙要收好，教室门就在右边。）
+  ✓ 教室门上也挂着交互组件
+  ✓ 开门后状态应变为已解锁
+  ✓ 演示场景里有玩家节点
+  ✓ 把「交互」改绑到 K 应成功
+  ✓ 按新按键 K 应触发交互
+  ✓ 改键后旧按键空格不应再触发交互
+  ✓ 演示场景里有状态 HUD
+  ✓ 切到英文后 HUD 应显示英文（实际：Key: Owned    Classroom Door: Unlocked
+Stage: Exploration    Basement: Locked）
+  ✓ 顶部操作提示应跟着切换语言
+  ✓ 切换游戏语言不应改变编辑器语言
+  ✓ 英文下对话提示应为英文（实际：Space / Left Click / Pad A）
+  ✓ 切回中文后 HUD 应恢复中文
+  ✓ 对话应停在等待确认状态
+  ✓ 应显示第一段（实际：第一段）
+  ✓ 一次按键应推进对话
+  ✓ 一次按键只应推进一段（9 → 10，当前：第二段）
+  ✓ 应停在第 second 段（实际：第二段）
+  ✓ 推进时不应顺带选定某个选项
+  ✓ 办公室桌子和教室黑板都挂好了交互组件
+  ✓ 关卡开始时总控图应把阶段设为探索
+  ✓ 调查办公室后应获得教师日志
+  ✓ 只完成一处时地下室应仍然锁着
+  ✓ 调查教室后应发现线索
+  ✓ 两处都完成后地下室应自动解锁
+  ✓ 解锁后总控图应把阶段切到地下室
+  ✓ HUD 应显示地下室已解锁（实际：钥匙：已获得　　教室门：已打开 / 阶段：地下室调查　　地下室：已解锁）
+  ✓ 过场里的移动指令应真的移动了 NPC
+  ✓ 过场结束后画面应恢复（不是黑屏）
+  ✓ 演示场景里应有摄像机
+  ✓ 镜头应已恢复跟随玩家
+  ✓ 运行期文案不应缺翻译：[]
+
+──── 集成测试：37 项，失败 0 项 ────
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

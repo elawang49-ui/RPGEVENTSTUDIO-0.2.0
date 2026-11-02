@@ -1,0 +1,37 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 运行时里有交互管理器
+  ✓ 更近的 NPC 应成为当前目标
+  ✓ 目标应显示提示
+  ✓ 非目标不显示提示
+  ✓ 提示里应有对象名字
+  ✓ 按键应触发当前显示的目标
+  ✓ 触发的确实是图书管理员事件
+  ✓ 玩家走近门后目标应切换成门
+  ✓ 提示应跟着切换
+  ✓ 切换后按键应触发门的事件
+  ✓ 触发的确实是门事件，而不是 NPC
+  ✓ 平手时也应有确定的目标
+  ✓ 距离相同时目标不应来回跳动
+  ✓ 平手规则应按节点路径稳定选中（这里是门）
+  ✓ 附近没有对象时应清空目标
+  ✓ 没有目标时提示应消失
+  ✓ 原点处的对象应成为目标
+  ✓ 鼠标点在目标的屏幕位置应触发交互（原点）
+  ✓ 非原点世界位的目标应成为当前目标
+  ✓ 鼠标点在非原点目标的屏幕位置应触发交互
+  ✓ 点击点偏离目标 400px 时不应触发交互
+  ✓ 后台parallel真实等待中
+  ✗ 不展示UI的parallel等待不占玩家交互锁
+  ✗ 后台parallel时仍可解析玩家交互目标
+  ✓ parallel取得展示层后正常阻塞交互
+  ✗ 工具面板打开时延后自动/区域触发：auto
+  ✓ 关闭工具面板后保留触发沿：auto
+  ✗ 工具面板打开时延后自动/区域触发：area
+  ✓ 关闭工具面板后保留触发沿：area
+
+──── 交互目标测试：29 项，失败 4 项 ────
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

@@ -1,0 +1,140 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ RPGEVENTSTUDIO Autoload 已加载
+[School] RPGEVENTSTUDIO 展示层已切换到游戏原叙事 UI
+  ✓ 游戏启动时创建了叙事适配器
+  ✓ 适配器节点有效
+  ✓ 运行时当前 presenter 是游戏适配器
+  ✓ 事件运行时也使用游戏适配器
+  ✓ 当前不是插件默认 UI 模式
+  ✓ 插件默认 UI 已隐藏
+  ✓ 适配器声明支持文字与选项
+  ✓ 适配器明确声明不支持淡入淡出
+  ✓ StateStore 快照写入 GameState 存档
+  ✓ GameState 自身 flags 仍按原格式保存
+  ✓ 存档可以重新读取
+  ✓ 读档恢复插件状态
+  ✓ 读档恢复 GameState flags
+  ✓ 章节重开恢复章节入口的插件状态
+  ✓ 旧存档缺少 event_state 时清空插件状态
+  ✓ 旧存档仍能读取 GameState flags
+  ✓ 新游戏开始时清空插件状态
+  ✓ game.narrative.play 的回调仍然触发
+  ✓ game.narrative.choose 的 index 仍是 0 起（实际 1）
+  ✓ BBCode 原叙事文本已显示
+  ✓ 原叙事框已使用 RichTextLabel
+  ✓ 原叙事保留原始 BBCode
+  ✓ 原叙事正确解析 BBCode（实际：重点
+金色线索 大字
+居中）
+  ✓ 原叙事打字机长度按可见字符计算
+  ✓ BBCode 文本可以正常确认关闭
+  ✓ BBCode 文本的完成回调仍然触发
+  ✓ BBCode 事件资源应能保存
+  ✓ 保存后重新读取的 BBCode 原文完整
+  ✓ 保存后的插件事件 BBCode 走原叙事 UI
+  ✓ 插件事件 BBCode 正确解析
+  ✓ BBCode 显示期间适配器状态正常
+  ✓ 插件事件 BBCode 可以正常关闭
+  ✓ BBCode 事件正常完成
+  ✓ 未闭合 BBCode 仍原样交给原叙事框
+  ✓ 未闭合 BBCode 被记录并提示
+  ✓ 未闭合 BBCode 不被静默改写
+  ✓ 未闭合 BBCode 文本仍可关闭
+  ✓ 未闭合 BBCode 不影响事件完成
+  ✓ 办公室关卡已加载（screen）
+  ✓ 首次调查电脑：原叙事框显示插件事件原文
+  ✓ 原文只出现一次（实际 1 次）
+  ✓ 文字确认前老板 CG 不应提前执行
+  ✓ 文字确认前不应出现 CG 节点
+  ✓ 文字可以正常确认并关闭
+  ✓ 插件事件完成信号已触发
+  ✓ 插件事件结果为 COMPLETED
+  ✓ 插件状态 School.Office.PcChecked 已写入
+  ✓ 事件完成后老板 CG 才出现
+  ✓ 老板 CG 结束后继续原有后续剧情
+  ✓ 老板首句没有重复触发（本次新增 1 次）
+  ✓ 老板 CG 标记已写入
+  ✓ 关闭后叙事框不再打开
+  ✓ 流程中确实产生了多段叙事
+  ✓ 办公室关卡已加载（form）
+  ✓ 首次调查考核表：原叙事框显示插件事件原文
+  ✓ 原文只出现一次（实际 1 次）
+  ✓ 文字确认前老板 CG 不应提前执行
+  ✓ 文字确认前不应出现 CG 节点
+  ✓ 文字可以正常确认并关闭
+  ✓ 插件事件完成信号已触发
+  ✓ 插件事件结果为 COMPLETED
+  ✓ 插件状态 School.Office.FormChecked 已写入
+  ✓ 事件完成后老板 CG 才出现
+  ✓ 老板 CG 结束后继续原有后续剧情
+  ✓ 老板首句没有重复触发（本次新增 1 次）
+  ✓ 老板 CG 标记已写入
+  ✓ 关闭后叙事框不再打开
+  ✓ 流程中确实产生了多段叙事
+  ✓ 插件选项使用原叙事 UI 显示
+  ✓ 等待选择时事件仍在运行（没有提前返回）
+  ✓ 玩家未选择前不写入 choice
+  ✓ 三个选项都交给原叙事 UI
+  ✓ 选项提示只显示一次
+  ✓ 选项提示 BBCode 正确渲染
+  ✓ 选择结果驱动条件分支走「是」
+  ✓ 分支文本只显示一次
+  ✓ 分支文本 BBCode 正确渲染
+  ✓ 事件成功前 choice 不发布到宿主
+  ✓ 分支文字可以正常关闭
+  ✓ 选项事件完成信号已触发
+  ✓ 选项事件正常完成
+  ✓ 成功后 choice 正式写入 1
+  ✓ 接管测试文字已显示
+  ✓ 原叙事接管时插件事件取消
+  ✓ 原叙事 play 打开的 UI 没有被适配器误关
+  ✓ 原叙事接管后显示的是新内容
+  ✓ 接管后适配器状态已清理
+  ✓ 接管后的原叙事文字可以正常关闭
+  ✓ 原叙事 play 的完成回调仍然触发
+  ✓ 外部关闭测试文字已显示
+  ✓ 外部关闭叙事框应取消插件事件
+  ✓ 外部关闭后适配器没有挂起状态
+  ✓ 外部关闭后 UI 已收起
+  ✓ 取消测试文字已显示
+  ✓ cancel_all 后事件为 CANCELLED
+  ✓ 取消后叙事框已关闭
+  ✓ 取消后适配器已清理
+  ✓ 取消后仍能显示新事件
+  ✓ 取消后新事件能正常结束
+  ✓ 取消后的新事件正常完成
+  ✓ 替换前文字已显示
+  ✓ 运行中可恢复插件默认 UI
+  ✓ 替换展示层会取消旧事件
+  ✓ 替换后原叙事 UI 已关闭
+  ✓ 替换后适配器状态已清理
+  ✓ 默认 UI 恢复可见与处理
+  ✓ 插件默认 UI 模式仍能完成事件
+  ✓ 默认 UI 事件结果为 COMPLETED
+  ✓ 默认 UI 收到了事件文本
+  ✓ 可以重新注回游戏适配器
+  ✓ 重新注入后运行时指向游戏适配器
+  ✓ 重新注入后默认 UI 再次隐藏
+  ✓ 游戏节点释放后运行时回到默认展示层
+[School] RPGEVENTSTUDIO 展示层已切换到游戏原叙事 UI
+  ✓ 重新启动后重新创建适配器
+  ✓ 重新启动后适配器再次注入
+  ✓ 重启后插件事件仍走原叙事 UI
+  ✓ 重启后的文字能正常关闭
+  ✓ 重启后的插件事件完成
+
+──── 叙事适配器测试：119 项，失败 0 项 ────
+WARNING: [School][narrative] 未闭合的 BBCode 标签：[b]
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+     GDScript backtrace (most recent call first):
+         [0] _show_line (res://scripts/case/narrative.gd:297)
+         [1] play (res://scripts/case/narrative.gd:247)
+         [2] show_text (res://scripts/integration/game_narrative_presenter.gd:81)
+         [3] execute (res://addons/rpgeventstudio/core/runtime/commands/cmd_show_text.gd:16)
+         [4] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:269)
+         [5] _drive (res://addons/rpgeventstudio/core/runtime/event_runner.gd:182)
+WARNING: 9 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

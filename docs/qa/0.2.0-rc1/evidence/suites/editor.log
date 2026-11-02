@@ -1,0 +1,65 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started 项目初始化 (5 steps)[39m[0m
+[   0% ] [90m[1mfirst_scan_filesystem[22m | 正在扫描文件结构……[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | 正在加载全局类名……[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | 正在校验 GDExtension……[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | 正在创建自动加载脚本……[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | 正在初始化插件……[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | 正在启动文件扫描……[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started 正在加载编辑器 (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | 正在加载编辑器布局……[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | 正在加载停靠面板……[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+[SELFTEST] ✓ 添加指令：+1
+[SELFTEST] ✓ 撤销添加：恢复原状
+[SELFTEST] ✓ 重做添加：再次 +1
+[SELFTEST] ✓ 删除指令：-1
+[SELFTEST] ✓ 撤销删除：指令回来了
+[SELFTEST] ✓ 撤销删除：对象是同一个（不是复制品）
+[SELFTEST] ✓ 上移：顺序改变
+[SELFTEST] ✓ 撤销上移：顺序还原
+[SELFTEST] ✓ 改参数：写入成功
+[SELFTEST] ✓ 撤销改参数：值还原
+[SELFTEST] ✓ 重做改参数：值再次生效
+[SELFTEST] ✓ 分支内添加：+1
+[SELFTEST] ✓ 撤销分支内添加：恢复
+[SELFTEST] ✓ 重做分支内添加：+1
+[SELFTEST] ✓ 移到另一分支：源分支 -1
+[SELFTEST] ✓ 移到另一分支：目标分支 +1
+[SELFTEST] ✓ 撤销移分支：源分支还原
+[SELFTEST] ✓ 撤销移分支：目标分支还原
+[SELFTEST] ✓ 撤销移分支：对象回到原位
+[SELFTEST] ✓ 剪切撤销后粘贴新增副本
+[SELFTEST] ✓ 剪切撤销粘贴不重复插入同一实例
+[SELFTEST] ✓ 撤销粘贴保留原实例
+[SELFTEST] ✓ 新增事件页
+[SELFTEST] ✓ 撤销新增页保留原页实例
+[SELFTEST] ✓ 重做新增页
+[SELFTEST] ✓ 撤销删除页
+[SELFTEST] ✓ 重做删除页
+[SELFTEST] ✓ 修改页触发方式
+[SELFTEST] ✓ 撤销页触发方式
+[SELFTEST] ✓ 修改重复策略
+[SELFTEST] ✓ 撤销重复策略
+[SELFTEST] ✓ 添加出现条件
+[SELFTEST] ✓ 撤销添加条件
+[SELFTEST] ✓ 重做添加条件
+[SELFTEST] ✓ 撤销条件字段
+[SELFTEST] ✓ Story 插入后 Inspector 同步出现新行
+[SELFTEST] ✓ Inspector 删除后 Story 同步刷新
+[SELFTEST] ✓ 关闭面板后仍能撤销资源操作
+[SELFTEST] ✓ 关闭面板后重做恢复同一资源且无悬空调用
+[SELFTEST] ✓ 真实禁用插件
+[SELFTEST] ✓ 禁用时移除路径或 UID 形式的插件 Autoload
+[SELFTEST] ✓ 真实重新启用插件
+[SELFTEST] ✓ 重新启用自动安装 Autoload
+[SELFTEST] ✓ 重新启用状态真正写入 project.godot
+[SELFTEST] ===== 检查 44 项，失败 0 项 =====
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

@@ -1,0 +1,44 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 校验通过时正常替换
+  ✓ 内容已更新
+  ✓ 保留了原文件备份
+  ✓ 备份内容与原文件一致
+  ✓ 空输出应被拒绝
+  ✓ 空输出时原文件不变
+  ✓ 缺少必需列应被拒绝
+  ✓ 结构错误时原文件不变
+  ✓ 条目骤降应被拒绝
+  ✓ 条目骤降时原文件不变
+  ✓ 重复键应被拒绝
+  ✓ 重复键时原文件不变
+  ✓ 临时文件写入失败应中止
+  ✓ 写入失败时原文件不变
+  ✓ 资源安全写入成功
+  ✓ 写入后的资源能正确解析
+  ✓ 空资源应被拒绝
+  ✓ UTF-8 截断夹具模板字节布局有效
+  ✓ 前置：事件夹具第 240 字节切进 3 字节中文
+  ✓ 前置：关卡图夹具第 240 字节切进 3 字节中文
+  ✓ 头部读取应返回干净的合法 UTF-8 前缀（不含残缺尾巴）
+  ✓ 头部不应含 U+FFFD 替换符乱码
+  ✓ 头部仍应能识别 EventDefinition
+  ✓ EventReferences 应从头部被切断的关卡图文本检出 event_path 引用
+  ✓ StoryAudit 应把头部被切断的事件资源统计为已扫描
+  ✓ 事件列表 _collect 应收录头部被切断的事件资源
+  ✓ read_head 对读不到的文件返回空串
+  ✓ 纯 ASCII 头部精确读取 240 字节
+  ✓ 文件短于 max_bytes 时返回全文
+  ✓ 边界恰好落在 ASCII 上时不丢字节
+  ✓ 切进中文时返回合法前缀（丢弃残缺序列）
+  ✓ read_head 不产生 U+FFFD 乱码
+  ✓ 完整落在界内的多字节字符应保留
+  ✓ 只剩首字节时连同首字节一起丢弃
+  ✓ 4 字节字符被切时丢弃残缺序列
+  ✓ 文件结尾的完整中文字符不受影响
+
+──── 安全写入故障注入：36 项，失败 0 项 ────
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

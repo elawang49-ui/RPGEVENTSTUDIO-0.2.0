@@ -1,0 +1,77 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started 项目初始化 (5 steps)[39m[0m
+[   0% ] [90m[1mfirst_scan_filesystem[22m | 正在扫描文件结构……[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | 正在加载全局类名……[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | 正在校验 GDExtension……[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | 正在创建自动加载脚本……[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | 正在初始化插件……[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | 正在启动文件扫描……[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started 正在加载编辑器 (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | 正在加载编辑器布局……[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | 正在加载停靠面板……[39m[0m
+[  33% ] [90m[1mloading_editor_layout[22m | 正在重新打开场景……[39m[0m
+[  50% ] [90m[1mloading_editor_layout[22m | 正在加载中央编辑器布局……[39m[0m
+[  66% ] [90m[1mloading_editor_layout[22m | 正在加载插件窗口布局……[39m[0m
+[  83% ] [90m[1mloading_editor_layout[22m | 编辑器布局就绪。[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+  ✓ 能在编辑器打开地图事件示例场景
+  ✓ 示例场景有 7 个地图事件（实际 7）
+  ✓ 编辑器创建了地图事件面板
+  ✓ 地图事件总览已填充
+  ✓ 总览 tooltip 显示触发区位置
+  ✓ 总览显示触发方式
+  ✓ 总览 tooltip 显示关联事件
+  ✓ 总览能找到未关联对象
+  ✓ 总览 tooltip 显示场景位置
+  ✓ 未关联对象用警示标记并显示「未关联」
+  ✓ 选中地图事件后面板同步
+  ✓ 详情 tooltip 显示层级
+  ✓ 双击总览行打开关联事件
+  ✓ 事件编辑器切换到该事件
+  ✓ 面板放置按钮生成地图事件并选中
+  ✓ 放置后场景事件数 +1
+  ✓ 新事件挂在场景根节点下
+  ✓ 新事件 owner 设为场景根，能随场景保存
+  ✓ 宝箱默认使用玩家交互
+  ✓ 默认同层 z_index = 0
+  ✓ 能取得编辑器 UndoRedo
+  ✓ 场景有对应的 UndoRedo 历史
+  ✓ 撤销放置后对象离开场景
+  ✓ 重做放置后对象回到场景
+  ✓ 重做后 owner 仍正确
+  ✓ 可从地编入口创建类型 0
+  ✓ 类型 0 使用正确默认触发
+  ✓ 类型 0 的 owner 正确
+  ✓ 可从地编入口创建类型 1
+  ✓ 类型 1 使用正确默认触发
+  ✓ 类型 1 的 owner 正确
+  ✓ 可从地编入口创建类型 3
+  ✓ 类型 3 使用正确默认触发
+  ✓ 类型 3 的 owner 正确
+  ✓ 可从地编入口创建类型 5
+  ✓ 类型 5 使用正确默认触发
+  ✓ 类型 5 的 owner 正确
+  ✓ 总览识别失效引用
+  ✓ 定位按钮重新选中场景对象
+  ✓ 能切换到 UI 主题页
+  ✓ UI 主题页已创建
+  ✓ 主题页有真实 DialoguePresenter 预览
+  ✓ 主题预览支持普通/BBCode/多行/选项
+  ✓ 主题页控件完整
+  ✓ 主题页有 5 个分区跳转
+  ✓ 主题页能保存项目主题资源
+  ✓ 重新加载主题后设置仍在
+  ✓ 重新打开主题页仍读取已保存设置
+  ✓ 恢复默认主题生效
+  ✓ 自定义 UI 项目进入只读能力模式
+  ✓ 自定义 UI 项目不显示插件主题配置
+
+[MAP_SELFTEST] 检查项：51，失败：0
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

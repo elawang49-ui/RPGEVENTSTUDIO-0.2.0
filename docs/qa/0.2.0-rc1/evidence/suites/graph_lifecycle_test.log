@@ -1,0 +1,40 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 测试环境里应有 RPGEventStudio 运行时
+  ✓ 测试关卡图应能保存
+  ✓ 进入场景后运行时应注册恰好 1 个关卡图
+  ✓ 注册的 runner 应处于运行状态
+  ✓ 关卡图应自动启动并推进到探索阶段
+  ✓ 宿主场景释放后 graphs 应注销旧图
+  ✓ 旧 runner 应完全停止
+  ✓ 旧 runner 应断开 StateStore.changed 连接
+  ✓ 旧 runner 的节点状态转发应一并断开
+  ✓ 旧 runner 的阶段转发应一并断开
+  ✓ 旧 runner 的停止广播连接应一并断开
+  ✓ 释放后翻转监视键不应再触发旧图传播
+  ✓ 重新进入场景后 graphs 应恰好 1 个 runner（无重复注册/残留）
+  ✓ 新 runner 应正常响应监视键变化
+  ✓ stop_graph 后应从 graphs 注销
+  ✓ 重复停止只应广播一次 stopped
+  ✓ 手动停止后也应断开状态监视连接
+  ✓ 手动停止后翻转监视键不应触发旧图
+  ✓ 重新 start_graph 后 graphs 应恰好 1 个（旧 runner 不残留）
+  ✓ 重新 start_graph 后应再次推进到探索阶段
+  ✓ 重启后的 runner 应正常响应监视键变化
+  ✓ 重启后的图随宿主释放也应注销
+  ✓ 循环 1：进入后 graphs 应恰好 1 个
+  ✓ 循环 1：退出后 graphs 应清空
+  ✓ 循环 1：旧图不应再响应状态变化
+  ✓ 循环 2：进入后 graphs 应恰好 1 个
+  ✓ 循环 2：退出后 graphs 应清空
+  ✓ 循环 2：旧图不应再响应状态变化
+  ✓ 循环 3：进入后 graphs 应恰好 1 个
+  ✓ 循环 3：退出后 graphs 应清空
+  ✓ 循环 3：旧图不应再响应状态变化
+  ✓ 3 次进出循环后不应残留任何 runner
+
+──── 关卡图生命周期测试：32 项，失败 0 项 ────
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

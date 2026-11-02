@@ -1,0 +1,63 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 剧情工作台应能在 headless 下完成构建
+  ✓ 重建视图应包含选项块条目
+  ✓ 顺序式选项块（1 show_choices + 2 if）应占 3 条指令（实际 3）
+  ✓ 选项块的 show_choices 下标应为 1（实际 1）
+  ✓ 插入目标列表应是事件页指令数组
+  ✓ 选中选项块后插入位应是整块之后（预期 4，实际 4）
+  ✓ 插入一句台词后指令数应为 6（实际 6）
+  ✓ show_choices 仍应在下标 1
+  ✓ 选项块的两条 if 仍应紧跟 show_choices（实际 if / if）
+  ✓ 新台词应插到整块之后（下标 4 实际是 show_text）
+  ✓ 重建后条目数应为 4（台词 / 选项块 / 新台词 / 台词，实际 4）
+  ✓ 插入后选项块应仍 well_formed
+  ✓ 插入后选项块仍应占 3 条指令（实际 3）
+  ✓ 两个选项各应保留 1 句分支台词（实际 1 / 1）
+  ✓ 新台词条目应紧跟选项块（实际 kind=line index=4）
+  ✓ 新条件应插到选项块整块之后（下标 4 实际是 if）
+  ✓ 插入条件后选项块应仍完整（3 条指令、well_formed）
+  ✓ 插入条件不应改变选项块自身的下标
+  ✓ 插入新选项块（3 条指令）后指令数应为 8（实际 8）
+  ✓ 新选项块的 show_choices 应在整块之后（下标 4 实际是 show_choices）
+  ✓ 新选项块的两条 if 应紧跟其后（实际 if / if）
+  ✓ 重建后条目数应为 4（台词 / 两个选项块 / 台词，实际 4）
+  ✓ 每个选项块都应完整（consumed=3、well_formed，实际 consumed=3）
+  ✓ 每个选项块都应完整（consumed=3、well_formed，实际 consumed=3）
+  ✓ 首条目应是普通台词
+  ✓ 选中台词后插入位仍是 index+1（预期 1，实际 1）
+  ✓ 新台词应插到所选台词之后（下标 1 实际是 show_text）
+  ✓ 选项块整体应顺移到下标 2-4 且不被拆断
+  ✓ 台词插进块前时选项块应仍完整
+  ✓ 删除整个选项块不留下孤儿条件 nested=false
+  ✓ 复制整个选项块 nested=false
+  ✓ 复制所有分支
+  ✓ 复制的 options 不污染原资源
+  ✓ 分支命令深拷贝
+  ✓ 下移跨越相邻条目且保留整块 nested=false
+  ✓ 上移恢复原对象顺序 nested=false
+  ✓ 重建选项块不能修改供撤销使用的原命令
+  ✓ 删除整个选项块不留下孤儿条件 nested=true
+  ✓ 复制整个选项块 nested=true
+  ✓ 复制所有分支
+  ✓ 复制的 options 不污染原资源
+  ✓ 分支命令深拷贝
+  ✓ 下移跨越相邻条目且保留整块 nested=true
+  ✓ 上移恢复原对象顺序 nested=true
+  ✓ 重建选项块不能修改供撤销使用的原命令
+  ✓ 复制命令保留外部资源引用，不复制公共事件定义
+  ✓ 复制命令深拷贝嵌套参数容器
+  ✓ 经典编辑器默认字符串选项按运行时规则拆成两项
+  ✓ 字符串选项与分支正确配对
+  ✓ 字符串选项可改名
+  ✓ 字符串选项可以移动
+  ✓ 移动保留分支命令实例且与文本一致
+  ✓ 复制保留第三方 EventCommand 子类脚本
+  ✓ 第三方导出容器深拷贝且不污染原资源
+  ✓ 复制保留 Resource 名称等既有存储属性
+
+──── 剧情选项块插入测试：55 项，失败 0 项 ────
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

@@ -1,0 +1,11 @@
+{
+  "code_commit": "833ea41427dff8df3f9e9560441a6e53f7ae3835",
+  "package": "rpgeventstudio-0.2.0-rc1.zip",
+  "sha256": "70f70628a7814eb16e3faa8199daf6fda348fbe1ee006c27f918a93ac742aa44",
+  "package_files": 203,
+  "plugin_files": 200,
+  "scripts": 87,
+  "missing_uid": [],
+  "unwanted_files": [],
+  "all_plugin_bytes_match_git": true
+}

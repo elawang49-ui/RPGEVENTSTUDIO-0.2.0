@@ -1,0 +1,21 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 应扫描到演示事件（实际 14）
+  ✓ 应扫描到演示关卡图（实际 4）
+  ✓ 状态栏应显示数量
+  ✓ 搜索应减少显示数量
+  ✓ 清空搜索后应恢复全部
+  ✓ 能查到事件被哪些场景对象引用
+  ✓ 引用里带具体节点路径
+  ✓ 只在关卡图里调用的事件应记成「图引用」而不是场景引用
+  ✓ 「只看未挂到场景」应筛出没有场景引用的事件
+  ✓ 选中事件后详情显示挂载节点
+  ✓ 列表里应能选中一个事件
+  ✓ 双击事件应发出打开信号
+  ✓ 双击关卡图应发出打开信号
+
+──── 事件列表测试：13 项，失败 0 项 ────
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

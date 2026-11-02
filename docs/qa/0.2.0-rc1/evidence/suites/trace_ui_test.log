@@ -1,0 +1,31 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 运行时 Autoload 存在
+  ✓ 事件执行后产生追踪记录
+  ✓ 追踪记录带触发对象来源
+  ✓ 追踪视图渲染时间线
+  ✓ 默认显示全部记录（8）
+  ✓ 按事件 ID 过滤后仍显示该事件记录
+  ✓ 按状态标识过滤只显示该状态记录（实际 1）
+  ✓ 按完成结果过滤仍保留该 trace
+  ✓ 导出 JSON 文件
+  ✓ 导出 JSON 可解析且带版本
+  ✓ 状态行使用自然语言摘要
+  ✓ 默认显示自然语言详情
+  ✓ 详情提供两种模式
+  ✓ 原始 JSON 详情保留专业字段
+  ✓ 专业视图条件摘要保留原始键与分支枚举
+  ✓ 专业视图条件结果保留 false
+  ✓ 专业视图状态值不翻译阶段词条
+  ✓ 专业视图图分支保留原始端口与节点 ID
+  ✓ 专业视图汇合结果保留 false
+  ✓ 专业视图页面结果保留 true
+  ✓ 自然视图仍把 true 端口翻译为中文
+
+──────── 追踪 UI 测试结果 ────────
+检查项：21，失败：0
+RESULT: PASS
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

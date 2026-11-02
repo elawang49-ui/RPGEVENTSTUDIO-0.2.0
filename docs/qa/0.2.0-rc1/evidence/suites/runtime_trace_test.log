@@ -1,0 +1,93 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 普通事件应真实改变状态
+  ✓ 记录事件开始与 event_id
+  ✓ 记录事件显示名
+  ✓ 记录被选中的事件页
+  ✓ 记录指令开始（set_switch）
+  ✓ 事件正常结束记录为 completed
+  ✓ 状态记录真实 key
+  ✓ 状态记录修改前后值（false → true）
+  ✓ 状态写入关联到所属事件
+  ✓ 状态写入关联到具体指令
+  ✓ 写入相同值不产生重复状态记录（观察者不改变语义）
+  ✓ 两页都应记录选择结果
+  ✓ 条件不满足的第 1 页不应被选中
+  ✓ 兜底的第 2 页应被选中
+  ✓ 记录第 1 页条件失败及实际值
+  ✓ 条件记录实际值（false）
+  ✓ 条件记录判断结果
+  ✓ 条件记录进入 else 分支
+  ✓ 实际执行 else 分支
+  ✓ 条件成立时记录 then 分支
+  ✓ 选项结果驱动实际分支
+  ✓ 选项状态写入被追踪（@@self.choice → 1）
+  ✓ show_choices 指令被追踪
+  ✓ 公共事件里的指令应真实执行
+  ✓ 记录公共事件调用进入
+  ✓ 记录公共事件调用返回
+  ✓ 公共事件内的状态写入仍归到调用方事件
+  ✓ 记录关卡图事件节点
+  ✓ 事件记录带关卡图节点来源
+  ✓ 事件记录带 graph_id
+  ✓ 图调用的事件真实执行
+  ✓ AND 汇合达到 required 后应继续执行
+  ✓ 记录 AND 汇合计数与触发结果
+  ✓ 关卡图动作的状态写入归到图节点
+  ✓ 记录关卡图条件为 true 的分支
+  ✓ 图条件记录包含 graph_id/node_id
+  ✓ 图条件记录保留 trace_id=0 设计
+  ✓ 记录 OR 汇合
+  ✓ 记录条件到 OR 汇合的实际连线
+  ✓ 记录关卡图条件为 false 的分支
+  ✓ false 分支同样带 graph_id
+  ✓ 取消事件记录为 cancelled
+  ✓ 记录取消原因
+EXPECTED_ERROR_BEGIN missing-common
+ERROR: Cannot open file 'res://.godot/nope.tres'.
+   at: load (scene/resources/resource_format_text.cpp:1442)
+   GDScript backtrace (most recent call first):
+       [0] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:385)
+       [1] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [2] _drive (res://addons/rpgeventstudio/core/runtime/event_runner.gd:182)
+ERROR: Failed loading resource: res://.godot/nope.tres.
+   at: _load (core/io/resource_loader.cpp:317)
+   GDScript backtrace (most recent call first):
+       [0] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:385)
+       [1] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [2] _drive (res://addons/rpgeventstudio/core/runtime/event_runner.gd:182)
+ERROR: [RPGEventStudio] 找不到公共事件：res://.godot/nope.tres
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _execute_call (res://addons/rpgeventstudio/core/runtime/event_runner.gd:387)
+       [1] _execute_list (res://addons/rpgeventstudio/core/runtime/event_runner.gd:291)
+       [2] _drive (res://addons/rpgeventstudio/core/runtime/event_runner.gd:182)
+EXPECTED_ERROR_END missing-common
+  ✓ 执行异常记录为 failed
+  ✓ 失败指令记录 abort 结果
+  ✓ 拒绝事件记录 event_id
+  ✓ 拒绝事件记录真实触发来源
+  ✓ 重入丢弃应记录 event_ignored/reentry
+  ✓ repeat_policy 不允许时应记录 event_ignored/repeat_policy
+  ✓ 被策略拒绝时不产生 event_start
+  ✓ 正常完成后事件上下文已退出
+  ✓ 连续两个事件后上下文仍为空
+  ✓ 第二个事件的状态写入归因到第二个事件，不被旧上下文污染
+  ✓ 环形缓冲不超过容量（5）
+  ✓ 记录被丢弃的数量（5）
+  ✓ 导出的 JSON 可解析
+  ✓ JSON 带版本号
+  ✓ JSON 记录数量一致
+  ✓ 关闭追踪后事件仍正常执行
+  ✓ 关闭追踪后不产生记录
+  ✓ 开关追踪的状态结果一致
+  ✓ 开关追踪的事件结果一致
+  ✓ 实例 id 不受追踪影响（on=1 off=1）
+
+──────── 运行时追踪测试结果 ────────
+检查项：63，失败：0
+RESULT: PASS
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
