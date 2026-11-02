@@ -29,6 +29,7 @@ func _run() -> void:
 
 	_test_choice_block_operations()
 	_test_reference_copy()
+	_test_legacy_string_options()
 	panel.queue_free()
 	await process_frame
 	_report()
@@ -257,3 +258,20 @@ func _test_reference_copy() -> void:
 	_check(copy.params["target"] == asset, "复制命令保留外部资源引用，不复制公共事件定义")
 	copy.params["nested"][0]["text"] = "changed"
 	_check(original.params["nested"][0]["text"] == "original", "复制命令深拷贝嵌套参数容器")
+
+func _test_legacy_string_options() -> void:
+	var page := EventPage.new()
+	var show := CommandRegistry.create_command(&"show_choices")
+	var a := CommandRegistry.create_command(&"if"); a.params = {"key": "@@self.choice", "op": "==", "value": "0"}
+	var b := CommandRegistry.create_command(&"if"); b.params = {"key": "@@self.choice", "op": "==", "value": "1"}
+	var line_a := CommandRegistry.create_command(&"show_text"); line_a.params["text"] = "A"
+	var line_b := CommandRegistry.create_command(&"show_text"); line_b.params["text"] = "B"
+	a.children = [line_a]; b.children = [line_b]; page.commands = [show, a, b]
+	var doc := StoryDocument.new(page)
+	var item: Dictionary = doc.build_items()[0]
+	_check(item["options"] == ["是", "否"], "经典编辑器默认字符串选项按运行时规则拆成两项")
+	_check(item["well_formed"], "字符串选项与分支正确配对")
+	doc.choice_rename_option(item, 0, "changed")
+	_check(show.params["options"][0] == "changed", "字符串选项可改名")
+	_check(doc.choice_move_option(doc.build_items()[0], 0, 1), "字符串选项可以移动")
+	_check(a.children[0] == line_b and b.children[0] == line_a, "移动保留分支命令实例且与文本一致")

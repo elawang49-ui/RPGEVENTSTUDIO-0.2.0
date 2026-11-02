@@ -80,13 +80,7 @@ static func _condition_item(command: EventCommand, list: Array, index: int, dept
 
 static func _choice_item(command: EventCommand, list: Array, index: int, depth: int) -> Dictionary:
 	var item := _base_item("choice", command, list, index, depth)
-	var options: Array = []
-	var raw: Variant = command.params.get("options", [])
-	if raw is Array:
-		for entry in raw:
-			options.append(str(entry))
-	elif raw is String and str(raw).strip_edges() != "":
-		options.append(str(raw))
+	var options := EventCommand._choice_options(command.params.get("options", []))
 	item["options"] = options
 
 	var ifs: Array = []
@@ -314,7 +308,7 @@ func move_item(item: Dictionary, delta: int) -> void:
 func set_line_param(item: Dictionary, param: String, value: Variant) -> void:
 	_set_param(int(item["index"]), item["command"], param, value)
 
-func _set_param(_index: int, command: EventCommand, param: String, value: Variant) -> void:
+func _set_param(_index: int, command: EventCommand, param: String, value: Variant, merge_suffix: String = "") -> void:
 	if command == null:
 		return
 	var old_value: Variant = command.params.get(param)
@@ -325,7 +319,7 @@ func _set_param(_index: int, command: EventCommand, param: String, value: Varian
 	var undo := _undo()
 	if undo == null:
 		return
-	undo.create_action("%s:%s:%d" % [L10n.ui("story.undo.param"), param, command.get_instance_id()], UndoRedo.MERGE_ENDS, page)
+	undo.create_action("%s:%s:%d:%s" % [L10n.ui("story.undo.param"), param, command.get_instance_id(), merge_suffix], UndoRedo.MERGE_ENDS, page)
 	undo.force_fixed_history()
 	undo.add_do_method(self, "_apply_param", command, param, value)
 	undo.add_undo_method(self, "_apply_param", command, param, old_value)
@@ -340,7 +334,7 @@ func _apply_param(command: EventCommand, param: String, value: Variant) -> void:
 func _values_equal(a: Variant, b: Variant) -> bool:
 	if (a is int or a is float) and (b is int or b is float):
 		return is_equal_approx(float(a), float(b))
-	return a == b
+	return a == b if typeof(a) == typeof(b) else false
 
 ## 修改条件分歧 / 状态指令的参数。
 func set_condition_param(item: Dictionary, param: String, value: Variant) -> void:
@@ -357,31 +351,18 @@ func choice_set_prompt(item: Dictionary, prompt: String) -> void:
 ## 改选项文字：只动 options 数组，不改结构。
 func choice_rename_option(item: Dictionary, option_index: int, text: String) -> void:
 	var command: EventCommand = item["command"]
-	var options: Array = command.params.get("options", [])
-	if option_index < 0 or option_index >= options.size():
-		return
-	var old_text := str(options[option_index])
-	if old_text == text:
+	var options := EventCommand._choice_options(command.params.get("options", []))
+	if option_index < 0 or option_index >= options.size() or options[option_index] == text:
 		return
 	options[option_index] = text
-	command.emit_changed()
-	changed.emit()
-	var undo := _undo()
-	if undo == null:
-		return
-	undo.create_action("%s:%d:%d" % [L10n.ui("story.undo.option"), command.get_instance_id(), option_index], UndoRedo.MERGE_ENDS, page)
-	undo.force_fixed_history()
-	undo.add_do_method(self, "_apply_option", command, option_index, text)
-	undo.add_undo_method(self, "_apply_option", command, option_index, old_text)
-	undo.commit_action(false)
+	_set_param(int(item["index"]), command, "options", options, str(option_index))
 
 func _apply_option(command: EventCommand, option_index: int, text: String) -> void:
-	var options: Array = command.params.get("options", [])
-	if option_index < 0 or option_index >= options.size():
-		return
-	options[option_index] = text
-	command.emit_changed()
-	changed.emit()
+	var options := EventCommand._choice_options(command.params.get("options", []))
+	if option_index >= 0 and option_index < options.size():
+		options[option_index] = text
+		command.set_param("options", options)
+		changed.emit()
 
 ## 新增选项：改写成顺序式（原分支内容原样搬移）。
 func choice_add_option(item: Dictionary, text: String) -> bool:
@@ -421,9 +402,13 @@ func choice_move_option(item: Dictionary, option_index: int, delta: int) -> bool
 	if not bool(item.get("well_formed", false)):
 		return false
 	var target := option_index + delta
-	var options: Array = item["command"].params.get("options", [])
-	if target < 0 or target >= options.size():
+	var original_options: Variant = item["command"].params.get("options", [])
+	var options := EventCommand._choice_options(original_options)
+	if option_index < 0 or option_index >= options.size() or target < 0 or target >= options.size():
 		return false
+	var text: Variant = options[option_index]
+	options[option_index] = options[target]
+	options[target] = text
 	var branches: Array = item["branches"]
 	if branches[option_index] == null or branches[target] == null:
 		return false
@@ -433,22 +418,23 @@ func choice_move_option(item: Dictionary, option_index: int, delta: int) -> bool
 	# 交换是自反操作：do / undo 用同一组参数（两个分支数组都是活引用）。
 	var undo := _undo()
 	if undo == null:
-		_do_swap_option(command, option_index, target, list_a, list_b)
+		_do_swap_option(command, option_index, target, list_a, list_b, options)
 		return true
 	undo.create_action(L10n.ui("story.undo.choice_move"), UndoRedo.MERGE_DISABLE, page)
 	undo.force_fixed_history()
-	undo.add_do_method(self, "_do_swap_option", command, option_index, target, list_a, list_b)
-	undo.add_undo_method(self, "_do_swap_option", command, option_index, target, list_a, list_b)
+	undo.add_do_method(self, "_do_swap_option", command, option_index, target, list_a, list_b, options)
+	undo.add_undo_method(self, "_do_swap_option", command, option_index, target, list_a, list_b, original_options)
 	undo.commit_action()
 	return true
 
-func _do_swap_option(command: EventCommand, a: int, b: int, list_a: Array, list_b: Array) -> void:
-	var options: Array = command.params.get("options", [])
+func _do_swap_option(command: EventCommand, a: int, b: int, list_a: Array, list_b: Array, replacement: Variant = null) -> void:
+	var options := EventCommand._choice_options(command.params.get("options", []))
 	if a < 0 or a >= options.size() or b < 0 or b >= options.size():
 		return
 	var text: Variant = options[a]
 	options[a] = options[b]
 	options[b] = text
+	command.set_param("options", replacement if replacement != null else options)
 	var contents_a := list_a.duplicate()
 	list_a.clear()
 	for entry in list_b:

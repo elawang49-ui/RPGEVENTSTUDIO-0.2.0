@@ -237,4 +237,4 @@ func _coerce(key: String, value: Variant) -> Variant:
 func _equal(a: Variant, b: Variant) -> bool:
 	if (a is int or a is float) and (b is int or b is float):
 		return is_equal_approx(float(a), float(b))
-	return a == b
+	return a == b if typeof(a) == typeof(b) else false

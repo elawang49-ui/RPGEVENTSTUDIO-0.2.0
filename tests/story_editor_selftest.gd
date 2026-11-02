@@ -40,6 +40,7 @@ func start(_plugin: EditorPlugin, story_view: Control) -> void:
 	_test_text_edit_and_undo(panel, definition)
 	_test_choice_add_and_undo(panel, definition)
 	_test_block_undo(panel)
+	_test_legacy_option_undo(panel)
 	_test_page_undo(panel, definition)
 	_test_save_reload(panel, definition)
 	_test_roster(panel)
@@ -324,3 +325,21 @@ func _test_page_undo(panel: Control, definition: EventDefinition) -> void:
 	history.redo()
 	_check(definition.pages == original, "Story 重做删除页")
 	panel.call("_on_page_selected", 0)
+
+func _test_legacy_option_undo(panel: Control) -> void:
+	var definition := _demo_definition()
+	var show := definition.pages[0].commands[2]
+	show.params["options"] = "A\nB"
+	panel.call("open_definition", definition, null)
+	var doc: StoryDocument = panel.get("_document")
+	doc.choice_rename_option(_choice_item(panel), 0, "edited")
+	var history := _history(definition.pages[0])
+	history.undo()
+	_check(show.params["options"] is String and show.params["options"] == "A\nB", "选项改名撤销恢复原字符串资源数据")
+	history.redo()
+	_check(show.params["options"] == ["edited", "B"], "选项改名重做")
+	history.undo()
+	doc = panel.get("_document")
+	_check(doc.choice_move_option(_choice_item(panel), 0, 1), "字符串选项移动可登记撤销")
+	history.undo()
+	_check(show.params["options"] is String and show.params["options"] == "A\nB", "选项移动撤销恢复字符串表示")

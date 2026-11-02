@@ -30,3 +30,17 @@ func duplicate_command() -> EventCommand:
 	for child in else_children:
 		copy.else_children.append(child.duplicate_command() if child != null else null)
 	return copy
+
+# Both serialized option representations are supported by the runtime and editors.
+static func _choice_options(raw: Variant) -> Array:
+	var options: Array = []
+	var entries: Array = []
+	if raw is Array:
+		entries = raw
+	elif raw is String:
+		entries.assign(String(raw).split("\n", false))
+	for entry in entries:
+		var text := str(entry).strip_edges()
+		if text != "":
+			options.append(text)
+	return options

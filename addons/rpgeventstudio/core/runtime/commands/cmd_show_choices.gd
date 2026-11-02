@@ -28,15 +28,4 @@ func execute(ctx: EventContext) -> int:
 	return CmdResult.WAIT
 
 func _parse_options(raw: Variant) -> Array:
-	var out: Array = []
-	if raw is Array:
-		for item in raw:
-			var text := str(item).strip_edges()
-			if text != "":
-				out.append(text)
-	elif raw is String:
-		for line in String(raw).split("\n", false):
-			var text := line.strip_edges()
-			if text != "":
-				out.append(text)
-	return out
+	return EventCommand._choice_options(raw)

@@ -19,7 +19,7 @@
     "presenter_lifecycle_test": 48,
     "input_coexistence_test": 35,
     "nested_event_semantics_test": 31,
-    "story_insert_choice_test": 47,
+    "story_insert_choice_test": 52,
     "theme_reload_test": 10,
     "runtime_release_test": 74
   },
@@ -27,7 +27,7 @@
     "editor": 44,
     "map": 51,
     "gvl": 72,
-    "story": 35,
+    "story": 39,
     "audit": 14,
     "trace": 8
   }

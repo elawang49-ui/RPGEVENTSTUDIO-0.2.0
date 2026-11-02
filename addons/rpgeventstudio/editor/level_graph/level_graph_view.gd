@@ -1691,7 +1691,7 @@ func _change_param(node: LevelNode, key: String, value: Variant) -> void:
 	if _loading or node == null:
 		return
 	var old_value: Variant = node.params.get(key, null)   # 先取旧值：undo 必须登记修改前的值
-	if old_value == value:
+	if typeof(old_value) == typeof(value) and old_value == value:
 		return
 	node.params[key] = value
 	node.emit_changed()
