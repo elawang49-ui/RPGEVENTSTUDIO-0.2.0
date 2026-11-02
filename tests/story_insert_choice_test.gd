@@ -27,6 +27,7 @@ func _run() -> void:
 	await _test_insert_choice_after_block(panel)
 	await _test_line_selection_still_index_plus_one(panel)
 
+	_test_choice_block_operations()
 	panel.queue_free()
 	await process_frame
 	_report()
@@ -205,3 +206,44 @@ func _report() -> void:
 	print("──── 剧情选项块插入测试：%d 项，失败 %d 项 ────" % [_checks, _failures.size()])
 	for failure in _failures:
 		print("  ✗ ", failure)
+
+# Whole-block operations must preserve sequential/nested branches and object identity.
+func _test_choice_block_operations() -> void:
+	for nested in [false, true]:
+		var page := EventPage.new()
+		var before := CommandRegistry.create_command(&"show_text")
+		var show := CommandRegistry.create_command(&"show_choices")
+		show.params["options"] = ["A", "B"]
+		var a := CommandRegistry.create_command(&"if")
+		a.params = {"key": "@@self.choice", "op": "==", "value": "0"}
+		a.children = [CommandRegistry.create_command(&"show_text")]
+		var b := CommandRegistry.create_command(&"if")
+		b.params = {"key": "@@self.choice", "op": "==", "value": "1"}
+		b.children = [CommandRegistry.create_command(&"show_text")]
+		var after := CommandRegistry.create_command(&"end")
+		page.commands.assign([before, show, a, after] if nested else [before, show, a, b, after])
+		if nested:
+			a.else_children = b.children
+		var doc := StoryDocument.new(page)
+		var originals := page.commands.duplicate()
+		doc.delete_item(doc.build_items()[1])
+		_check(page.commands == [before, after], "删除整个选项块不留下孤儿条件 nested=%s" % nested)
+		page.commands.assign(originals)
+		doc.duplicate_item(doc.build_items()[1])
+		var items := doc.build_items()
+		_check(items.size() == 4 and items[2]["kind"] == "choice", "复制整个选项块 nested=%s" % nested)
+		if items.size() == 4 and items[2]["kind"] == "choice":
+			_check(items[2]["consumed"] == items[1]["consumed"], "复制所有分支")
+			items[2]["command"].params["options"][0] = "changed"
+			_check(show.params["options"][0] == "A", "复制的 options 不污染原资源")
+			var copied_branch: EventCommand = items[2]["branches"][0][0]
+			_check(copied_branch != a.children[0], "分支命令深拷贝")
+		page.commands.assign(originals)
+		doc.move_item(doc.build_items()[1], 1)
+		items = doc.build_items()
+		_check(items.size() == 3 and items[1]["command"] == after and items[2]["command"] == show, "下移跨越相邻条目且保留整块 nested=%s" % nested)
+		doc.move_item(items[-1], -1)
+		_check(page.commands == originals, "上移恢复原对象顺序 nested=%s" % nested)
+		page.commands.assign(originals)
+		doc.choice_add_option(doc.build_items()[1], "C")
+		_check(show.params["options"] == ["A", "B"], "重建选项块不能修改供撤销使用的原命令")

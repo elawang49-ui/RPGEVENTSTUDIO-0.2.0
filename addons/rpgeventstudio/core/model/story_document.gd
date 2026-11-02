@@ -210,6 +210,7 @@ func insert_command(target_list: Array, index: int, command: EventCommand, undo_
 		_do_insert(target_list, index, command)
 		return
 	undo.create_action(undo_name if undo_name != "" else L10n.ui("story.undo.insert"), UndoRedo.MERGE_DISABLE, page)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_insert", target_list, index, command)
 	undo.add_undo_method(self, "_do_remove_at", target_list, index, command)
 	undo.add_do_reference(command)
@@ -232,6 +233,7 @@ func insert_commands(target_list: Array, index: int, commands: Array, undo_name:
 		_do_insert_many(target_list, index, commands)
 		return
 	undo.create_action(undo_name if undo_name != "" else L10n.ui("story.undo.insert"), UndoRedo.MERGE_DISABLE, page)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_insert_many", target_list, index, commands)
 	undo.add_undo_method(self, "_do_remove_many", target_list, index, commands)
 	for command in commands:
@@ -252,55 +254,61 @@ func _do_remove_many(target_list: Array, index: int, commands: Array) -> void:
 			target_list.remove_at(at)
 	changed.emit()
 
-## 删除条目（含选项块整体 / 条件块整体）。
+## Return the whole visible item, including the sibling ifs belonging to choices.
+func _item_commands(item: Dictionary) -> Array:
+	var list: Array = item["list"]
+	var index := int(item["index"])
+	return list.slice(index, index + int(item.get("consumed", 1)))
+
 func delete_item(item: Dictionary) -> void:
 	var list: Array = item["list"]
 	var index := int(item["index"])
-	if index < 0 or index >= list.size():
+	var commands := _item_commands(item)
+	if commands.is_empty():
 		return
-	var command: EventCommand = item["command"]
 	var undo := _undo()
 	if undo == null:
-		_do_remove_at(list, index, command)
+		_do_replace_slice(list, index, commands, [])
 		return
 	undo.create_action(L10n.ui("story.undo.delete"), UndoRedo.MERGE_DISABLE, page)
-	undo.add_do_method(self, "_do_remove_at", list, index, command)
-	undo.add_undo_method(self, "_do_insert", list, index, command)
-	undo.add_undo_reference(command)
+	undo.force_fixed_history()
+	undo.add_do_method(self, "_do_replace_slice", list, index, commands, [])
+	undo.add_undo_method(self, "_do_replace_slice", list, index, [], commands)
+	for command in commands:
+		undo.add_undo_reference(command)
 	undo.commit_action()
 
-## 复制条目：深拷贝后插到原条目后面。
 func duplicate_item(item: Dictionary) -> void:
-	var command: EventCommand = item["command"]
-	if command == null:
-		return
-	var copy := command.duplicate(true) as EventCommand
-	var list: Array = item["list"]
-	insert_command(list, int(item["index"]) + 1, copy, L10n.ui("story.undo.duplicate"))
+	var copies: Array = []
+	for command in _item_commands(item):
+		copies.append(command.duplicate_command())
+	insert_commands(item["list"], int(item["index"]) + copies.size(), copies, L10n.ui("story.undo.duplicate"))
 
-## 在同一条列表里上移 / 下移（delta = -1 / +1）。
+## Swap complete visible items, never an individual choice branch sibling.
 func move_item(item: Dictionary, delta: int) -> void:
 	var list: Array = item["list"]
-	var from_index := int(item["index"])
-	var to_index := from_index + delta
-	if to_index < 0 or to_index >= list.size():
+	var items := build_items_of(list, 0)
+	var from := -1
+	for i in items.size():
+		if items[i]["command"] == item["command"]:
+			from = i
+	var to := from + delta
+	if from < 0 or to < 0 or to >= items.size():
 		return
+	var first: Dictionary = items[mini(from, to)]
+	var second: Dictionary = items[maxi(from, to)]
+	var originals := _item_commands(first) + _item_commands(second)
+	var moved := _item_commands(second) + _item_commands(first)
+	var index := int(first["index"])
 	var undo := _undo()
 	if undo == null:
-		_do_move(list, from_index, to_index)
+		_do_replace_slice(list, index, originals, moved)
 		return
 	undo.create_action(L10n.ui("story.undo.move"), UndoRedo.MERGE_DISABLE, page)
-	undo.add_do_method(self, "_do_move", list, from_index, to_index)
-	undo.add_undo_method(self, "_do_move", list, to_index, from_index)
+	undo.force_fixed_history()
+	undo.add_do_method(self, "_do_replace_slice", list, index, originals, moved)
+	undo.add_undo_method(self, "_do_replace_slice", list, index, moved, originals)
 	undo.commit_action()
-
-func _do_move(target_list: Array, from_index: int, to_index: int) -> void:
-	if from_index < 0 or from_index >= target_list.size():
-		return
-	var command: EventCommand = target_list[from_index]
-	target_list.remove_at(from_index)
-	target_list.insert(clampi(to_index, 0, target_list.size()), command)
-	changed.emit()
 
 ## 修改 show_text 的参数（speaker / text / auto_advance）。连续输入合并成一步。
 func set_line_param(item: Dictionary, param: String, value: Variant) -> void:
@@ -319,6 +327,7 @@ func _set_param(_index: int, command: EventCommand, param: String, value: Varian
 	if undo == null:
 		return
 	undo.create_action("%s:%s:%d" % [L10n.ui("story.undo.param"), param, command.get_instance_id()], UndoRedo.MERGE_ENDS, page)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_apply_param", command, param, value)
 	undo.add_undo_method(self, "_apply_param", command, param, old_value)
 	undo.commit_action(false)
@@ -363,6 +372,7 @@ func choice_rename_option(item: Dictionary, option_index: int, text: String) -> 
 	if undo == null:
 		return
 	undo.create_action("%s:%d" % [L10n.ui("story.undo.option"), option_index], UndoRedo.MERGE_ENDS, page)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_apply_option", command, option_index, text)
 	undo.add_undo_method(self, "_apply_option", command, option_index, old_text)
 	undo.commit_action(false)
@@ -428,6 +438,7 @@ func choice_move_option(item: Dictionary, option_index: int, delta: int) -> bool
 		_do_swap_option(command, option_index, target, list_a, list_b)
 		return true
 	undo.create_action(L10n.ui("story.undo.choice_move"), UndoRedo.MERGE_DISABLE, page)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_swap_option", command, option_index, target, list_a, list_b)
 	undo.add_undo_method(self, "_do_swap_option", command, option_index, target, list_a, list_b)
 	undo.commit_action()
@@ -488,7 +499,7 @@ func _rebuild_choice(item: Dictionary, command: EventCommand, options: Array, br
 			originals.append(list[index + offset])
 
 	var rebuilt: Array = []
-	var new_show := command.duplicate() as EventCommand
+	var new_show := command.duplicate_command()
 	new_show.params["options"] = options
 	rebuilt.append(new_show)
 	for option_index in options.size():
@@ -506,6 +517,7 @@ func _rebuild_choice(item: Dictionary, command: EventCommand, options: Array, br
 		_do_replace_slice(list, index, originals, rebuilt)
 		return
 	undo.create_action(undo_name, UndoRedo.MERGE_DISABLE, page)
+	undo.force_fixed_history()
 	undo.add_do_method(self, "_do_replace_slice", list, index, originals, rebuilt)
 	undo.add_undo_method(self, "_do_replace_slice", list, index, rebuilt, originals)
 	for entry in rebuilt:

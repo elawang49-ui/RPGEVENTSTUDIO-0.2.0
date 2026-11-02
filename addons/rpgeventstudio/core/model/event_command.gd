@@ -18,4 +18,15 @@ func set_param(key: String, value: Variant) -> void:
 	emit_changed()
 
 func duplicate_command() -> EventCommand:
-	return duplicate(true) as EventCommand
+	# Containers and command trees are owned by the copy; referenced assets/events
+	# remain references (duplicating an audio/event resource changes its meaning).
+	var copy := EventCommand.new()
+	copy.type = type
+	copy.params = params.duplicate(true)
+	copy.enabled = enabled
+	copy.comment = comment
+	for child in children:
+		copy.children.append(child.duplicate_command() if child != null else null)
+	for child in else_children:
+		copy.else_children.append(child.duplicate_command() if child != null else null)
+	return copy
