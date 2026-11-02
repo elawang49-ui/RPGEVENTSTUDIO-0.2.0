@@ -2,7 +2,7 @@
   "headless": {
     "run": 355,
     "story_audit_test": 24,
-    "state_bulk_register_test": 114,
+    "state_bulk_register_test": 116,
     "graph_editor_smoke": 19,
     "ui_smoke": 56,
     "integration_demo": 37,
@@ -24,7 +24,7 @@
     "runtime_release_test": 65
   },
   "editor": {
-    "editor": 27,
+    "editor": 44,
     "map": 51,
     "gvl": 72,
     "story": 35,

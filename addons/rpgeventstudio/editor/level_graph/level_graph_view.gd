@@ -1768,6 +1768,9 @@ func _on_state_library_pressed() -> void:
 		return
 	var dialog := StateLibraryDialog.new()
 	add_child(dialog)
+	dialog.visibility_changed.connect(func():
+		if not dialog.visible: dialog.queue_free()
+	)
 	dialog.state_saved.connect(func(_key: String) -> void:
 		_rebuild_params()
 		_rebuild_view()

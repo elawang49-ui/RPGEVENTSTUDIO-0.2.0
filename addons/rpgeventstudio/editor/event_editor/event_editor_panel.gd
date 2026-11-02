@@ -26,6 +26,8 @@ const REPEAT_POLICIES := [
 const OPS := ["==", "!=", ">", ">=", "<", "<="]
 const ARITH_OPS := ["+", "-", "*", "/"]
 
+const ResourceEdits = preload("res://addons/rpgeventstudio/editor/resource_edits.gd")
+
 var _plugin: EditorPlugin
 var _definition: EventDefinition
 var _source_node: Node
@@ -65,6 +67,8 @@ var _target_label: Label
 var _add_ids: Dictionary = {}
 var _row_buttons: Dictionary = {}
 var _building := false
+var _emitting_change := false
+var _refresh_queued := false
 
 func bind_plugin(plugin: EditorPlugin) -> void:
 	_plugin = plugin
@@ -100,8 +104,7 @@ func open_definition(definition: EventDefinition, source_node: Node) -> void:
 	_selected = null
 	_contexts.clear()
 	_clipboard = null
-	if definition.resource_path != "":
-		_definition.changed.connect(_on_definition_changed)
+	_definition.changed.connect(_on_definition_changed)
 	_reset_insert_target()
 	_refresh_all()
 
@@ -394,9 +397,7 @@ func _make_condition_row(condition: EventCondition, page: EventPage) -> Control:
 	selector.set_show_internal(_show_internal_check.button_pressed)
 	selector.set_key(condition.key)
 	selector.state_changed.connect(func(value: String) -> void:
-		condition.key = value
-		condition.emit_changed()
-		page.emit_changed()
+		_change_page_property(condition, "key", value)
 		_rebuild_conditions()
 	)
 
@@ -411,9 +412,7 @@ func _make_condition_row(condition: EventCondition, page: EventPage) -> Control:
 	if is_bool:
 		op_option.tooltip_text = L10n.ui("editor.condition.bool_op_tip")
 	op_option.item_selected.connect(func(index: int) -> void:
-		condition.op = OPS[index]
-		condition.emit_changed()
-		page.emit_changed()
+		_change_page_property(condition, "op", OPS[index])
 	)
 	row.add_child(op_option)
 
@@ -428,9 +427,7 @@ func _make_condition_row(condition: EventCondition, page: EventPage) -> Control:
 			want = ValueParser.parse(str(condition.value)) == true
 		choice.selected = 0 if want else 1
 		choice.item_selected.connect(func(index: int) -> void:
-			condition.value = (index == 0)
-			condition.emit_changed()
-			page.emit_changed()
+			_change_page_property(condition, "value", index == 0)
 		)
 		row.add_child(choice)
 	else:
@@ -439,17 +436,16 @@ func _make_condition_row(condition: EventCondition, page: EventPage) -> Control:
 		value_edit.placeholder_text = L10n.ui("editor.condition.value")
 		value_edit.custom_minimum_size = Vector2(64, 0)
 		value_edit.text_changed.connect(func(text: String) -> void:
-			condition.value = ValueParser.parse(text)
-			condition.emit_changed()
-			page.emit_changed()
+			_change_page_property(condition, "value", ValueParser.parse(text))
 		)
 		row.add_child(value_edit)
 
 	var remove := Button.new()
 	remove.text = "×"
 	remove.pressed.connect(func() -> void:
-		page.conditions.erase(condition)
-		page.emit_changed()
+		var conditions := page.conditions.duplicate()
+		conditions.erase(condition)
+		_change_page_property(page, "conditions", conditions)
 		_rebuild_conditions()
 	)
 	row.add_child(remove)
@@ -898,8 +894,7 @@ func _change_param(command: EventCommand, name: String, value: Variant) -> void:
 	if _values_equal(old_value, value):
 		return
 
-	command.params[name] = value
-	command.emit_changed()
+	command.set_param(name, value)
 	_update_row_text(command)
 
 	var undo := _undo_redo()
@@ -912,15 +907,15 @@ func _change_param(command: EventCommand, name: String, value: Variant) -> void:
 		_current_page()
 	)
 	undo.force_fixed_history()
-	undo.add_do_method(self, "_apply_param", command, name, value)
-	undo.add_undo_method(self, "_apply_param", command, name, old_value)
+	var edits := ResourceEdits.new()
+	undo.add_do_method(edits, "set_command_param", _definition, command, name, value, weakref(self))
+	undo.add_undo_method(edits, "set_command_param", _definition, command, name, old_value, weakref(self))
 	undo.commit_action(false)
 
 func _apply_param(command: EventCommand, name: String, value: Variant) -> void:
 	if command == null:
 		return
-	command.params[name] = value
-	command.emit_changed()
+	command.set_param(name, value)
 	_rebuild_commands()
 	if _selected == command:
 		_rebuild_params()
@@ -975,13 +970,13 @@ func _commit_pages(pages: Array, selected: int) -> void:
 		return
 	undo.create_action(L10n.ui("editor.path.page", {"page": selected + 1}), UndoRedo.MERGE_DISABLE, _definition)
 	undo.force_fixed_history()
-	undo.add_do_method(self, "_apply_pages", _definition, pages, selected)
-	undo.add_undo_method(self, "_apply_pages", _definition, _definition.pages.duplicate(), _page_index)
+	var edits := ResourceEdits.new()
+	undo.add_do_method(edits, "replace_pages", _definition, pages, selected, weakref(self))
+	undo.add_undo_method(edits, "replace_pages", _definition, _definition.pages.duplicate(), _page_index, weakref(self))
 	undo.commit_action()
 
 func _apply_pages(definition: EventDefinition, pages: Array, selected: int) -> void:
-	definition.pages.assign(pages)
-	definition.emit_changed()
+	definition._replace_pages(pages)
 	if definition != _definition:
 		return
 	_page_index = clampi(selected, 0, maxi(0, pages.size() - 1))
@@ -989,20 +984,10 @@ func _apply_pages(definition: EventDefinition, pages: Array, selected: int) -> v
 	_refresh_all()
 
 func _on_trigger_selected(index: int) -> void:
-	var page := _current_page()
-	if page == null:
-		return
-	page.trigger = str(TRIGGERS[index]["id"])
-	page.emit_changed()
-	_definition.emit_changed()
+	_change_page_property(_current_page(), "trigger", str(TRIGGERS[index]["id"]))
 
 func _on_repeat_selected(index: int) -> void:
-	var page := _current_page()
-	if page == null:
-		return
-	page.repeat_policy = str(REPEAT_POLICIES[index]["id"])
-	page.emit_changed()
-	_definition.emit_changed()
+	_change_page_property(_current_page(), "repeat_policy", str(REPEAT_POLICIES[index]["id"]))
 
 func _on_add_condition() -> void:
 	var page := _current_page()
@@ -1011,10 +996,36 @@ func _on_add_condition() -> void:
 	var condition := EventCondition.new()
 	condition.key = "Global."
 	condition.value = true
-	page.conditions.append(condition)
-	page.emit_changed()
-	_definition.emit_changed()
+	var conditions := page.conditions.duplicate()
+	conditions.append(condition)
+	_change_page_property(page, "conditions", conditions)
 	_rebuild_conditions()
+
+func _change_page_property(target: Resource, property: String, value: Variant) -> void:
+	if target == null or _definition == null or target.get(property) == value:
+		return
+	var old: Variant = target.get(property)
+	if old is Array:
+		old = old.duplicate()
+	target.set(property, value)
+	target.emit_changed()
+	_mark_dirty()
+	var undo := _undo_redo()
+	if undo == null:
+		return
+	undo.create_action("%s:%d" % [property, target.get_instance_id()], UndoRedo.MERGE_ENDS if property != "conditions" else UndoRedo.MERGE_DISABLE, _current_page())
+	undo.force_fixed_history()
+	var edits := ResourceEdits.new()
+	undo.add_do_method(edits, "set_page_property", _definition, target, property, value, weakref(self))
+	undo.add_undo_method(edits, "set_page_property", _definition, target, property, old, weakref(self))
+	undo.commit_action(false)
+
+func _apply_page_property(definition: EventDefinition, target: Resource, property: String, value: Variant) -> void:
+	target.set(property, value)
+	target.emit_changed()
+	definition.emit_changed()
+	if definition == _definition:
+		_refresh_all()
 
 # ── 指令操作 ─────────────────────────────────────────────
 
@@ -1049,8 +1060,9 @@ func _commit_insert(list: Array, index: int, command: EventCommand) -> void:
 		return
 	undo.create_action(L10n.ui("editor.undo.add"), UndoRedo.MERGE_DISABLE, _current_page())
 	undo.force_fixed_history()
-	undo.add_do_method(self, "_do_insert", list, index, command)
-	undo.add_undo_method(self, "_do_remove", list, index)
+	var edits := ResourceEdits.new()
+	undo.add_do_method(edits, "insert_command", _current_page(), list, index, command, _definition, weakref(self))
+	undo.add_undo_method(edits, "remove_command", _current_page(), list, index, _definition, weakref(self))
 	undo.add_do_reference(command)
 	undo.commit_action()
 
@@ -1089,7 +1101,9 @@ func _after_structure_change() -> void:
 
 func _mark_dirty() -> void:
 	if _definition != null:
+		_emitting_change = true
 		_definition.emit_changed()
+		_emitting_change = false
 
 func _on_delete_command() -> void:
 	if _selected == null:
@@ -1106,8 +1120,9 @@ func _on_delete_command() -> void:
 		list.remove_at(index)
 	else:
 		undo.create_action(L10n.ui("editor.undo.delete"), UndoRedo.MERGE_DISABLE, _current_page())
-		undo.add_do_method(self, "_do_remove", list, index)
-		undo.add_undo_method(self, "_do_insert", list, index, command)
+		var edits := ResourceEdits.new()
+		undo.add_do_method(edits, "remove_command", _current_page(), list, index, _definition, weakref(self))
+		undo.add_undo_method(edits, "insert_command", _current_page(), list, index, command, _definition, weakref(self))
 		undo.add_undo_reference(command)
 		undo.commit_action()
 
@@ -1138,8 +1153,9 @@ func _on_move_command(delta: int) -> void:
 		_select(command)
 	else:
 		undo.create_action(L10n.ui("editor.undo.move"), UndoRedo.MERGE_DISABLE, _current_page())
-		undo.add_do_method(self, "_do_move", list, index, target)
-		undo.add_undo_method(self, "_do_move", list, target, index)
+		var edits := ResourceEdits.new()
+		undo.add_do_method(edits, "move_command", _current_page(), list, index, target, _definition, weakref(self))
+		undo.add_undo_method(edits, "move_command", _current_page(), list, target, index, _definition, weakref(self))
 		undo.commit_action()
 		_selected = null
 		_rebuild_commands()
@@ -1182,8 +1198,9 @@ func _cross_move(from_list: Array, from_index: int, to_list: Array, to_index: in
 
 	undo.create_action(L10n.ui("editor.undo.branch"), UndoRedo.MERGE_DISABLE, _current_page())
 	undo.force_fixed_history()
-	undo.add_do_method(self, "_do_cross_move", from_list, from_index, to_list, to_index)
-	undo.add_undo_method(self, "_do_cross_move", to_list, to_index, from_list, from_index)
+	var edits := ResourceEdits.new()
+	undo.add_do_method(edits, "cross_move", _current_page(), from_list, from_index, to_list, to_index, _definition, weakref(self))
+	undo.add_undo_method(edits, "cross_move", _current_page(), to_list, to_index, from_list, from_index, _definition, weakref(self))
 	undo.commit_action()
 	_selected = null
 	_rebuild_commands()
@@ -1274,7 +1291,7 @@ func _open_file_dialog(edit: LineEdit, command: EventCommand, param_name: String
 	var dialog := EditorFileDialog.new()
 	dialog.file_mode = EditorFileDialog.FILE_MODE_OPEN_FILE
 	dialog.access = EditorFileDialog.ACCESS_RESOURCES
-	dialog.add_filter("*.tres", "res://")
+	dialog.add_filter("*.wav,*.ogg,*.mp3", "Audio") if param_name == "sound_path" else dialog.add_filter("*.tres", "res://")
 	dialog.file_selected.connect(func(path: String) -> void:
 		edit.text = path
 		_change_param(command, param_name, path)
@@ -1318,6 +1335,9 @@ func _open_node_picker(command: EventCommand, name: String) -> void:
 		return
 	var picker := SceneObjectPicker.new()
 	add_child(picker)
+	picker.visibility_changed.connect(func():
+		if not picker.visible: picker.queue_free()
+	)
 	picker.picked.connect(func(node_path: String, scene_path: String) -> void:
 		_change_param(command, name, node_path)
 		_change_param(command, name + "_scene", scene_path)
@@ -1374,6 +1394,9 @@ func _on_state_library_pressed() -> void:
 		return
 	var dialog := StateLibraryDialog.new()
 	add_child(dialog)
+	dialog.visibility_changed.connect(func():
+		if not dialog.visible: dialog.queue_free()
+	)
 	dialog.state_saved.connect(func(_key: String) -> void:
 		_refresh_state_selectors()
 	)
@@ -1404,9 +1427,16 @@ func _on_language_selected(index: int) -> void:
 # ── 杂项 ─────────────────────────────────────────────────
 
 func _on_definition_changed() -> void:
-	if _building or _definition == null:
+	if _building or _emitting_change or _definition == null or _refresh_queued:
 		return
-	_rebuild_commands()
+	_refresh_queued = true
+	_refresh_external.call_deferred()
+
+func _refresh_external() -> void:
+	_refresh_queued = false
+	if _definition != null:
+		_page_index = clampi(_page_index, 0, maxi(0, _definition.pages.size() - 1))
+		_refresh_all()
 
 func _index_of_id(entries: Array, value: String) -> int:
 	for index in entries.size():

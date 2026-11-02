@@ -21,11 +21,18 @@ var _description_edit: TextEdit
 var _hint: Label
 var _current: StateDefinition
 var _building := false
+var _save_timer: Timer
+var _pending_saved_key := ""
 
 func _ready() -> void:
 	title = L10n.ui("state.library.title")
 	min_size = Vector2i(780, 520)
 	_build()
+	_save_timer = Timer.new()
+	_save_timer.one_shot = true
+	_save_timer.wait_time = 0.35
+	_save_timer.timeout.connect(_flush)
+	add_child(_save_timer)
 	confirmed.connect(_flush)
 	canceled.connect(_flush)
 	close_requested.connect(_flush)
@@ -112,9 +119,9 @@ func _build() -> void:
 		if _building or _current == null:
 			return
 		_current.display_name = text
-		_flush()
+		_queue_flush()
 		_refresh_item_text(_current)
-		state_saved.emit(_current.key)
+		_pending_saved_key = _current.key
 	)
 	right.add_child(_display_edit)
 
@@ -128,7 +135,7 @@ func _build() -> void:
 		if _building or _current == null:
 			return
 		_current.type = TYPES[index]
-		_flush()
+		_queue_flush()
 	)
 	type_row.add_child(_type_option)
 
@@ -138,7 +145,7 @@ func _build() -> void:
 		if _building or _current == null:
 			return
 		_current.default_value = ValueParser.parse(text)
-		_flush()
+		_queue_flush()
 	)
 	right.add_child(_default_edit)
 
@@ -148,7 +155,7 @@ func _build() -> void:
 		if _building or _current == null:
 			return
 		_current.category = text
-		_flush()
+		_queue_flush()
 		_refresh_item_text(_current)
 	)
 	right.add_child(_category_edit)
@@ -160,7 +167,7 @@ func _build() -> void:
 		if _building or _current == null:
 			return
 		_current.description = _description_edit.text
-		_flush()
+		_queue_flush()
 	)
 	right.add_child(_description_edit)
 
@@ -280,9 +287,24 @@ func _on_delete() -> void:
 
 # ── 保存 ─────────────────────────────────────────────────
 
+func _queue_flush() -> void:
+	if _save_timer != null:
+		_save_timer.start()
+
+func _exit_tree() -> void:
+	if _save_timer != null and not _save_timer.is_stopped():
+		_flush()
+
 func _flush() -> void:
-	if _building or _catalog == null:
+	if _save_timer != null:
+		_save_timer.stop()
+	if _catalog == null:
 		return
 	var error := StateCatalogStore.save()
 	if error != OK:
 		push_warning("[RPGEventStudio] 状态库保存失败：%d" % error)
+
+	elif _pending_saved_key != "":
+		var key := _pending_saved_key
+		_pending_saved_key = ""
+		state_saved.emit(key)

@@ -252,7 +252,7 @@ func _rebuild_tree() -> void:
 	var filter := _search.text.strip_edges().to_lower() if _search != null else ""
 	for key in _entries.keys():
 		var entry: Dictionary = _entries[key]
-		if filter != "" and not (_match_text(entry).contains(filter)):
+		if filter != "" and not (_match_text(entry).to_lower().contains(filter)):
 			continue
 		var item := _tree.create_item(hidden_root)
 		item.set_metadata(COL_CHECK, entry["key"])
@@ -294,7 +294,7 @@ func _apply_row_visibility() -> void:
 	while item != null:
 		var entry: Dictionary = _entries.get(str(item.get_metadata(COL_CHECK)), {})
 		var visible := true
-		if entry.is_empty() or (filter != "" and not _match_text(entry).contains(filter)):
+		if entry.is_empty() or (filter != "" and not _match_text(entry).to_lower().contains(filter)):
 			visible = false
 		elif mode == 1 and not _has_kind_family(entry, ["event.", "cmd."]):
 			visible = false

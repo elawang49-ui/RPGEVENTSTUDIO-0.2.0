@@ -42,3 +42,8 @@ func remove_page(index: int) -> void:
 
 func summary() -> String:
 	return "%s（%d 页）" % [display_name, pages.size()]
+
+# Internal undo endpoint: redo restores the exact same page Resources.
+func _replace_pages(replacement: Array) -> void:
+	pages.assign(replacement)
+	emit_changed()

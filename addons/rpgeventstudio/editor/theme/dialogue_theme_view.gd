@@ -107,6 +107,11 @@ func _ready() -> void:
 	_theme = _load_theme()
 	_build()
 	set_process(true)
+	_sync_preview_activity()
+
+func _sync_preview_activity() -> void:
+	if _preview_viewport != null:
+		_preview_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if is_visible_in_tree() else SubViewport.UPDATE_DISABLED
 
 func _process(_delta: float) -> void:
 	if not is_visible_in_tree():
@@ -217,6 +222,7 @@ func _build() -> void:
 	container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	container.resized.connect(_sync_preview_size)
 	visibility_changed.connect(_sync_preview_size)
+	visibility_changed.connect(_sync_preview_activity)
 	preview_panel.add_child(container)
 	_preview_container = container
 	_preview_viewport = SubViewport.new()
@@ -505,7 +511,7 @@ func _open_font_dialog() -> void:
 				_font_edit.text = path
 			_set_prop("font_path", path)
 		)
-		get_tree().root.add_child(_font_dialog)
+		add_child(_font_dialog)
 	_font_dialog.popup_centered_ratio(0.55)
 
 func _set_prop(prop: String, value: Variant) -> void:

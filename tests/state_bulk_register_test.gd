@@ -381,6 +381,15 @@ func _test_dialog_tree_rows() -> void:
 	var row4: TreeItem = dialog.call("_row_item", "delta.flag")
 	_check(row4 != null and not row4.visible, "搜索未命中第 4 行应隐藏")
 
+	var mixed_entries: Dictionary = dialog.get("_entries")
+	mixed_entries["alpha.flag"]["display_name"] = "MixedCASE"
+	search.text = "mixedcase"
+	dialog.call("_apply_row_visibility")
+	_check(row1.visible, "搜索匹配字段不区分大小写")
+	search.text = "ALPHA.FLAG"
+	dialog.call("_apply_row_visibility")
+	_check(row1.visible, "搜索关键字不区分大小写")
+
 	# 清空搜索恢复全部行
 	search.text = ""
 	dialog.call("_apply_row_visibility")

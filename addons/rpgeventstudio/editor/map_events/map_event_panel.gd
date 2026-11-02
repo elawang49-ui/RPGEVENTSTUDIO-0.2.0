@@ -121,7 +121,7 @@ func _apply_columns() -> void:
 	refresh()
 
 func _process(delta: float) -> void:
-	if not Engine.is_editor_hint():
+	if not Engine.is_editor_hint() or not is_visible_in_tree():
 		return
 	_refresh_clock += delta
 	if _refresh_clock < REFRESH_INTERVAL:

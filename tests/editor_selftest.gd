@@ -43,7 +43,11 @@ func start(_dock_panel: Control) -> void:
 
 	_test_cut_undo_paste(panel, page)
 	_test_page_undo(panel, definition)
+	_test_page_properties(panel, definition)
+	await _test_panel_sync(panel, definition)
 	panel.queue_free()
+	await _test_closed_panel_undo()
+	await _test_plugin_lifecycle()
 	_finish()
 
 # ── 用例 ─────────────────────────────────────────────────
@@ -200,3 +204,80 @@ func _finish() -> void:
 	var tree := get_tree()
 	if tree != null:
 		tree.quit()
+
+func _test_page_properties(panel: Control, definition: EventDefinition) -> void:
+	panel.call("_on_page_selected", 0)
+	var page := definition.pages[0]
+	var history := _history(page)
+	var old_trigger := page.trigger
+	panel.call("_on_trigger_selected", 6)
+	_check(page.trigger == "call", "修改页触发方式")
+	history.undo()
+	_check(page.trigger == old_trigger, "撤销页触发方式")
+	panel.call("_on_repeat_selected", 1)
+	_check(page.repeat_policy == "once", "修改重复策略")
+	history.undo()
+	_check(page.repeat_policy == "every_time", "撤销重复策略")
+	var count := page.conditions.size()
+	panel.call("_on_add_condition")
+	_check(page.conditions.size() == count + 1, "添加出现条件")
+	history.undo()
+	_check(page.conditions.size() == count, "撤销添加条件")
+	history.redo()
+	_check(page.conditions.size() == count + 1, "重做添加条件")
+	var condition := page.conditions[-1]
+	panel.call("_change_page_property", condition, "key", "Global.Edited")
+	history.undo()
+	_check(condition.key == "Global.", "撤销条件字段")
+	history.undo()
+
+func _test_panel_sync(panel: Control, definition: EventDefinition) -> void:
+	var story: Control = load("res://addons/rpgeventstudio/editor/story/story_editor_panel.gd").new()
+	EditorInterface.get_base_control().add_child(story)
+	story.call("open_definition", definition, null)
+	panel.call("_on_page_selected", 0)
+	var doc: StoryDocument = story.get("_document")
+	var command := CommandRegistry.create_command(&"show_text")
+	doc.insert_command(definition.pages[0].commands, 0, command)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var contexts: Dictionary = panel.get("_contexts")
+	_check(contexts.has(command), "Story 插入后 Inspector 同步出现新行")
+	panel.call("_on_command_row_pressed", command)
+	panel.call("_on_delete_command")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var items: Array = story.get("_items")
+	_check(items.is_empty() or items[0]["command"] != command, "Inspector 删除后 Story 同步刷新")
+	story.queue_free()
+
+func _test_plugin_lifecycle() -> void:
+	# The test node outlives the plugin it disables. Re-enable restores project settings.
+	reparent(EditorInterface.get_base_control())
+	EditorInterface.set_plugin_enabled("rpgeventstudio", false)
+	await get_tree().process_frame
+	_check(not EditorInterface.is_plugin_enabled("rpgeventstudio"), "真实禁用插件")
+	_check(not ProjectSettings.has_setting("autoload/RPGEventStudio"), "禁用时移除路径或 UID 形式的插件 Autoload")
+	EditorInterface.set_plugin_enabled("rpgeventstudio", true)
+	await get_tree().process_frame
+	_check(EditorInterface.is_plugin_enabled("rpgeventstudio"), "真实重新启用插件")
+	_check(ProjectSettings.has_setting("autoload/RPGEventStudio"), "重新启用自动安装 Autoload")
+	var persisted := ConfigFile.new()
+	_check(persisted.load("res://project.godot") == OK and "res://addons/rpgeventstudio/plugin.cfg" in persisted.get_value("editor_plugins", "enabled", PackedStringArray()), "重新启用状态真正写入 project.godot")
+
+func _test_closed_panel_undo() -> void:
+	var temporary: Control = load("res://addons/rpgeventstudio/editor/event_editor/event_editor_panel.gd").new()
+	EditorInterface.get_base_control().add_child(temporary)
+	var definition := EventDefinition.new()
+	var page := definition.add_page()
+	temporary.call("open_definition", definition, null)
+	var command := CommandRegistry.create_command(&"show_text")
+	temporary.call("_commit_insert", page.commands, 0, command)
+	var history := _history(page)
+	temporary.queue_free()
+	await get_tree().process_frame
+	history.undo()
+	_check(page.commands.is_empty(), "关闭面板后仍能撤销资源操作")
+	history.redo()
+	_check(page.commands.size() == 1 and page.commands[0] == command, "关闭面板后重做恢复同一资源且无悬空调用")
+	history.undo()

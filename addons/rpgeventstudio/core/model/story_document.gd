@@ -320,8 +320,7 @@ func _set_param(_index: int, command: EventCommand, param: String, value: Varian
 	var old_value: Variant = command.params.get(param)
 	if _values_equal(old_value, value):
 		return
-	command.params[param] = value
-	command.emit_changed()
+	command.set_param(param, value)
 	changed.emit()
 	var undo := _undo()
 	if undo == null:
@@ -335,8 +334,7 @@ func _set_param(_index: int, command: EventCommand, param: String, value: Varian
 func _apply_param(command: EventCommand, param: String, value: Variant) -> void:
 	if command == null:
 		return
-	command.params[param] = value
-	command.emit_changed()
+	command.set_param(param, value)
 	changed.emit()
 
 func _values_equal(a: Variant, b: Variant) -> bool:
@@ -371,7 +369,7 @@ func choice_rename_option(item: Dictionary, option_index: int, text: String) -> 
 	var undo := _undo()
 	if undo == null:
 		return
-	undo.create_action("%s:%d" % [L10n.ui("story.undo.option"), option_index], UndoRedo.MERGE_ENDS, page)
+	undo.create_action("%s:%d:%d" % [L10n.ui("story.undo.option"), command.get_instance_id(), option_index], UndoRedo.MERGE_ENDS, page)
 	undo.force_fixed_history()
 	undo.add_do_method(self, "_apply_option", command, option_index, text)
 	undo.add_undo_method(self, "_apply_option", command, option_index, old_text)

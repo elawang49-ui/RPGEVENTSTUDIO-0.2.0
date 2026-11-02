@@ -49,3 +49,8 @@ func move_command(from_index: int, to_index: int) -> void:
 	to_index = clampi(to_index, 0, commands.size())
 	commands.insert(to_index, command)
 	emit_changed()
+
+# Internal atomic editor endpoint, preserving the Array identity held by open views.
+func _replace_list(target: Array, replacement: Array) -> void:
+	target.assign(replacement)
+	emit_changed()

@@ -11,6 +11,8 @@ extends VBoxContainer
 
 const INSERT_DEFAULT_CHOICE_OPTIONS := 2
 
+const ResourceEdits = preload("res://addons/rpgeventstudio/editor/resource_edits.gd")
+
 var _plugin: EditorPlugin
 var _definition: EventDefinition
 var _source_node: Node
@@ -23,6 +25,8 @@ var _roster: StoryCharacters
 var _selected_character: StoryCharacter = null
 
 var _building := false
+var _refresh_queued := false
+var _roster_save_timer: Timer
 var _live_editing := false
 
 var _title_label: Label
@@ -66,6 +70,11 @@ func bind_plugin(plugin: EditorPlugin) -> void:
 func _ready() -> void:
 	_roster = StoryCharacters.load_roster()
 	_build_ui()
+	_roster_save_timer = Timer.new()
+	_roster_save_timer.one_shot = true
+	_roster_save_timer.wait_time = 0.35
+	_roster_save_timer.timeout.connect(_persist_roster)
+	add_child(_roster_save_timer)
 	_show_placeholder(L10n.ui("story.open_hint"))
 
 # ── 对外 ─────────────────────────────────────────────────
@@ -82,7 +91,10 @@ func open_from_selection(nodes: Array) -> void:
 				return
 
 func open_definition(definition: EventDefinition, source_node: Node) -> void:
+	if _definition != null and _definition.changed.is_connected(_on_definition_changed):
+		_definition.changed.disconnect(_on_definition_changed)
 	_definition = definition
+	_definition.changed.connect(_on_definition_changed)
 	_source_node = source_node
 	_page_index = clampi(_page_index, 0, max(0, _definition.pages.size() - 1))
 	_selected_command = null
@@ -378,7 +390,7 @@ func _refresh_all() -> void:
 	_title_label.text = "%s　[%s]" % [_definition.display_name, String(_definition.event_id)]
 	_document = StoryDocument.new(_current_page())
 	_document.undo_provider = _editor_undo
-	_document.changed.connect(_on_document_changed)
+	_document.changed.connect(_on_document_changed.bind(_definition))
 	_rebuild_pages()
 	_rebuild_roster_list()
 	_rebuild_script_list()
@@ -387,9 +399,15 @@ func _refresh_all() -> void:
 	_show_status()
 	_building = false
 
-func _on_document_changed() -> void:
+func _on_document_changed(changed_definition: EventDefinition = null) -> void:
+	if changed_definition != null and changed_definition != _definition:
+		changed_definition.emit_changed()
+		return
 	if _building or _definition == null:
 		return
+	_building = true
+	_definition.emit_changed()
+	_building = false
 	if _live_editing:
 		# 打字过程中只更新行摘要与预览，不重建正在输入的控件。
 		_update_selected_row()
@@ -401,6 +419,18 @@ func _on_document_changed() -> void:
 	_rebuild_preview()
 	_show_status()
 	_building = false
+
+func _on_definition_changed() -> void:
+	if _building or _refresh_queued:
+		return
+	_refresh_queued = true
+	_refresh_external.call_deferred()
+
+func _refresh_external() -> void:
+	_refresh_queued = false
+	if _definition != null:
+		_page_index = clampi(_page_index, 0, maxi(0, _definition.pages.size() - 1))
+		_refresh_all()
 
 func _current_page() -> EventPage:
 	if _definition == null or _definition.pages.is_empty():
@@ -1161,13 +1191,13 @@ func _commit_pages(pages: Array, selected: int) -> void:
 		return
 	undo.create_action(L10n.ui("editor.path.page", {"page": selected + 1}), UndoRedo.MERGE_DISABLE, _definition)
 	undo.force_fixed_history()
-	undo.add_do_method(self, "_apply_pages", _definition, pages, selected)
-	undo.add_undo_method(self, "_apply_pages", _definition, _definition.pages.duplicate(), _page_index)
+	var edits := ResourceEdits.new()
+	undo.add_do_method(edits, "replace_pages", _definition, pages, selected, weakref(self))
+	undo.add_undo_method(edits, "replace_pages", _definition, _definition.pages.duplicate(), _page_index, weakref(self))
 	undo.commit_action()
 
 func _apply_pages(definition: EventDefinition, pages: Array, selected: int) -> void:
-	definition.pages.assign(pages)
-	definition.emit_changed()
+	definition._replace_pages(pages)
 	if definition != _definition:
 		return
 	_page_index = clampi(selected, 0, maxi(0, pages.size() - 1))
@@ -1211,15 +1241,19 @@ func _on_undo_pressed() -> void:
 	if _live_editing:
 		return
 	var undo := _undo_redo()
-	if undo != null and undo.can_undo():
-		undo.undo()
+	if undo != null:
+		var history := undo.get_history_undo_redo(undo.get_object_history_id(_current_page()))
+		if history.has_undo():
+			history.undo()
 
 func _on_redo_pressed() -> void:
 	if _live_editing:
 		return
 	var undo := _undo_redo()
-	if undo != null and undo.can_redo():
-		undo.redo()
+	if undo != null:
+		var history := undo.get_history_undo_redo(undo.get_object_history_id(_current_page()))
+		if history.has_redo():
+			history.redo()
 
 func _undo_redo() -> EditorUndoRedoManager:
 	if not Engine.is_editor_hint():
@@ -1297,9 +1331,15 @@ func _rebuild_roster_fields() -> void:
 	_roster_id_edit.text = character.character_id
 	_roster_id_edit.placeholder_text = L10n.ui("story.roster.id")
 	_roster_id_edit.text_submitted.connect(func(value: String) -> void:
+		if character.character_id == value.strip_edges():
+			return
 		character.character_id = value.strip_edges()
 		_persist_roster()
 		_rebuild_roster_list()
+	)
+	var id_input := _roster_id_edit
+	id_input.focus_exited.connect(func():
+		id_input.text_submitted.emit(id_input.text)
 	)
 	_roster_fields.add_child(_roster_id_edit)
 
@@ -1307,10 +1347,16 @@ func _rebuild_roster_fields() -> void:
 	_roster_name_edit.text = character.display_name
 	_roster_name_edit.placeholder_text = L10n.ui("story.roster.name")
 	_roster_name_edit.text_submitted.connect(func(value: String) -> void:
+		if character.display_name == value:
+			return
 		character.display_name = value
 		_persist_roster()
 		_rebuild_roster_list()
 		_rebuild_preview()
+	)
+	var name_input := _roster_name_edit
+	name_input.focus_exited.connect(func():
+		name_input.text_submitted.emit(name_input.text)
 	)
 	_roster_fields.add_child(_roster_name_edit)
 
@@ -1342,8 +1388,7 @@ func _rebuild_roster_fields() -> void:
 	_roster_color_picker.custom_minimum_size = Vector2(0, 24)
 	_roster_color_picker.color_changed.connect(func(color: Color) -> void:
 		character.color = color
-		_persist_roster()
-		_rebuild_roster_list()
+		_roster_save_timer.start()
 		_rebuild_preview()
 	)
 	_roster_fields.add_child(_roster_color_picker)
@@ -1352,8 +1397,14 @@ func _rebuild_roster_fields() -> void:
 	_roster_notes_edit.text = character.notes
 	_roster_notes_edit.placeholder_text = L10n.ui("story.roster.notes")
 	_roster_notes_edit.text_submitted.connect(func(value: String) -> void:
+		if character.notes == value:
+			return
 		character.notes = value
 		_persist_roster()
+	)
+	var notes_input := _roster_notes_edit
+	notes_input.focus_exited.connect(func():
+		notes_input.text_submitted.emit(notes_input.text)
 	)
 	_roster_fields.add_child(_roster_notes_edit)
 
@@ -1395,6 +1446,8 @@ func _open_avatar_dialog(character: StoryCharacter) -> void:
 	dialog.popup_centered(Vector2i(720, 480))
 
 func _persist_roster() -> void:
+	if _roster_save_timer != null:
+		_roster_save_timer.stop()
 	if _roster == null:
 		return
 	var ok := StoryCharacters.save_roster(_roster)
@@ -1447,3 +1500,7 @@ func _toast(message: String) -> void:
 	var toaster := EditorInterface.get_editor_toaster()
 	if toaster != null:
 		toaster.push_toast(message, EditorToaster.SEVERITY_INFO)
+
+func _exit_tree() -> void:
+	if _roster_save_timer != null and not _roster_save_timer.is_stopped():
+		_persist_roster()
