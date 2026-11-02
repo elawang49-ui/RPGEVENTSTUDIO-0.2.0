@@ -42,7 +42,7 @@ School 的旧测试有一项在剧情中途读取 choice；需要更新为“中
 
 宿主 `SceneTree.paused = true` 时，默认事件推进、计时与展示层暂停；取消仍可收尾。插件不主动更改宿主 paused。自定义 Presenter 的动画、输入及自行创建的 Tween 由宿主按同一暂停规则管理。
 
-扩展继续使用现有 CommandHandler + CommandRegistry 注册机制，不在资源内执行任意脚本表达式。自定义展示类指令应注册到 `CommandRegistry.CAT_DIALOGUE`，便于统一申请展示层所有权；长任务返回 WAIT 并使用 ctx.wait_until。所有状态修改走 ctx.state；持有全局 runtime.state 直接写入属于宿主行为，不会被事件回滚。注册入口目前仍是既有 `CommandRegistry._register`，本次保留，没有擅自新增或删改公开扩展接口。
+扩展继续使用现有 CommandHandler + CommandRegistry 注册机制，不在资源内执行任意脚本表达式。自定义展示类指令应注册到 `CommandRegistry.CAT_DIALOGUE`，便于统一申请展示层所有权；长任务返回 WAIT 并使用 ctx.wait_until。运行时使用 Godot Logger 的临时观察器辨别同步指令及等待回调的脚本异常；不屏蔽日志，不在 await 期间常驻，不接管宿主自己的日志器。所有状态修改走 ctx.state；持有全局 runtime.state 直接写入属于宿主行为，不会被事件回滚。注册入口目前仍是既有 `CommandRegistry._register`，本次保留，没有擅自新增或删改公开扩展接口。
 
 插件保留宿主已定义的 InputMap 动作和绑定。需要主动改键时，通过 InputService 的既有 register_action、extend_action_defaults 与设置面板接入。
 

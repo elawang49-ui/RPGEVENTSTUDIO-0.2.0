@@ -264,6 +264,8 @@ def run_faults():
             intended = None
             if title in ("fault_type_error.gd", "fault_null.gd", "fault_subtest_abort.gd"):
                 intended = "SCRIPT ERROR" in output and "Parse Error" not in output
+            elif title == "fault_event_handler.gd":
+                intended = "SCRIPT ERROR" in output and "RUNTIME_GUARD_PASS checks=12" in output
             elif title.startswith("run.gd 注入"):
                 intended = "CASE_INCOMPLETE" in output and "CASES：" in output
             elif title == "脚本解析失败":
@@ -310,6 +312,7 @@ def run_faults():
         ("fault_null.gd", False),
         ("fault_assert_fail.gd", False),
         ("fault_subtest_abort.gd", False),
+        ("fault_event_handler.gd", False),
     ]:
         all_ok = check_fault(
             script,

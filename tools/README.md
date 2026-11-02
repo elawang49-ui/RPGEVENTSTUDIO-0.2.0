@@ -4,7 +4,7 @@
 
 | 工具 | 实际作用 |
 |---|---|
-| `test_runner.py` | 自动 `--editor --import`，执行全部22个 headless、6个 editor 套件和11个故障注入控制；校验数量、完成度、退出码、未授权诊断，写日志到 `.godot/test-results/` |
+| `test_runner.py` | 自动 `--editor --import`，执行全部22个 headless、6个 editor 套件和12个故障注入控制；校验数量、完成度、退出码、未授权诊断，写日志到 `.godot/test-results/` |
 | `test_counts.json` | 每个套件的精确断言数量，不允许少注册测试 |
 | `release_check.py` | 从插件包实际安装空白工程、注入安装失败、独立 clone 全测，以及可选 School/GamePrototype 隔离升级回归；打印证据目录 |
 | `blank_install_check.gd` | 只依赖 addon 的8项安装/运行/资源读回测试；故障模式必须返回非零 |

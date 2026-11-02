@@ -29,6 +29,7 @@ var command_index: int = -1
 var command_serial: int = 0
 var trace_pages: Array = []
 
+var _failure_reason := ""
 var _settling := false
 var cancelled: bool = false
 var cancel_reason: String = ""

@@ -8,6 +8,7 @@ extends RefCounted
 
 enum Result { COMPLETED, CANCELLED, FAILED }
 
+const ScriptGuard = preload("res://addons/rpgeventstudio/core/runtime/script_error_guard.gd")
 const StateSession = preload("res://addons/rpgeventstudio/core/state/event_state_session.gd")
 
 const MAX_CALL_DEPTH := 8
@@ -177,7 +178,7 @@ func _drive(ctx: EventContext) -> void:
 		result = Result.CANCELLED
 	elif code == CmdResult.ABORT:
 		result = Result.FAILED
-		fail_reason = L10n.game("diag.command_failed")
+		fail_reason = ctx._failure_reason if ctx._failure_reason != "" else L10n.game("diag.command_failed")
 
 	if result == Result.COMPLETED:
 		# Commit is a synchronous terminal boundary; cancellation cannot undo a published batch.
@@ -256,14 +257,19 @@ func _execute_list(ctx: EventContext, commands: Array) -> int:
 			if ctx.cancelled:
 				return CmdResult.ABORT
 		ctx.state._write_context = {"trace_id": ctx.trace_id, "event_id": ctx.event_id, "command_index": index, "command_type": command_type}
+		var guard := ScriptGuard.new()
+		OS.add_logger(guard)
 		var raw_code: Variant = handler.execute(ctx)
-		var code: int = raw_code if raw_code is int and raw_code in range(CmdResult.ABORT + 1) else CmdResult.ABORT
+		OS.remove_logger(guard)
+		if guard.failed:
+			ctx._failure_reason = guard.message
+		var code: int = raw_code if not guard.failed and raw_code is int and raw_code in range(CmdResult.ABORT + 1) else CmdResult.ABORT
 		match code:
 			CmdResult.CONTINUE:
 				pass
 			CmdResult.WAIT:
 				await _pump(ctx)
-				if ctx.cancelled:
+				if ctx.cancelled or ctx._failure_reason != "":
 					_trace_command_end(ctx, serial, index, command_type, CmdResult.ABORT, started_ms)
 					return CmdResult.ABORT
 			CmdResult.ENTER_BLOCK:
@@ -314,8 +320,16 @@ func _pump(ctx: EventContext) -> void:
 		await _wait_unpaused(ctx)
 		if ctx.cancelled:
 			return
-		if ctx.is_wait_done():
+		var guard := ScriptGuard.new()
+		OS.add_logger(guard)
+		var done := ctx.is_wait_done()
+		if done and not guard.failed:
 			ctx.finish_wait()
+		OS.remove_logger(guard)
+		if guard.failed:
+			ctx._failure_reason = guard.message
+			return
+		if done:
 			return
 		await _next_frame()
 
@@ -465,7 +479,7 @@ func _run_nested_event(parent: EventContext, target: EventDefinition, call_args:
 		result = Result.CANCELLED
 	elif code == CmdResult.ABORT:
 		result = Result.FAILED
-		fail_reason = L10n.game("diag.command_failed")
+		fail_reason = child._failure_reason if child._failure_reason != "" else L10n.game("diag.command_failed")
 	var report := {
 		"event_id": child.event_id,
 		"instance_id": child.instance_id,
@@ -491,6 +505,7 @@ func _run_nested_event(parent: EventContext, target: EventDefinition, call_args:
 		parent._cancel_hooks.append_array(child._cancel_hooks)
 		child._cancel_hooks.clear()
 	elif result == Result.FAILED:
+		parent._failure_reason = fail_reason
 		child.cancel(fail_reason)
 	child._settling = true
 	bus.event_finished.emit(report)
