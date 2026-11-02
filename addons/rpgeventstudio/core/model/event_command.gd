@@ -20,7 +20,15 @@ func set_param(key: String, value: Variant) -> void:
 func duplicate_command() -> EventCommand:
 	# Containers and command trees are owned by the copy; referenced assets/events
 	# remain references (duplicating an audio/event resource changes its meaning).
-	var copy := EventCommand.new()
+	var copy := duplicate(false) as EventCommand
+	# Preserve third-party scripts and storage fields; copy owned containers only.
+	for property in get_property_list():
+		if int(property["usage"]) & PROPERTY_USAGE_STORAGE:
+			var value: Variant = get(property["name"])
+			if value is Array or value is Dictionary:
+				copy.set(property["name"], value.duplicate(true))
+	copy.children = []
+	copy.else_children = []
 	copy.type = type
 	copy.params = params.duplicate(true)
 	copy.enabled = enabled

@@ -30,6 +30,7 @@ func _run() -> void:
 	_test_choice_block_operations()
 	_test_reference_copy()
 	_test_legacy_string_options()
+	_test_extended_command_copy()
 	panel.queue_free()
 	await process_frame
 	_report()
@@ -275,3 +276,14 @@ func _test_legacy_string_options() -> void:
 	_check(show.params["options"][0] == "changed", "字符串选项可改名")
 	_check(doc.choice_move_option(doc.build_items()[0], 0, 1), "字符串选项可以移动")
 	_check(a.children[0] == line_b and b.children[0] == line_a, "移动保留分支命令实例且与文本一致")
+
+func _test_extended_command_copy() -> void:
+	var original: EventCommand = load("res://tests/fixtures/extended_command.gd").new()
+	original.resource_name = "Keep custom Resource identity"
+	var copy := original.duplicate_command()
+	_check(copy.get_script() == original.get_script(), "复制保留第三方 EventCommand 子类脚本")
+	var payload: Variant = copy.get("extra")
+	if payload is Dictionary:
+		payload["notes"][0] = "changed"
+	_check(payload is Dictionary and original.get("extra")["notes"][0] == "original", "第三方导出容器深拷贝且不污染原资源")
+	_check(copy.resource_name == original.resource_name, "复制保留 Resource 名称等既有存储属性")
