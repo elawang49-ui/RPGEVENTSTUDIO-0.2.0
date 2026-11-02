@@ -133,6 +133,8 @@ def package(output):
             if not file.is_file() or file.suffix in (".bak", ".tmp", ".translation", ".import") or file.name == ".DS_Store":
                 continue
             archive.write(file, file.relative_to(ROOT))
+        for name in ["LICENSE", "LICENSING.md"]:
+            archive.write(ROOT / name, name)
         for name in ["INSTALL.md", "RELEASE_NOTES.md", "school-state-contract.patch"]:
             file = ROOT / "docs" / "release" / name
             if file.exists():

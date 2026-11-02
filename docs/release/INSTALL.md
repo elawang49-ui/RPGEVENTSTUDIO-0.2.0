@@ -71,3 +71,9 @@ python3 tools/release_check.py --fresh          # 独立无缓存 clone + 全量
 ```
 
 宿主回归可加 `--school <School路径> --school-state-contract --prototype <GamePrototype路径>`。工具只改新建隔离副本，原项目不变。证据和日志目录会打印到控制台，失败返回非零。
+
+## 作者与许可
+
+elawang49-ui <elawang49@gmail.com>。自定义RPGEVENTSTUDIO Source-Available License 1.0允许用插件制作和发行商业游戏，包括收费、广告、内购；禁止把插件本身或其修改版作为收费插件销售或收费分发。随游戏打包必要运行时是允许的，不要求公开游戏源码。分发插件时保留LICENSE；游戏可在随附许可证文件中保留声明，无需启动画面署名。
+
+完整授权条款随安装包提供，复制addons/rpgeventstudio目录时其中的LICENSE和LICENSING.md也必须保留。本项目准确归类为“源码公开、禁止售卖插件”，不是OSI开源许可。

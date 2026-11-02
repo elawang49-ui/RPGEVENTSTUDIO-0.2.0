@@ -108,3 +108,9 @@ python3 tools/release_check.py --school <School> --school-state-contract --proto
 ```
 
 最终HEAD、完整新增提交清单、插件包SHA-256、源码ZIP和可独立clone的Git bundle列在交付目录的COMMITS.txt和SHA256SUMS.txt中。报告归档后发布worktree保持干净；没有合并main或推送/发布远程版本。
+
+## 9. 发布许可补充（2026-11-02）
+
+用户确认的准确许可范围为“允许做商业游戏，只禁止售卖插件本身”，并最终选择设备Git/SSH账号elawang49-ui及邮箱elawang49@gmail.com作为署名。新增自定义RPGEVENTSTUDIO Source-Available License 1.0；完整条款与中文说明同时保存在仓库根目录和插件目录，安装包也包含它们。允许商业游戏、独立扩展与服务，禁止售卖插件本体/改版；不冒称MIT/GPL或OSI开源许可。
+
+本轮只修改署名、授权说明和打包内容，不修改运行时代码、公共API或资源schema。既有验收数量保持有效；许可证版本另做实际ZIP独立安装和许可文件一致性验证。后续提交使用当前GitHub账号的作者邮箱，仅通过单次git命令覆盖身份；没有修改设备全局Git配置，也没有改写既有历史提交。

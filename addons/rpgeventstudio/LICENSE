@@ -1,0 +1,70 @@
+RPGEVENTSTUDIO Source-Available License 1.0
+
+Copyright (c) 2026 elawang49-ui
+Contact: elawang49@gmail.com
+
+1. Scope
+
+"Software" means the RPGEVENTSTUDIO source code, documentation, examples, and
+other project material provided under this license, including modified versions
+and forks of that material. Material carrying a separate third-party license
+remains governed by that separate license.
+
+2. Permission
+
+Subject to the conditions below, the copyright holder grants you a worldwide,
+non-exclusive, royalty-free copyright license to use, copy, run, study, modify,
+and distribute the Software for personal, educational, and commercial purposes.
+You may share the Software and modified versions free of charge.
+
+You may use the Software to develop and distribute commercial games, including
+paid games, games supported by advertising, games with in-app purchases, and
+paid downloadable game content. You may include the Software's runtime or other
+necessary portions in those games. Your game, original game content, and
+independent code do not have to be published as source or licensed under these
+terms merely because they use the Software.
+
+Independently authored extensions that do not contain substantial portions of
+the Software are not the Software and may have their own licenses and pricing.
+Any redistribution of the Software alongside an extension remains subject to
+this license.
+
+3. No Sale of the Plugin
+
+You may not sell, offer a paid license to, charge for access to, or charge for
+redistribution of the Software itself, including a modified version or fork,
+as a standalone plugin or as a paid plugin/toolkit bundle whose primary
+commercial offering is the Software. Renaming, repackaging, or modifying the
+Software does not remove this restriction.
+
+Selling a game or game content permitted by section 2 is not a sale of the
+Software merely because the game includes or depends on the Software. Fees for
+independent game development, integration, training, or maintenance services
+are permitted, provided they are not a charge for access to, a license to, or
+redistribution of the plugin as a paid product.
+
+4. Redistribution and Notices
+
+When you distribute the Software or a modified version, preserve its copyright
+notices and include this license. Software modifications distributed as a
+plugin or fork must remain available to their recipients under these same
+terms; you may not remove the no-sale restriction from such a distribution.
+This condition does not apply to your independent game or original game
+content described in section 2. A distributed game may place the required
+Software notices in its accompanying license files or third-party notices;
+on-screen attribution is not required.
+
+5. Reserved Rights
+
+Rights not expressly granted are reserved. No trademark rights are granted.
+Any use outside these permissions requires separate written permission from
+the copyright holder at the contact address above. These permissions are
+conditional on compliance with this license.
+
+6. Disclaimer
+
+The Software is provided "AS IS", without warranties of any kind, express or
+implied, including warranties of merchantability, fitness for a particular
+purpose, and non-infringement. To the extent permitted by applicable law, the
+copyright holder and contributors are not liable for any claim, loss, or damage
+arising from the Software, its use, or inability to use it.
