@@ -12,6 +12,7 @@ extends VBoxContainer
 const INSERT_DEFAULT_CHOICE_OPTIONS := 2
 
 const ResourceEdits = preload("res://addons/rpgeventstudio/editor/resource_edits.gd")
+const STUDIO_DESIGN := preload("res://addons/rpgeventstudio/core/theme/studio_design.gd")
 
 var _plugin: EditorPlugin
 var _definition: EventDefinition
@@ -113,16 +114,19 @@ func _definition_of_node(node: Node) -> EventDefinition:
 # ── 界面骨架 ─────────────────────────────────────────────
 
 func _build_ui() -> void:
-	add_theme_constant_override("separation", 6)
+	add_theme_constant_override("separation", 8)
 
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 6)
+	var header := HFlowContainer.new()
+	header.add_theme_constant_override("h_separation", 7)
+	header.add_theme_constant_override("v_separation", 6)
 	add_child(header)
 
 	_title_label = Label.new()
 	_title_label.text = L10n.ui("story.title")
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title_label.add_theme_font_size_override("font_size", 15)
+	_title_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_title_label.add_theme_font_size_override("font_size", 18)
+	_title_label.add_theme_color_override("font_color", STUDIO_DESIGN.TEXT)
 	header.add_child(_title_label)
 
 	_open_button = Button.new()
@@ -147,7 +151,9 @@ func _build_ui() -> void:
 
 	_save_button = Button.new()
 	_save_button.text = L10n.ui("editor.save")
+	_save_button.custom_minimum_size = Vector2(72, 0)
 	_save_button.pressed.connect(_on_save_pressed)
+	STUDIO_DESIGN.primary_button(_save_button)
 	header.add_child(_save_button)
 
 	_panels_menu = MenuButton.new()
@@ -216,22 +222,25 @@ func _build_ui() -> void:
 	center.add_child(center_split)
 
 	var list_scroll := ScrollContainer.new()
+	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	list_scroll.custom_minimum_size = Vector2(0, 220)
+	list_scroll.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.OBSIDIAN, STUDIO_DESIGN.BORDER_SOFT, 8, 1, 6, 6))
 	center_split.add_child(list_scroll)
 
 	_script_list = VBoxContainer.new()
 	_script_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_script_list.add_theme_constant_override("separation", 2)
+	_script_list.add_theme_constant_override("separation", 4)
 	list_scroll.add_child(_script_list)
 
 	var editor_scroll := ScrollContainer.new()
 	editor_scroll.custom_minimum_size = Vector2(0, 190)
+	editor_scroll.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.SURFACE, STUDIO_DESIGN.BORDER_SOFT, 8, 1, 10, 10))
 	center_split.add_child(editor_scroll)
 
 	_editor_box = VBoxContainer.new()
 	_editor_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_editor_box.add_theme_constant_override("separation", 4)
+	_editor_box.add_theme_constant_override("separation", 7)
 	editor_scroll.add_child(_editor_box)
 
 	_preview_panel = _build_preview_section()
@@ -287,16 +296,19 @@ func _on_panels_menu(id: int) -> void:
 	_update_responsive_panels()
 
 func _build_roster_section() -> Control:
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(250, 0)
+	frame.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.SURFACE, STUDIO_DESIGN.BORDER_SOFT, 9, 1, 11, 11))
 	var panel := VBoxContainer.new()
-	panel.custom_minimum_size = Vector2(250, 0)
-	panel.add_theme_constant_override("separation", 4)
+	panel.add_theme_constant_override("separation", 7)
+	frame.add_child(panel)
 
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 4)
 	var title := Label.new()
 	title.text = L10n.ui("story.roster.title")
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_font_size_override("font_size", 13)
+	STUDIO_DESIGN.section_title(title)
 	header.add_child(title)
 	var add := Button.new()
 	add.text = "＋"
@@ -313,53 +325,58 @@ func _build_roster_section() -> Control:
 	var list_scroll := ScrollContainer.new()
 	list_scroll.custom_minimum_size = Vector2(0, 130)
 	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list_scroll.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.OBSIDIAN, STUDIO_DESIGN.BORDER_SOFT, 7, 1, 5, 5))
 	panel.add_child(list_scroll)
 	_roster_list = VBoxContainer.new()
 	_roster_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_roster_list.add_theme_constant_override("separation", 2)
+	_roster_list.add_theme_constant_override("separation", 4)
 	list_scroll.add_child(_roster_list)
 
 	_roster_fields = VBoxContainer.new()
-	_roster_fields.add_theme_constant_override("separation", 3)
+	_roster_fields.add_theme_constant_override("separation", 5)
 	panel.add_child(_roster_fields)
 
 	var hint := Label.new()
 	hint.text = L10n.ui("story.roster.hint")
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_font_size_override("font_size", UiFonts.NOTE)
-	hint.add_theme_color_override("font_color", Color(0.55, 0.60, 0.68))
+	hint.add_theme_color_override("font_color", STUDIO_DESIGN.TEXT_FAINT)
 	panel.add_child(hint)
-	return panel
+	return frame
 
 func _build_preview_section() -> Control:
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(320, 0)
+	frame.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.SURFACE, STUDIO_DESIGN.BORDER_SOFT, 9, 1, 12, 12))
 	var panel := VBoxContainer.new()
-	panel.custom_minimum_size = Vector2(320, 0)
-	panel.add_theme_constant_override("separation", 4)
+	panel.add_theme_constant_override("separation", 7)
+	frame.add_child(panel)
 
 	var title := Label.new()
 	title.text = L10n.ui("story.preview.title")
-	title.add_theme_font_size_override("font_size", 13)
+	STUDIO_DESIGN.section_title(title)
 	panel.add_child(title)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.OBSIDIAN, STUDIO_DESIGN.BORDER_SOFT, 7, 1, 9, 9))
 	panel.add_child(scroll)
 
 	_preview_label = RichTextLabel.new()
 	_preview_label.bbcode_enabled = true
 	_preview_label.fit_content = true
 	_preview_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_preview_label.custom_minimum_size = Vector2(300, 0)
+	_preview_label.custom_minimum_size = Vector2(280, 0)
 	_preview_label.add_theme_font_size_override("normal_font_size", 14)
-	_preview_label.add_theme_constant_override("line_separation", 4)
-	_preview_label.add_theme_color_override("default_color", Color(0.90, 0.92, 0.96))
+	_preview_label.add_theme_constant_override("line_separation", 6)
+	_preview_label.add_theme_color_override("default_color", STUDIO_DESIGN.TEXT)
 	scroll.add_child(_preview_label)
 
 	var issues_title := Label.new()
 	issues_title.text = L10n.ui("story.preview.issues_title")
 	issues_title.add_theme_font_size_override("font_size", UiFonts.NOTE)
-	issues_title.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
+	issues_title.add_theme_color_override("font_color", STUDIO_DESIGN.TEXT_MUTED)
 	panel.add_child(issues_title)
 
 	_preview_issues = Label.new()
@@ -367,7 +384,7 @@ func _build_preview_section() -> Control:
 	_preview_issues.add_theme_font_size_override("font_size", UiFonts.NOTE)
 	_preview_issues.add_theme_color_override("font_color", Color(0.98, 0.68, 0.42))
 	panel.add_child(_preview_issues)
-	return panel
+	return frame
 
 func _show_placeholder(text: String) -> void:
 	_title_label.text = L10n.ui("story.title")
@@ -580,7 +597,9 @@ func _make_select_button(row: HBoxContainer, item: Dictionary, text: String, col
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.toggle_mode = true
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.clip_text = false
+	button.clip_text = true
+	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	STUDIO_DESIGN.command_button(button)
 	button.pressed.connect(_on_row_pressed.bind(item))
 	if color.a > 0.0:
 		button.add_theme_color_override("font_color", color)

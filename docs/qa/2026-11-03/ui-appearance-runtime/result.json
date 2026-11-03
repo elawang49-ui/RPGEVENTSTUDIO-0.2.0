@@ -1,0 +1,238 @@
+{
+  "at": "2026-11-03T16:15:26",
+  "checks": [
+    {
+      "detail": "玩家进入交互半径（距离 51.3）",
+      "id": "interact.reach",
+      "ok": true
+    },
+    {
+      "detail": "交互提示出现（图书管理员\n空格 / 回车 / 鼠标左键 / 手柄 A）",
+      "id": "interact.prompt",
+      "ok": true
+    },
+    {
+      "detail": "按下交互键后对话框打开",
+      "id": "interact.trigger",
+      "ok": true
+    },
+    {
+      "detail": "正文显示第一句：你看起来在找什么？",
+      "id": "dialogue.first_text",
+      "ok": true
+    },
+    {
+      "detail": "短文本对话框在窗口内（bottom=596.2 / 648.0）",
+      "id": "dialogue.short_bounds",
+      "ok": true
+    },
+    {
+      "detail": "短文本不出现正文滚动条",
+      "id": "dialogue.short_no_scroll",
+      "ok": true
+    },
+    {
+      "detail": "说话人标签应用了外观包样式",
+      "id": "dialogue.speaker_style",
+      "ok": true
+    },
+    {
+      "detail": "出现动画结束后不透明度为 1",
+      "id": "dialogue.final_alpha",
+      "ok": true
+    },
+    {
+      "detail": "选项面板显示且为 2 项（实际 2）",
+      "id": "choices.visible",
+      "ok": true
+    },
+    {
+      "detail": "选项带编号：01   询问钥匙 / 02   离开",
+      "id": "choices.numbered",
+      "ok": true
+    },
+    {
+      "detail": "默认选中第 1 项",
+      "id": "choices.default_selected",
+      "ok": true
+    },
+    {
+      "detail": "选中项与未选中项背景不同（(0.16, 0.13, 0.085, 0.98) / (0.06, 0.075, 0.105, 0.88)）",
+      "id": "choices.selected_style",
+      "ok": true
+    },
+    {
+      "detail": "方向键把选中项切到第 2 项",
+      "id": "choices.keyboard_switch",
+      "ok": true
+    },
+    {
+      "detail": "切换后高亮跟随到第 2 项",
+      "id": "choices.keyboard_feedback",
+      "ok": true
+    },
+    {
+      "detail": "鼠标移到第 1 项后选中反馈切回第 1 项",
+      "id": "choices.mouse_switch",
+      "ok": true
+    },
+    {
+      "detail": "鼠标点击后选项面板关闭并进入所选分支",
+      "id": "choices.click_select",
+      "ok": true
+    },
+    {
+      "detail": "选项分支正文：这把钥匙给你，别弄丢了。",
+      "id": "flow.key_text",
+      "ok": true
+    },
+    {
+      "detail": "获得道具提示：获得【教室钥匙】！",
+      "id": "flow.item_text",
+      "ok": true
+    },
+    {
+      "detail": "获得钥匙后本次事件结束",
+      "id": "flow.event_end",
+      "ok": true
+    },
+    {
+      "detail": "再次交互命中条件页：钥匙要收好，教室门就在右边。",
+      "id": "flow.conditional_page",
+      "ok": true
+    },
+    {
+      "detail": "动画结束后的最终画面：可见、alpha=1、offset=0",
+      "id": "anim.final_frame",
+      "ok": true
+    },
+    {
+      "detail": "长文本事件在真实运行时启动",
+      "id": "long.started",
+      "ok": true
+    },
+    {
+      "detail": "长文本需要翻页",
+      "id": "long.needs_pages",
+      "ok": true
+    },
+    {
+      "detail": "长文本不使用滚动条",
+      "id": "long.no_scrollbar",
+      "ok": true
+    },
+    {
+      "detail": "翻页推进（0 → 2）",
+      "id": "long.page2_advance",
+      "ok": true
+    },
+    {
+      "detail": "第 2 页有可见行",
+      "id": "long.page2_visible",
+      "ok": true
+    },
+    {
+      "detail": "再次翻页推进（2 → 4）",
+      "id": "long.page3_advance",
+      "ok": true
+    },
+    {
+      "detail": "长文本翻页可终止（额外 5 页）",
+      "id": "long.terminates",
+      "ok": true
+    },
+    {
+      "detail": "验收事件结束后界面复位（正文行数 1 → 15）",
+      "id": "long.cleanup",
+      "ok": true
+    },
+    {
+      "detail": "1280×820 面板在窗口内（bottom=754 / 820）",
+      "id": "wide.panel_inside",
+      "ok": true
+    },
+    {
+      "detail": "1280×820 正文按真实行高取整（114.0 / 38.0 = 3.00 行）",
+      "id": "wide.whole_lines",
+      "ok": true
+    },
+    {
+      "detail": "1280×820 长文本可翻页",
+      "id": "wide.page_turn",
+      "ok": true
+    },
+    {
+      "detail": "按 F1 打开按键设置弹层",
+      "id": "settings.open_by_key",
+      "ok": true
+    },
+    {
+      "detail": "弹层在窗口内（680x560 @ 236,44 / 1152x648）",
+      "id": "settings.bounds",
+      "ok": true
+    },
+    {
+      "detail": "操作行已生成（12 组）",
+      "id": "settings.rows",
+      "ok": true
+    },
+    {
+      "detail": "弹层打开时游戏输入被阻断",
+      "id": "settings.blocks_game",
+      "ok": true
+    },
+    {
+      "detail": "语言切换后标题刷新为英文（实际 Input Settings）",
+      "id": "settings.language",
+      "ok": true
+    },
+    {
+      "detail": "语言切回中文（实际 按键设置）",
+      "id": "settings.language_back",
+      "ok": true
+    },
+    {
+      "detail": "找到改键按钮",
+      "id": "settings.rebind_button",
+      "ok": true
+    },
+    {
+      "detail": "点击修改后进入按键监听",
+      "id": "settings.listening",
+      "ok": true
+    },
+    {
+      "detail": "Esc 只取消监听，不关闭弹层",
+      "id": "settings.cancel_listen",
+      "ok": true
+    },
+    {
+      "detail": "点击关闭按钮后弹层关闭",
+      "id": "settings.close_button",
+      "ok": true
+    },
+    {
+      "detail": "再次按 F1 重新打开",
+      "id": "settings.reopen",
+      "ok": true
+    },
+    {
+      "detail": "Esc 关闭弹层",
+      "id": "settings.close_esc",
+      "ok": true
+    },
+    {
+      "detail": "关闭后游戏输入恢复",
+      "id": "settings.unblock",
+      "ok": true
+    }
+  ],
+  "failed": 0,
+  "godot": "4.7.2-stable (official)",
+  "passed": 45,
+  "shots": "res://docs/images/ui-appearance-runtime",
+  "view": [
+    1152,
+    648
+  ]
+}

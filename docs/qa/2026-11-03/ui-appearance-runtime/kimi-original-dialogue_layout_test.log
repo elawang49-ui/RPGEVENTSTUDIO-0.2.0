@@ -1,0 +1,30 @@
+ERROR: Failed to open 'user://logs/godot2026-11-03T16.14.50.log'.
+   at: copy (core/io/dir_access.cpp:429)
+ERROR: Failed to open log file for writing: user://logs/godot.log
+   at: rotate_file (core/io/logger.cpp:169)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ✓ 对话框界面已构建
+  ✓ 超长正文不启用玩家滚动条
+  ✓ 超长正文本体滚动条不可见
+  ✓ 超长正文内容高于可见区域
+  ✓ 超长正文可翻页
+  ✓ 推进后翻到下一页（scroll=76.0）
+  ✓ 翻页后仍等待继续
+  ✓ 翻页后面板保持显示
+  ✓ 超长正文对话框底边不越出窗口（bottom=596.2）
+  ✓ 短正文不显示滚动条
+  ✓ 短正文完整可见
+  ✓ 短正文对话框底边不越出窗口（bottom=598.5）
+  ✓ 选项面板可见
+  ✓ 选项面板允许按需纵向滚动
+  ✓ 选项滚动区高度不超过窗口
+  ✓ 选项面板底边不越出窗口（bottom=392.7）
+
+──────── 对话框布局测试结果 ────────
+检查项：16，失败：0
+RESULT: PASS
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

@@ -9,6 +9,7 @@ extends VBoxContainer
 const THEME_PATH := "res://ui/rpgeventstudio_theme.tres"
 const UI_MODE_SETTING := "rpg_event_studio/ui_mode"
 const CAPS_SETTING := "rpg_event_studio/custom_ui_capabilities"
+const STUDIO_DESIGN := preload("res://addons/rpgeventstudio/core/theme/studio_design.gd")
 
 const SAMPLE_PLAIN := "这是一段普通文本预览。\n可以检查颜色、字号、位置与内边距。"
 const SAMPLE_BBCODE := "[b]重点文字[/b]\n[color=#FFD700]关键线索[/color] [font_size=26]大字号[/font_size]\n[center]居中文字[/center]"
@@ -121,30 +122,34 @@ func _process(_delta: float) -> void:
 func _build() -> void:
 	add_theme_constant_override("separation", 8)
 	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 16)
 	add_child(header)
-	var title := Label.new()
-	title.text = L10n.ui("theme.title")
-	title.add_theme_font_size_override("font_size", 18)
-	header.add_child(title)
+	header.add_child(STUDIO_DESIGN.heading(L10n.ui("theme.title"), "INTERFACE ATELIER"))
 	_path_label = Label.new()
 	_path_label.text = L10n.ui("theme.path", {"path": theme_path})
 	_path_label.custom_minimum_size = Vector2(0, 0)
 	_path_label.clip_text = true
 	_path_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_path_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_path_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_path_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_path_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
-	_path_label.add_theme_color_override("font_color", Color(0.62, 0.68, 0.76))
+	_path_label.add_theme_color_override("font_color", STUDIO_DESIGN.TEXT_MUTED)
 	header.add_child(_path_label)
 
 	if _custom_mode:
 		_build_custom_mode()
 		return
 
-	var footer := HBoxContainer.new()
+	var footer := HFlowContainer.new()
+	footer.add_theme_constant_override("h_separation", 7)
+	footer.add_theme_constant_override("v_separation", 6)
 	add_child(footer)
 	var save := Button.new()
 	save.text = L10n.ui("theme.save")
+	save.custom_minimum_size = Vector2(104, 0)
 	save.pressed.connect(_save_theme)
+	STUDIO_DESIGN.primary_button(save)
 	footer.add_child(save)
 	var reload := Button.new()
 	reload.text = L10n.ui("theme.reload")
@@ -185,16 +190,19 @@ func _build() -> void:
 	preview_side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	preview_side.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	preview_side.custom_minimum_size = Vector2(360, 0)
+	preview_side.add_theme_constant_override("separation", 7)
 	body.add_child(preview_side)
 	_preview_side = preview_side
 
 	var preview_title := Label.new()
 	preview_title.text = L10n.ui("theme.preview")
-	preview_title.add_theme_font_size_override("font_size", 12)
+	STUDIO_DESIGN.section_title(preview_title)
 	preview_side.add_child(preview_title)
 	var sample_row := HBoxContainer.new()
+	sample_row.add_theme_constant_override("separation", 6)
 	preview_side.add_child(sample_row)
 	_sample = OptionButton.new()
+	_sample.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for key in ["theme.preview.text", "theme.preview.bbcode", "theme.preview.multiline", "theme.preview.choices"]:
 		_sample.add_item(L10n.ui(key))
 	_sample.item_selected.connect(func(_index: int) -> void: _play_preview())
@@ -204,20 +212,16 @@ func _build() -> void:
 	replay.pressed.connect(_play_preview)
 	sample_row.add_child(replay)
 
-
 	var preview_panel := PanelContainer.new()
 	preview_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# 固定预览高度：编辑器主屏本身可能很高，预览若跟着拉伸，对话框会落到可视区外。
+	# 预览填充当前可用空间；子视口由 SubViewportContainer 管理，不反向撑高主屏。
 	preview_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	preview_panel.custom_minimum_size = Vector2(240, 240)
-	var preview_style := StyleBoxFlat.new()
-	preview_style.bg_color = Color(0.08, 0.09, 0.12)
-	preview_style.set_corner_radius_all(4)
-	preview_panel.add_theme_stylebox_override("panel", preview_style)
+	preview_panel.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.OBSIDIAN, STUDIO_DESIGN.BORDER, 10, 1, 1, 1))
 	preview_side.add_child(preview_panel)
 	_preview_panel = preview_panel
 	var container := SubViewportContainer.new()
-	container.stretch = false
+	container.stretch = true
 	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	container.resized.connect(_sync_preview_size)
@@ -229,8 +233,18 @@ func _build() -> void:
 	_preview_viewport.size = Vector2i(320, 180)
 	_preview_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	container.add_child(_preview_viewport)
-	var bg := ColorRect.new()
-	bg.color = Color(0.08, 0.09, 0.12)
+	# 预览舞台使用极轻的冷雾蓝渐变，衬托对话框而不是与其争夺注意力。
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(0.075, 0.10, 0.145))
+	gradient.set_color(1, STUDIO_DESIGN.OBSIDIAN)
+	var backdrop := GradientTexture2D.new()
+	backdrop.gradient = gradient
+	backdrop.fill_from = Vector2(0.0, 0.0)
+	backdrop.fill_to = Vector2(0.85, 1.0)
+	var bg := TextureRect.new()
+	bg.texture = backdrop
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.stretch_mode = TextureRect.STRETCH_SCALE
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_preview_viewport.add_child(bg)
@@ -244,7 +258,7 @@ func _build() -> void:
 	var settings := VBoxContainer.new()
 	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	settings.add_theme_constant_override("separation", 6)
+	settings.add_theme_constant_override("separation", 7)
 	body.add_child(settings)
 	_settings_box = settings
 
@@ -252,8 +266,7 @@ func _build() -> void:
 	settings.add_child(settings_header)
 	var settings_title := Label.new()
 	settings_title.text = L10n.ui("theme.settings")
-	settings_title.add_theme_font_size_override("font_size", 12)
-	settings_title.add_theme_color_override("font_color", Color(0.7, 0.74, 0.82))
+	STUDIO_DESIGN.section_title(settings_title)
 	settings_header.add_child(settings_title)
 	_section_jump = OptionButton.new()
 	_section_jump.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -265,10 +278,11 @@ func _build() -> void:
 	_settings_scroll.custom_minimum_size = Vector2(360, 0)
 	_settings_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_settings_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_settings_scroll.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.SURFACE, STUDIO_DESIGN.BORDER_SOFT, 8, 1, 10, 10))
 	settings.add_child(_settings_scroll)
 	_controls_box = VBoxContainer.new()
 	_controls_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_controls_box.add_theme_constant_override("separation", 3)
+	_controls_box.add_theme_constant_override("separation", 5)
 	_settings_scroll.add_child(_controls_box)
 
 	resized.connect(_update_responsive_layout)
@@ -336,21 +350,18 @@ func _update_responsive_layout() -> void:
 				_preview_panel.custom_minimum_size = Vector2(240, 240)
 	call_deferred("_sync_preview_size")
 
-## 预览 SubViewport 跟随真实容器尺寸，避免固定 960×540 被拉伸成灰边/错比例。
+## stretch=true 时引擎会让 SubViewport 跟随内容容器，且不传播反向最小尺寸。
+## 这里只监听尺寸变化并重新测量对话高度；不要再次手动回写 viewport.size。
 func _sync_preview_size() -> void:
 	if _preview_container == null or _preview_viewport == null:
 		return
-	var panel_size := _preview_panel.size
-	if panel_size.x < 1.0 or panel_size.y < 1.0:
-		panel_size = _preview_container.size
-	if panel_size.x < 1.0 or panel_size.y < 1.0:
+	var content_size := _preview_container.size
+	if content_size.x <= 2.0 or content_size.y <= 2.0:
 		return
-	var target := Vector2i(maxi(1, int(panel_size.x)), maxi(1, int(panel_size.y)))
+	var target := Vector2i(maxi(1, int(content_size.x)), maxi(1, int(content_size.y)))
 	if target == _last_preview_size:
 		return
 	_last_preview_size = target
-	if panel_size.x > 2.0 and panel_size.y > 2.0:
-		_preview_viewport.size = target
 	if _preview != null and is_instance_valid(_preview):
 		_preview.call("_schedule_height_update")
 
@@ -435,12 +446,12 @@ func _build_controls() -> void:
 			_controls_box.add_child(HSeparator.new())
 		var section_box := VBoxContainer.new()
 		section_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		section_box.add_theme_constant_override("separation", 2)
+		section_box.add_theme_constant_override("separation", 5)
 		_controls_box.add_child(section_box)
 		var heading := Label.new()
 		heading.text = L10n.ui(str(section.get("title", "")))
-		heading.add_theme_font_size_override("font_size", 13)
-		heading.add_theme_color_override("font_color", Color(0.78, 0.84, 0.92))
+		heading.add_theme_font_size_override("font_size", 12)
+		heading.add_theme_color_override("font_color", STUDIO_DESIGN.GOLD_BRIGHT)
 		section_box.add_child(heading)
 		for field in section.get("fields", []):
 			section_box.add_child(_make_field(field))

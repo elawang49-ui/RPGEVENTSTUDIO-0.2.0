@@ -47,6 +47,7 @@ func _run() -> void:
 	await _test_auto_after_typing()
 	await _test_last_page_and_choices()
 	await _test_overlap_mode()
+	await _test_font_metrics_alignment()
 
 	_p.queue_free()
 	_report()
@@ -291,6 +292,31 @@ func _test_overlap_mode() -> void:
 	_check(int(_p.get("_page_line")) == no_end,
 		"不重叠：下一页从第一个未完整行开始（%d→%d）" % [no_start, no_end])
 	_check(int(_p.get("_page_line")) > no_start, "不重叠：页面向前推进")
+
+# ── 默认字体：行高取整（页底不能露半行） ───────────────────
+
+## 回归：正文高度曾用 font_size + line_separation 估算（21+7=28），
+## 而中文字体真实行高约 38；按 28 取整会在页底露出下一行的上半截。
+func _test_font_metrics_alignment() -> void:
+	var theme := RpgEventStudioTheme.new()
+	theme.text_font_size = 21
+	theme.line_separation = 7
+	theme.text_speed = 4000.0
+	_p.set_dialogue_theme(theme)
+	await _show_ready("默认字体行高验收：这一段文本用于确认正文高度按真实字体度量取整。" .repeat(18))
+	var font := _label.get_theme_font("normal_font")
+	var line_height := font.get_height(21) + 7.0
+	var ratio := _label.size.y / line_height
+	_check(absf(ratio - roundf(ratio)) < 0.02,
+		"默认字体：正文高度按真实行高取整（%.1f / %.1f = %.2f 行）" % [_label.size.y, line_height, ratio])
+	var start := int(_p.get("_page_line"))
+	var end := int(_p.call("_page_end_line"))
+	var tops: PackedFloat32Array = _p.call("_measure_line_tops", true)
+	if end < tops.size() and start < tops.size():
+		_check(tops[end] - tops[start] >= _label.size.y - 0.5,
+			"默认字体：页底不露半行（下一行起点 %.1f ≥ 视口 %.1f）" % [tops[end] - tops[start], _label.size.y])
+	else:
+		_check(true, "默认字体：单页文本无需检查页底")
 
 # ── 分页完整性 ─────────────────────────────────────────────
 

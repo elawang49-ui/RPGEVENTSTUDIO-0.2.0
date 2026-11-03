@@ -332,13 +332,14 @@ func _apply_fit_view() -> void:
 		(canvas.x - margin * 2.0) / maxf(bounds.size.x, 1.0),
 		(canvas.y - margin * 2.0) / maxf(bounds.size.y, 1.0),
 	)
-	var zoom := clampf(fit_zoom, 0.7, 1.0)
+	var zoom := clampf(fit_zoom, 0.35, 1.0)
 	_graph_edit.zoom = zoom
+	# GraphEdit 的 scroll_offset 与画布坐标方向相反，与 _view_center/_locate_node 保持一致。
 	if zoom > fit_zoom + 0.001:
-		# 为保证文字可读性放大了最小缩放；此时从左上角开始显示，避免左侧节点被裁掉。
-		_graph_edit.scroll_offset = bounds.position * zoom - Vector2(28.0, 28.0)
+		# 极宽图表仍保留最低可读缩放；此时从左上角开始显示，避免左侧节点被裁掉。
+		_graph_edit.scroll_offset = Vector2(28.0, 28.0) - bounds.position * zoom
 	else:
-		_graph_edit.scroll_offset = bounds.get_center() * zoom - canvas * 0.5
+		_graph_edit.scroll_offset = canvas * 0.5 - bounds.get_center() * zoom
 
 ## 检查结果面板（默认收起，点工具栏「检查」展开）。
 func _build_check_panel() -> void:
@@ -489,15 +490,50 @@ func _make_node_view(node: LevelNode) -> GraphNode:
 	# 用户给节点起的标题优先；没起标题时才用类型名，避免自定义标题被类型名覆盖。
 	view.title = custom_title if custom_title != "" else type_cn
 	view.position_offset = node.position
-	view.custom_minimum_size = Vector2(220, 0)
+	view.custom_minimum_size = Vector2(224, 0)
 	view.add_theme_font_size_override("title_font_size", 15)
 	view.tooltip_text = "%s · %s\n%s" % [type_cn, String(node.node_id), _summary_of(node)]
+
+	# 每种节点保留语义色，但降低面积与饱和度：左侧细条 + 标题色，而不是整块高亮。
+	var accent := _node_color(node.type)
+	var panel := StyleBoxFlat.new()
+	panel.bg_color = Color(0.055, 0.067, 0.091, 0.98)
+	panel.border_color = Color(accent, 0.42)
+	panel.set_border_width_all(1)
+	panel.border_width_left = 3
+	panel.set_corner_radius_all(9)
+	panel.content_margin_left = 14
+	panel.content_margin_right = 12
+	panel.content_margin_top = 10
+	panel.content_margin_bottom = 10
+	panel.shadow_color = Color(0, 0, 0, 0.32)
+	panel.shadow_size = 8
+	panel.shadow_offset = Vector2(0, 4)
+	var selected_panel := panel.duplicate() as StyleBoxFlat
+	selected_panel.bg_color = Color(0.078, 0.091, 0.119, 1.0)
+	selected_panel.border_color = accent
+	var titlebar := StyleBoxFlat.new()
+	titlebar.bg_color = Color(accent, 0.10)
+	titlebar.set_corner_radius_all(8)
+	titlebar.corner_radius_bottom_left = 0
+	titlebar.corner_radius_bottom_right = 0
+	titlebar.content_margin_left = 12
+	titlebar.content_margin_right = 12
+	titlebar.content_margin_top = 8
+	titlebar.content_margin_bottom = 8
+	var selected_titlebar := titlebar.duplicate() as StyleBoxFlat
+	selected_titlebar.bg_color = Color(accent, 0.20)
+	view.add_theme_stylebox_override("panel", panel)
+	view.add_theme_stylebox_override("panel_selected", selected_panel)
+	view.add_theme_stylebox_override("titlebar", titlebar)
+	view.add_theme_stylebox_override("titlebar_selected", selected_titlebar)
+	view.add_theme_color_override("title_color", accent.lightened(0.18))
 
 	if custom_title != "":
 		var type_label := Label.new()
 		type_label.text = type_cn
 		type_label.add_theme_font_size_override("font_size", UiFonts.NOTE)
-		type_label.add_theme_color_override("font_color", _node_color(node.type))
+		type_label.add_theme_color_override("font_color", accent)
 		view.add_child(type_label)
 
 	var summary := Label.new()
@@ -511,7 +547,7 @@ func _make_node_view(node: LevelNode) -> GraphNode:
 	view.add_child(summary)
 
 	var has_output := node.type != "end"
-	view.set_slot(0, node.type != "start", 0, Color(0.55, 0.75, 1.0), has_output, 0, Color(0.85, 0.72, 0.45))
+	view.set_slot(0, node.type != "start", 0, Color(0.55, 0.75, 1.0), has_output, 0, accent)
 
 	if node.type == "condition":
 		var else_label := Label.new()
@@ -521,7 +557,7 @@ func _make_node_view(node: LevelNode) -> GraphNode:
 		view.add_child(else_label)
 		view.set_slot(1, false, 0, Color(), true, 0, Color(0.9, 0.55, 0.5))
 	elif node.type == "event":
-		view.set_slot(0, true, 0, Color(0.55, 0.75, 1.0), true, 0, Color(0.85, 0.72, 0.45))
+		view.set_slot(0, true, 0, Color(0.55, 0.75, 1.0), true, 0, accent)
 
 	_summary_labels[node.node_id] = summary
 	_graph_edit.add_child(view)

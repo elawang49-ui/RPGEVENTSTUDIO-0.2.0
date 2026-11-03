@@ -1,5 +1,6 @@
 class_name StateDebugPanel
 extends CanvasLayer
+const STUDIO_DESIGN := preload("res://addons/rpgeventstudio/core/theme/studio_design.gd")
 ## 游戏内状态调试面板（F2）：看当前状态、未登记状态、以及「事件为什么没执行」。
 ## 显示名与编辑器里完全一致——这里看到的「办公室日记已调查」就是编辑器里选的那条状态。
 
@@ -24,6 +25,7 @@ func _build() -> void:
 	_root.name = "StateDebugRoot"
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	_root.theme = STUDIO_DESIGN.runtime_theme()
 	add_child(_root)
 
 	var dim := ColorRect.new()
@@ -37,12 +39,7 @@ func _build() -> void:
 	_root.add_child(center)
 
 	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.07, 0.08, 0.11, 0.99)
-	style.border_color = Color(0.55, 0.75, 1.0, 0.85)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(10)
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel", STUDIO_DESIGN.modal_style(STUDIO_DESIGN.BLUE))
 	center.add_child(panel)
 	_panel = panel
 	_apply_bounds()

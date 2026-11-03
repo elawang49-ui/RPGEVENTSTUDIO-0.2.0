@@ -116,7 +116,8 @@ func _build_ui() -> void:
 
 	_text_label = RichTextLabel.new()
 	_text_label.bbcode_enabled = true
-	_text_label.fit_content = false
+	# 编辑器预览展示完整样张；运行时仍使用真实行测量分页。
+	_text_label.fit_content = editor_preview
 	# 滚动在 _update_heights 里按内容高度按需开启：短文本不显示滚动条，
 	# 超长文本必须能滚动，否则 1152×648 下正文会被从行中间裁掉。
 	_text_label.scroll_active = false
@@ -145,6 +146,9 @@ func _build_ui() -> void:
 	_choice_margin.add_child(_choices_scroll)
 
 	_choices_box = VBoxContainer.new()
+	# 选项按钮撑满面板宽度：ScrollContainer 只在子节点带 EXPAND 时才把它拉到自身宽度，
+	# 否则 VBox 只有文字最小宽度，按钮会缩在左侧、面板右侧留出大片空白。
+	_choices_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_choices_scroll.add_child(_choices_box)
 
 func _make_panel_style() -> StyleBoxFlat:
@@ -191,6 +195,22 @@ func _apply_style() -> void:
 
 	_name_label.add_theme_font_size_override("font_size", style.speaker_font_size)
 	_name_label.add_theme_color_override("font_color", style.speaker_color)
+	# 说话人不是普通正文：一条极细的香槟金标识 + 轻底托，建立清晰的叙事层级。
+	var speaker_style := StyleBoxFlat.new()
+	speaker_style.bg_color = Color(style.speaker_color, 0.075)
+	speaker_style.border_color = Color(style.speaker_color, 0.82)
+	speaker_style.border_width_left = 2
+	speaker_style.content_margin_left = 11.0
+	speaker_style.content_margin_right = 8.0
+	speaker_style.content_margin_top = 2.0
+	speaker_style.content_margin_bottom = 3.0
+	speaker_style.set_corner_radius_all(3)
+	speaker_style.anti_aliasing = true
+	_name_label.add_theme_stylebox_override("normal", speaker_style)
+	_name_label.add_theme_constant_override("outline_size", 0)
+	_name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.45))
+	_name_label.add_theme_constant_override("shadow_offset_x", 0)
+	_name_label.add_theme_constant_override("shadow_offset_y", 1)
 	_text_label.custom_minimum_size = Vector2(0, style.text_min_height)
 	_text_label.add_theme_font_size_override("normal_font_size", style.text_font_size)
 	_text_label.add_theme_color_override("default_color", style.text_color)
@@ -302,12 +322,18 @@ func show_choices(prompt: String, options: Array) -> void:
 	_clear_choice_buttons()
 	for index in options.size():
 		var button := Button.new()
-		button.text = str(options[index])
+		# 编号让键盘、鼠标和手柄共用同一套清晰的当前位置提示。
+		button.text = "%02d   %s" % [index + 1, str(options[index])]
 		button.custom_minimum_size = Vector2(0, style.choice_min_height if style != null else 40.0)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		# 自己管理选中项：不依赖 ui_up/ui_down，这样改键后依然有效
 		button.focus_mode = Control.FOCUS_NONE
 		button.toggle_mode = true
+		button.mouse_entered.connect(func() -> void:
+			if _choice_result < 0:
+				_choice_index = index
+				_update_choice_highlight()
+		)
 		button.pressed.connect(_on_choice_pressed.bind(index))
 		_choices_box.add_child(button)
 		_choice_buttons.append(button)
@@ -385,10 +411,22 @@ func _update_heights() -> void:
 	var text_min := minf(style.text_min_height, panel_room)
 	var panel_max := maxf(text_min, panel_room)
 	# 正文高度按整行对齐，分页边界不会留下半行。
+	# 行高必须取字体真实度量：font_size + line_separation 只是字面高度，
+	# 中文字体 ascent+descent 往往更多（如 21 号 PingFang 实际 31 + 7 = 38），
+	# 按字面值取整会让页底裁掉最后一行的一部分。
 	var line_height := maxf(1.0, float(style.text_font_size + style.line_separation))
+	var text_font := _text_label.get_theme_font("normal_font")
+	if text_font != null:
+		line_height = maxf(line_height, text_font.get_height(style.text_font_size) + float(style.line_separation))
+	if editor_preview:
+		# 预览按真实行测量完整展开短样张，同时给低高度舞台保留边界。
+		text_min = minf(maxf(float(style.text_min_height), text_content), maxf(line_height * 2.0, viewport_size.y * 0.52))
+		panel_max = maxf(text_min, panel_room)
 	var snapped_max: float = floor(panel_max / line_height) * line_height
-	if snapped_max < text_min:
+	if snapped_max < line_height:
 		snapped_max = panel_max
+	# 窗口矮到放不下最小高度时，优先保证「整行」而不是硬撑 text_min。
+	text_min = minf(text_min, snapped_max)
 	_text_label.custom_minimum_size = Vector2(0, clampf(text_content, text_min, snapped_max))
 	# 游戏内台词不使用玩家可见的滚动条：超出部分由 _dismiss_text 翻页。
 	_text_label.scroll_active = false
@@ -413,9 +451,13 @@ func close_all() -> void:
 	_kill_choices_tween()
 	if _panel != null:
 		_panel.modulate.a = 1.0
+		_panel.offset_top = 0.0
+		_panel.offset_bottom = 0.0
 		_panel.hide()
 	if _choices_panel != null:
 		_choices_panel.modulate.a = 1.0
+		_choices_panel.offset_top = 0.0
+		_choices_panel.offset_bottom = 0.0
 		_choices_panel.hide()
 	_clear_choice_buttons()
 	_typing = false
@@ -605,49 +647,73 @@ func _show_panel_with_animation() -> void:
 	_panel.show()
 	if style != null and style.appear_duration > 0.0:
 		_panel.modulate.a = 0.0
-		_panel_tween = create_tween()
+		_panel.offset_top = 10.0
+		_panel.offset_bottom = 10.0
+		_panel_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		_panel_tween.tween_property(_panel, "modulate:a", 1.0, style.appear_duration)
+		_panel_tween.parallel().tween_property(_panel, "offset_top", 0.0, style.appear_duration)
+		_panel_tween.parallel().tween_property(_panel, "offset_bottom", 0.0, style.appear_duration)
 	else:
 		_panel.modulate.a = 1.0
+		_panel.offset_top = 0.0
+		_panel.offset_bottom = 0.0
 
 func _hide_panel_with_animation() -> void:
 	_kill_panel_tween()
 	if style != null and style.disappear_duration > 0.0 and _panel.visible:
-		_panel_tween = create_tween()
+		_panel_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		_panel_tween.tween_property(_panel, "modulate:a", 0.0, style.disappear_duration)
+		_panel_tween.parallel().tween_property(_panel, "offset_top", 6.0, style.disappear_duration)
+		_panel_tween.parallel().tween_property(_panel, "offset_bottom", 6.0, style.disappear_duration)
 		_panel_tween.finished.connect(func() -> void:
 			if _panel != null:
 				_panel.hide()
 				_panel.modulate.a = 1.0
+				_panel.offset_top = 0.0
+				_panel.offset_bottom = 0.0
 		)
 	else:
 		_panel.hide()
 		_panel.modulate.a = 1.0
+		_panel.offset_top = 0.0
+		_panel.offset_bottom = 0.0
 
 func _show_choices_panel_with_animation() -> void:
 	_kill_choices_tween()
 	_choices_panel.show()
 	if style != null and style.appear_duration > 0.0:
 		_choices_panel.modulate.a = 0.0
-		_choices_tween = create_tween()
+		_choices_panel.offset_top = 8.0
+		_choices_panel.offset_bottom = 8.0
+		_choices_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		_choices_tween.tween_property(_choices_panel, "modulate:a", 1.0, style.appear_duration)
+		_choices_tween.parallel().tween_property(_choices_panel, "offset_top", 0.0, style.appear_duration)
+		_choices_tween.parallel().tween_property(_choices_panel, "offset_bottom", 0.0, style.appear_duration)
 	else:
 		_choices_panel.modulate.a = 1.0
+		_choices_panel.offset_top = 0.0
+		_choices_panel.offset_bottom = 0.0
 
 func _hide_choices_panel_with_animation() -> void:
 	_kill_choices_tween()
 	if style != null and style.disappear_duration > 0.0 and _choices_panel.visible:
-		_choices_tween = create_tween()
+		_choices_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		_choices_tween.tween_property(_choices_panel, "modulate:a", 0.0, style.disappear_duration)
+		_choices_tween.parallel().tween_property(_choices_panel, "offset_top", 5.0, style.disappear_duration)
+		_choices_tween.parallel().tween_property(_choices_panel, "offset_bottom", 5.0, style.disappear_duration)
 		_choices_tween.finished.connect(func() -> void:
 			if _choices_panel != null:
 				_choices_panel.hide()
 				_choices_panel.modulate.a = 1.0
+				_choices_panel.offset_top = 0.0
+				_choices_panel.offset_bottom = 0.0
 				_clear_choice_buttons()
 		)
 	else:
 		_choices_panel.hide()
 		_choices_panel.modulate.a = 1.0
+		_choices_panel.offset_top = 0.0
+		_choices_panel.offset_bottom = 0.0
 		_clear_choice_buttons()
 
 func _kill_panel_tween() -> void:
@@ -663,6 +729,8 @@ func _kill_choices_tween() -> void:
 func _clear_choices() -> void:
 	_kill_choices_tween()
 	_choices_panel.modulate.a = 1.0
+	_choices_panel.offset_top = 0.0
+	_choices_panel.offset_bottom = 0.0
 	_choices_panel.hide()
 	if _choices_scroll != null:
 		_choices_scroll.custom_minimum_size = Vector2(0, 0)

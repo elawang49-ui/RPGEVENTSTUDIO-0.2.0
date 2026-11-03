@@ -1,0 +1,79 @@
+ERROR: Failed to open 'user://logs/godot2026-11-03T16.15.04.log'.
+   at: copy (core/io/dir_access.cpp:429)
+ERROR: Failed to open log file for writing: user://logs/godot.log
+   at: rotate_file (core/io/logger.cpp:169)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 4.1 Metal - 90.5 - Compatibility - Using Device: Apple - Apple M4
+
+[SHOT] res://docs/images/ui-appearance-runtime/01-world.png (1152, 648)
+PASS interact.reach | 玩家进入交互半径（距离 51.3）
+PASS interact.prompt | 交互提示出现（图书管理员
+空格 / 回车 / 鼠标左键 / 手柄 A）
+[SHOT] res://docs/images/ui-appearance-runtime/02-interact-prompt.png (1152, 648)
+PASS interact.trigger | 按下交互键后对话框打开
+PASS dialogue.first_text | 正文显示第一句：你看起来在找什么？
+[SHOT] res://docs/images/ui-appearance-runtime/03-dialogue-short.png (1152, 648)
+PASS dialogue.short_bounds | 短文本对话框在窗口内（bottom=596.2 / 648.0）
+PASS dialogue.short_no_scroll | 短文本不出现正文滚动条
+PASS dialogue.speaker_style | 说话人标签应用了外观包样式
+PASS dialogue.final_alpha | 出现动画结束后不透明度为 1
+[DEBUG] choices visible=true buttons=2 result=-1 index=0
+PASS choices.visible | 选项面板显示且为 2 项（实际 2）
+PASS choices.numbered | 选项带编号：01   询问钥匙 / 02   离开
+PASS choices.default_selected | 默认选中第 1 项
+PASS choices.selected_style | 选中项与未选中项背景不同（(0.16, 0.13, 0.085, 0.98) / (0.06, 0.075, 0.105, 0.88)）
+[SHOT] res://docs/images/ui-appearance-runtime/04-choices.png (1152, 648)
+PASS choices.keyboard_switch | 方向键把选中项切到第 2 项
+PASS choices.keyboard_feedback | 切换后高亮跟随到第 2 项
+[SHOT] res://docs/images/ui-appearance-runtime/05-choice-keyboard.png (1152, 648)
+PASS choices.mouse_switch | 鼠标移到第 1 项后选中反馈切回第 1 项
+[SHOT] res://docs/images/ui-appearance-runtime/06-choice-mouse.png (1152, 648)
+PASS choices.click_select | 鼠标点击后选项面板关闭并进入所选分支
+PASS flow.key_text | 选项分支正文：这把钥匙给你，别弄丢了。
+[SHOT] res://docs/images/ui-appearance-runtime/07-branch-text.png (1152, 648)
+PASS flow.item_text | 获得道具提示：获得【教室钥匙】！
+[SHOT] res://docs/images/ui-appearance-runtime/08-item-text.png (1152, 648)
+PASS flow.event_end | 获得钥匙后本次事件结束
+PASS flow.conditional_page | 再次交互命中条件页：钥匙要收好，教室门就在右边。
+PASS anim.final_frame | 动画结束后的最终画面：可见、alpha=1、offset=0
+[SHOT] res://docs/images/ui-appearance-runtime/09-anim-final.png (1152, 648)
+PASS long.started | 长文本事件在真实运行时启动
+PASS long.needs_pages | 长文本需要翻页
+PASS long.no_scrollbar | 长文本不使用滚动条
+[SHOT] res://docs/images/ui-appearance-runtime/10-long-page1.png (1152, 648)
+PASS long.page2_advance | 翻页推进（0 → 2）
+PASS long.page2_visible | 第 2 页有可见行
+[SHOT] res://docs/images/ui-appearance-runtime/11-long-page2.png (1152, 648)
+PASS long.page3_advance | 再次翻页推进（2 → 4）
+[SHOT] res://docs/images/ui-appearance-runtime/12-long-page3.png (1152, 648)
+PASS long.terminates | 长文本翻页可终止（额外 5 页）
+PASS long.cleanup | 验收事件结束后界面复位（正文行数 1 → 15）
+PASS wide.panel_inside | 1280×820 面板在窗口内（bottom=754 / 820）
+PASS wide.whole_lines | 1280×820 正文按真实行高取整（114.0 / 38.0 = 3.00 行）
+PASS wide.page_turn | 1280×820 长文本可翻页
+[SHOT] res://docs/images/ui-appearance-runtime/12b-long-1280x820.png (1280, 820)
+[SHOT] res://docs/images/ui-appearance-runtime/12c-long-1280x820-page2.png (1280, 820)
+PASS settings.open_by_key | 按 F1 打开按键设置弹层
+PASS settings.bounds | 弹层在窗口内（680x560 @ 236,44 / 1152x648）
+PASS settings.rows | 操作行已生成（12 组）
+PASS settings.blocks_game | 弹层打开时游戏输入被阻断
+[SHOT] res://docs/images/ui-appearance-runtime/13-input-settings.png (1152, 648)
+PASS settings.language | 语言切换后标题刷新为英文（实际 Input Settings）
+[SHOT] res://docs/images/ui-appearance-runtime/14-input-settings-en.png (1152, 648)
+PASS settings.language_back | 语言切回中文（实际 按键设置）
+PASS settings.rebind_button | 找到改键按钮
+PASS settings.listening | 点击修改后进入按键监听
+[SHOT] res://docs/images/ui-appearance-runtime/15-input-listening.png (1152, 648)
+PASS settings.cancel_listen | Esc 只取消监听，不关闭弹层
+PASS settings.close_button | 点击关闭按钮后弹层关闭
+[SHOT] res://docs/images/ui-appearance-runtime/16-settings-closed.png (1152, 648)
+PASS settings.reopen | 再次按 F1 重新打开
+PASS settings.close_esc | Esc 关闭弹层
+PASS settings.unblock | 关闭后游戏输入恢复
+[SHOT] res://docs/images/ui-appearance-runtime/17-settings-restored.png (1152, 648)
+──── 运行态验收：45 项，失败 0 项 ────
+[ACCEPTANCE] 结果写入 res://docs/qa/2026-11-03/ui-appearance-runtime/result.json
+WARNING: 2 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 1 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

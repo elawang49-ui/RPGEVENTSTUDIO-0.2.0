@@ -69,7 +69,20 @@ func _run() -> void:
 		"选项面板允许按需纵向滚动")
 	_check(choices_scroll != null and choices_scroll.custom_minimum_size.y <= VIEW_H,
 		"选项滚动区高度不超过窗口")
+	_check((presenter.get("_choice_buttons") as Array).size() == options.size(), "选项按钮数量与选项一致")
 	_assert_inside(choices_panel, "选项面板")
+
+	# 回归：短选项时按钮曾按文字最小宽度排版，缩在选项区左侧、面板右侧留大片空白。
+	presenter.show_choices("要问点什么吗？", ["询问钥匙", "离开"])
+	for i in 10:
+		await process_frame
+	var short_buttons: Array = presenter.get("_choice_buttons")
+	_check(short_buttons.size() == 2, "短选项：按钮数量与选项一致")
+	var short_width := 0.0
+	for button in short_buttons:
+		short_width = maxf(short_width, (button as Button).size.x)
+	_check(short_width >= choices_scroll.size.x - 8.0,
+		"短选项：按钮撑满选项区宽度（按钮 %.0f / 选项区 %.0f）" % [short_width, choices_scroll.size.x])
 
 	presenter.queue_free()
 	_report()

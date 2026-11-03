@@ -27,6 +27,7 @@ const OPS := ["==", "!=", ">", ">=", "<", "<="]
 const ARITH_OPS := ["+", "-", "*", "/"]
 
 const ResourceEdits = preload("res://addons/rpgeventstudio/editor/resource_edits.gd")
+const STUDIO_DESIGN := preload("res://addons/rpgeventstudio/core/theme/studio_design.gd")
 
 var _plugin: EditorPlugin
 var _definition: EventDefinition
@@ -129,26 +130,44 @@ func _rebuild_ui() -> void:
 	else:
 		_show_placeholder(L10n.ui("editor.placeholder"))
 
-func _build_ui() -> void:
-	add_theme_constant_override("separation", 6)
+func _update_compact_header() -> void:
+	if _title_label == null or _save_button == null:
+		return
+	# 极窄 Dock 优先保证保存按钮完整可见；标题已由 Dock 标签本身表达。
+	_title_label.visible = size.x >= 260.0
+	_save_button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN if size.x < 260.0 else Control.SIZE_FILL
 
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 6)
+func _build_ui() -> void:
+	add_theme_constant_override("separation", 8)
+
+	var header := HFlowContainer.new()
+	header.add_theme_constant_override("h_separation", 7)
+	header.add_theme_constant_override("v_separation", 5)
 	add_child(header)
 
 	_title_label = Label.new()
 	_title_label.text = L10n.ui("editor.title")
+	_title_label.clip_text = true
+	_title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_title_label.add_theme_font_size_override("font_size", 15)
+	_title_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_title_label.add_theme_font_size_override("font_size", 17)
+	_title_label.add_theme_color_override("font_color", STUDIO_DESIGN.TEXT)
 	header.add_child(_title_label)
 
 	_save_button = Button.new()
 	_save_button.text = L10n.ui("editor.save")
+	_save_button.custom_minimum_size = Vector2(76, 0)
 	_save_button.pressed.connect(_on_save_pressed)
+	STUDIO_DESIGN.primary_button(_save_button)
 	header.add_child(_save_button)
+	if not resized.is_connected(_update_compact_header):
+		resized.connect(_update_compact_header)
+	_update_compact_header.call_deferred()
 
-	var tools := HBoxContainer.new()
-	tools.add_theme_constant_override("separation", 4)
+	var tools := HFlowContainer.new()
+	tools.add_theme_constant_override("h_separation", 5)
+	tools.add_theme_constant_override("v_separation", 5)
 	add_child(tools)
 
 	_new_event_button = Button.new()
@@ -179,8 +198,9 @@ func _build_ui() -> void:
 	_pages_box.add_theme_constant_override("separation", 2)
 	add_child(_pages_box)
 
-	var meta := HBoxContainer.new()
-	meta.add_theme_constant_override("separation", 6)
+	var meta := HFlowContainer.new()
+	meta.add_theme_constant_override("h_separation", 6)
+	meta.add_theme_constant_override("v_separation", 5)
 	add_child(meta)
 
 	var trigger_label := Label.new()
@@ -202,12 +222,11 @@ func _build_ui() -> void:
 
 	var conditions_title := Label.new()
 	conditions_title.text = L10n.ui("editor.conditions")
-	conditions_title.add_theme_font_size_override("font_size", 12)
-	conditions_title.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
+	STUDIO_DESIGN.section_title(conditions_title)
 	add_child(conditions_title)
 
 	_conditions_box = VBoxContainer.new()
-	_conditions_box.add_theme_constant_override("separation", 3)
+	_conditions_box.add_theme_constant_override("separation", 4)
 	add_child(_conditions_box)
 
 	var add_condition := Button.new()
@@ -217,8 +236,9 @@ func _build_ui() -> void:
 
 	add_child(HSeparator.new())
 
-	var toolbar := HBoxContainer.new()
-	toolbar.add_theme_constant_override("separation", 4)
+	var toolbar := HFlowContainer.new()
+	toolbar.add_theme_constant_override("h_separation", 5)
+	toolbar.add_theme_constant_override("v_separation", 5)
 	add_child(toolbar)
 
 	_add_button = MenuButton.new()
@@ -240,8 +260,9 @@ func _build_ui() -> void:
 	_down_button.pressed.connect(_on_move_command.bind(1))
 	toolbar.add_child(_down_button)
 
-	var toolbar2 := HBoxContainer.new()
-	toolbar2.add_theme_constant_override("separation", 4)
+	var toolbar2 := HFlowContainer.new()
+	toolbar2.add_theme_constant_override("h_separation", 5)
+	toolbar2.add_theme_constant_override("v_separation", 5)
 	add_child(toolbar2)
 
 	_cut_button = Button.new()
@@ -266,29 +287,31 @@ func _build_ui() -> void:
 	toolbar2.add_child(_out_button)
 
 	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.custom_minimum_size = Vector2(0, 240)
+	scroll.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.OBSIDIAN, STUDIO_DESIGN.BORDER_SOFT, 8, 1, 5, 5))
 	add_child(scroll)
 
 	_commands_box = VBoxContainer.new()
 	_commands_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_commands_box.add_theme_constant_override("separation", 1)
+	_commands_box.add_theme_constant_override("separation", 4)
 	scroll.add_child(_commands_box)
 
 	var params_title := Label.new()
 	params_title.text = L10n.ui("editor.params.title")
-	params_title.add_theme_font_size_override("font_size", 12)
-	params_title.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
+	STUDIO_DESIGN.section_title(params_title)
 	add_child(params_title)
 
 	var params_scroll := ScrollContainer.new()
 	# 多行文本下面有 BBCode 预览与警告，参数区需要比原来高一些。
 	params_scroll.custom_minimum_size = Vector2(0, 360)
+	params_scroll.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.SURFACE, STUDIO_DESIGN.BORDER_SOFT, 8, 1, 9, 9))
 	add_child(params_scroll)
 
 	_params_box = VBoxContainer.new()
 	_params_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_params_box.add_theme_constant_override("separation", 4)
+	_params_box.add_theme_constant_override("separation", 8)
 	params_scroll.add_child(_params_box)
 
 	_target_label = Label.new()
@@ -508,6 +531,9 @@ func _add_command_list(list: Array, depth: int, path: Array, parent_if: EventCom
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.text = _indent(depth) + "◆ " + CommandRegistry.summary(command)
 		button.button_pressed = command == _selected
+		button.clip_text = true
+		button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		STUDIO_DESIGN.command_button(button)
 		button.tooltip_text = L10n.ui("editor.tooltip.select")
 		button.pressed.connect(_on_command_row_pressed.bind(command))
 		_commands_box.add_child(button)

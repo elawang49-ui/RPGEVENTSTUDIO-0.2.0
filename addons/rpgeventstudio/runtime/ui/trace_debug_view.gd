@@ -1,5 +1,6 @@
 class_name TraceDebugView
 extends VBoxContainer
+const STUDIO_DESIGN := preload("res://addons/rpgeventstudio/core/theme/studio_design.gd")
 ## F2 面板内的「运行追踪」视图。复用 StateDebugPanel，不新建调试器。
 ## 只看 RuntimeTrace 已经记录的真实数据；没有的记录项显示为空，不推断。
 ## 自然语言视图把内部 ID 转成显示名（状态库 / 图节点标题 / 事件显示名）；
@@ -35,7 +36,7 @@ func setup(p_runtime: Node) -> void:
 	refresh(true)
 
 func _build() -> void:
-	add_theme_constant_override("separation", 6)
+	add_theme_constant_override("separation", 8)
 
 	var toolbar := HBoxContainer.new()
 	toolbar.add_theme_constant_override("separation", 6)
@@ -124,6 +125,7 @@ func _build() -> void:
 	_details.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_details.scroll_active = true
 	_details.add_theme_font_size_override("normal_font_size", RuntimeFonts.NOTE)
+	_details.add_theme_stylebox_override("normal", STUDIO_DESIGN.box(STUDIO_DESIGN.OBSIDIAN, STUDIO_DESIGN.BORDER_SOFT, 7, 1, 10, 8))
 	_details.text = L10n.game("trace.details_hint")
 	_details.visible = false
 	add_child(_details)

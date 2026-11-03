@@ -5,6 +5,8 @@ extends CanvasLayer
 
 signal locale_changed(locale: String)
 
+const STUDIO_DESIGN := preload("res://addons/rpgeventstudio/core/theme/studio_design.gd")
+
 var input: InputService
 ## 当前展示层：默认是 DialoguePresenter，也可能是游戏注入的展示层。
 ## 只有实现了 blocked 属性的实现才会被暂停。
@@ -33,14 +35,7 @@ var _pending_event: InputEvent = null
 var _pending_action := ""
 
 func _make_panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.07, 0.08, 0.11, 0.99)
-	style.border_color = Color(0.80, 0.70, 0.42, 0.85)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(10)
-	style.shadow_color = Color(0, 0, 0, 0.5)
-	style.shadow_size = 10
-	return style
+	return STUDIO_DESIGN.modal_style(STUDIO_DESIGN.GOLD)
 
 func _ready() -> void:
 	layer = 40
@@ -53,6 +48,7 @@ func _build_ui() -> void:
 	_root.name = "InputSettingsRoot"
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	_root.theme = STUDIO_DESIGN.runtime_theme()
 	add_child(_root)
 
 	var dim := ColorRect.new()
@@ -231,14 +227,17 @@ func _rebuild_rows() -> void:
 		child.queue_free()
 
 	for action in InputService.action_ids():
+		var frame := PanelContainer.new()
+		frame.add_theme_stylebox_override("panel", STUDIO_DESIGN.box(STUDIO_DESIGN.SURFACE, STUDIO_DESIGN.BORDER_SOFT, 8, 1, 10, 8))
+		_rows.add_child(frame)
 		var box := VBoxContainer.new()
-		box.add_theme_constant_override("separation", 2)
-		_rows.add_child(box)
+		box.add_theme_constant_override("separation", 4)
+		frame.add_child(box)
 
 		var title := Label.new()
 		title.text = L10n.game(InputService.action_label_key(action))
 		title.add_theme_font_size_override("font_size", 14)
-		title.add_theme_color_override("font_color", Color(0.95, 0.88, 0.66))
+		title.add_theme_color_override("font_color", STUDIO_DESIGN.GOLD_BRIGHT)
 		box.add_child(title)
 
 		for device in ["keyboard", "mouse", "gamepad"]:

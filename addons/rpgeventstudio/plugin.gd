@@ -16,6 +16,7 @@ const MAP_SCRIPT := "res://addons/rpgeventstudio/editor/map_events/map_event_pan
 const STORY_SCRIPT := "res://addons/rpgeventstudio/editor/story/story_editor_panel.gd"
 const AUDIT_SCRIPT := "res://addons/rpgeventstudio/editor/audit/story_audit_panel.gd"
 const RUNTIME_SCRIPT := "res://addons/rpgeventstudio/runtime/autoload/studio_runtime.gd"
+const STUDIO_DESIGN := preload("res://addons/rpgeventstudio/core/theme/studio_design.gd")
 const AUTOLOAD_NAME := "RPGEventStudio"
 const EDITOR_LANGUAGE_SETTING := "rpg_event_studio/editor_language"
 
@@ -41,6 +42,9 @@ func _enter_tree() -> void:
 	_create_main_screen()
 	_create_list_dock()
 	_create_debugger()
+	STUDIO_DESIGN.apply_editor(_main_tabs)
+	STUDIO_DESIGN.apply_editor(_panel)
+	STUDIO_DESIGN.apply_editor(_list_panel)
 	_connect_selection()
 
 	if OS.get_environment("RPGEVENTSTUDIO_SELFTEST") == "1":
@@ -708,6 +712,12 @@ func _capture_main_tab_screen() -> void:
 			(toggle as Button).button_pressed = true
 			(toggle as Button).toggled.emit(true)
 	await get_tree().create_timer(1.8).timeout
+	# 截图验收展示完整样张；正常主题预览仍保留原有打字机过程。
+	if tab == 1 and OS.get_environment("MAIN_TAB_PREVIEW") == "1" and _theme_view != null:
+		var preview = _theme_view.get("_preview")
+		if preview != null:
+			preview.call("_finish_typing")
+		await get_tree().process_frame
 	await _enforce_shot_size()
 	var base := EditorInterface.get_base_control()
 	if base != null:
@@ -735,6 +745,11 @@ func _capture_theme_screen() -> void:
 			(sample as OptionButton).item_selected.emit(1)
 		_theme_view.call("_play_preview")
 	await get_tree().create_timer(1.0).timeout
+	# 截图验收展示完整样张；正常主题预览仍保留原有打字机过程。
+	if _theme_view != null:
+		var preview = _theme_view.get("_preview")
+		if preview != null:
+			preview.call("_finish_typing")
 	await _enforce_shot_size()
 	var base := EditorInterface.get_base_control()
 	if base != null:
