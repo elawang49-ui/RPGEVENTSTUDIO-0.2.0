@@ -22,7 +22,7 @@ const VALID_ENTRANCE := ["fade", "rise", "pop", "slide-left", "wipe", "stamp", "
 const VALID_LOOP := ["none", "pulse", "bob", "nudge", "blink", "flicker", "float", "hop", "sway", "led"]
 const VALID_SELECT := ["none", "grow-line", "bar-up", "shift", "glow", "stamp-line", "pop", "step-cursor"]
 const VALID_NAMEPLATE := ["inline", "float", "capsule", "parallelogram", "wood", "blood", "column", "ribbon", "header", "blade", "poetic", "plaque", "seal", "floating", "callsign", "phone"]
-const VALID_PANEL_SHAPE := ["rect", "notched", "slant", "cinema", "octagon", "shard", "double-inner-line", "glass", "pixel-stepped", "cut-corner-thick"]
+const VALID_PANEL_SHAPE := ["rect", "notched", "slant", "cinema", "octagon", "shard", "double-inner-line", "glass", "pixel-stepped", "cut-corner-thick", "leaf"]
 const VALID_CHOICE_STYLE := ["rect", "pill", "skew", "note", "bar", "notch", "wing", "spindle", "swallowtail", "crystal", "filament", "paper-sign", "keycap-index", "pill-solid", "skew-strip", "underline-list", "glass-row", "ink-stroke", "pixel-box", "chat-chip", "leaf-row"]
 const VALID_MARKER := ["none", "number", "glyph", "crosshair", "seal", "heart", "bar", "tri", "diamond", "square", "index", "keycap", "leaf"]
 
@@ -30,9 +30,14 @@ var _checks := 0
 var _failures: PackedStringArray = []
 
 func _init() -> void:
+	# 本套件按“物理像素窗口”验证布局（含 1152×648 / 960×600 小窗）；项目默认的
+	# canvas_items 缩放会把小窗换算成 1280×720 逻辑尺寸，这里关闭缩放以保留原语义。
+	# 缩放 + expand 的多比例行为由 dialogue_theme_presets_test 的 _test_aspect_expand 单独覆盖。
 	_run.call_deferred()
 
 func _run() -> void:
+	root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	await process_frame
 	_test_registry()
 	_test_no_color_emoji()
 	_test_fonts_and_enums()
@@ -45,6 +50,7 @@ func _run() -> void:
 	await _test_portrait_layout()
 	await _test_window_sizes()
 	await _test_editor_view()
+	await _test_aspect_expand()
 	_report()
 	quit(0 if _failures.is_empty() else 1)
 
@@ -358,6 +364,9 @@ func _test_v5_layout_details() -> void:
 	var gap: float = panel.position.y - cp.position.y - cp.size.y
 	_check(absf(gap - 26.0) <= 2.0, "pixel 独立窗口紧贴面板上方 26px（gap=%.1f）" % gap)
 	_check(presenter.get("_choice_decor").visible, "pixel 独立窗口使用阶梯外框绘制")
+	await create_timer(0.5).timeout
+	_check(is_equal_approx(panel.scale.y, 1.0) and is_equal_approx(panel.scale.x, 1.0),
+		"pixel 步进展开结束后面板完全展开（scale=%s）" % str(panel.scale))
 	presenter.call("close_all")
 
 	presenter.set_dialogue_theme(DialogueThemePresets.create("codex"))
@@ -527,6 +536,40 @@ func _test_window_sizes() -> void:
 	await process_frame
 	root.size = W1280
 
+# ── canvas_items + expand：16:9 / 16:10 / 21:9 ─────────
+
+func _test_aspect_expand() -> void:
+	root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
+	root.content_scale_size = Vector2i(1280, 720)
+	for win in [Vector2i(1920, 1080), Vector2i(1920, 1200), Vector2i(2560, 1080)]:
+		root.size = win
+		await process_frame
+		var logical := root.get_visible_rect().size
+		for id in PRESET_IDS:
+			var presenter := DialoguePresenter.new()
+			root.add_child(presenter)
+			await process_frame
+			presenter.set_dialogue_theme(DialogueThemePresets.create(id))
+			presenter.set_dialogue_portrait(load(PORTRAIT))
+			presenter.show_choices("请选择", ["第一项", "第二项", "第三项"])
+			# 等入场动画（≤420ms）结束再量尺寸：wipe/pop 会临时缩放面板。
+			await create_timer(0.5).timeout
+			var panel: Control = presenter.get("_panel")
+			var cp: Control = presenter.get("_choices_panel")
+			var pr := panel.get_global_rect()
+			_check(pr.position.x >= 0.0 and pr.end.x <= logical.x + 1.0 and pr.end.y <= logical.y + 1.0
+				and absf(pr.size.x - logical.x * 0.86) < 2.0,
+				"%s @%dx%d（逻辑 %dx%d）面板按逻辑宽度铺开且不越界（%s）" % [id, win.x, win.y, int(logical.x), int(logical.y), str(pr)])
+			_check(cp.get_global_rect().end.y <= logical.y + 1.0 and cp.get_global_rect().position.y >= 0.0,
+				"%s @%dx%d 选项不越界" % [id, win.x, win.y])
+			_check(is_equal_approx(panel.scale.y, 1.0) and panel.modulate.a > 0.99,
+				"%s @%dx%d 入场动画结束后面板完全可见" % [id, win.x, win.y])
+			presenter.queue_free()
+			await process_frame
+	root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	root.size = W1280
+
 # ── 编辑器主题页 ─────────────────────────────────────────
 
 func _test_editor_view() -> void:
@@ -553,7 +596,7 @@ func _test_editor_view() -> void:
 	view.call("_on_preset_selected", 1)
 	await process_frame
 	theme = view.get("_theme")
-	_check(theme != null and theme.text_font_size == 22, "预设载入完整视觉参数")
+	_check(theme != null and theme.text_font_size == 20, "预设载入完整视觉参数")
 	var portrait_toggle: CheckButton = view.get("_portrait_toggle")
 	_check(portrait_toggle != null and portrait_toggle.button_pressed == theme.portrait_enabled,
 		"立绘框开关与预设同步")
@@ -595,7 +638,7 @@ func _make_presenter(size: Vector2i) -> DialoguePresenter:
 
 func _long_text() -> String:
 	var text := "这是用于验收长篇中文对白分页的第一段。对话框底边固定，顶部随内容向上生长；当正文超过可用高度时，翻页而不是让玩家看到滚动条。"
-	for i in 6:
+	for i in 10:
 		text += "\n第 %d 段：晨光穿过彩窗，尘埃在光柱里缓慢漂浮。旅人把提灯放在石阶上，听见远处传来钟声与风铃的回响。" % (i + 2)
 	text += "\n最后一段：如果你能看到这一行，说明分页保留了完整行，没有把中文标点切成两半。"
 	return text

@@ -11,9 +11,14 @@ var _checks := 0
 var _failures: PackedStringArray = []
 
 func _init() -> void:
+	# 本套件按“物理像素窗口”验证布局（含 1152×648 / 960×600 小窗）；项目默认的
+	# canvas_items 缩放会把小窗换算成 1280×720 逻辑尺寸，这里关闭缩放以保留原语义。
+	# 缩放 + expand 的多比例行为由 dialogue_theme_presets_test 的 _test_aspect_expand 单独覆盖。
 	_run.call_deferred()
 
 func _run() -> void:
+	root.content_scale_mode = Window.CONTENT_SCALE_MODE_DISABLED
+	await process_frame
 	root.size = Vector2i(VIEW_W, VIEW_H)
 	var presenter := DialoguePresenter.new()
 	root.add_child(presenter)

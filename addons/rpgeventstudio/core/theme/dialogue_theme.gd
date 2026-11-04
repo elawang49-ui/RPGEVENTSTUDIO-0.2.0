@@ -45,7 +45,9 @@ extends Resource
 
 ## 面板轮廓：rect 传统矩形；notched 斜切缺口；slant 平行四边形；cinema 无边框电影暗角；
 ## double-inner-line 双发丝内框；glass 玻璃高光；pixel-stepped 阶梯描边；cut-corner-thick 厚切角。
-@export_enum("rect", "notched", "slant", "cinema", "octagon", "shard", "double-inner-line", "glass", "pixel-stepped", "cut-corner-thick") var panel_shape: String = "rect"
+@export_enum("rect", "notched", "slant", "cinema", "octagon", "shard", "double-inner-line", "glass", "pixel-stepped", "cut-corner-thick", "leaf") var panel_shape: String = "rect"
+## leaf 叶形：左上/右下取 panel_corner_radius，右上/左下取该小圆角。
+@export_range(0, 40, 1) var panel_leaf_small_radius: int = 6
 @export_range(0, 32, 1) var panel_notch_size: int = 10
 @export_range(0, 32, 1) var panel_slant_size: int = 12
 ## 双层/装饰边框：plain 单层；double 内缩细线；ornament 细线+角花；
@@ -55,7 +57,9 @@ extends Resource
 @export_range(0, 24, 1) var frame_inner_gap: int = 4
 @export_range(0, 8, 1) var frame_inner_width: int = 1
 @export var frame_inner_dash: bool = false
-@export_enum("none", "star", "cross", "tape", "seal", "blade", "astrolabe", "butterfly") var corner_ornament: String = "none"
+@export_enum("none", "star", "cross", "tape", "seal", "blade", "astrolabe", "butterfly", "bracket") var corner_ornament: String = "none"
+## bracket 角框：四角 L 形括线的内缩距离（px）；臂长取 corner_ornament_size。
+@export_range(-4, 32, 1) var corner_bracket_inset: int = 10
 @export var corner_ornament_color: Color = Color(0.85, 0.75, 0.55, 0.8)
 @export var corner_glyph: String = "✦"
 @export_range(0, 48, 1) var corner_ornament_size: int = 13

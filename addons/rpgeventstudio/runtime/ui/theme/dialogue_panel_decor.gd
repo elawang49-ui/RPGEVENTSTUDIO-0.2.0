@@ -82,6 +82,10 @@ func _shape_points(rect: Rect2) -> PackedVector2Array:
 				Vector2(n, 0), Vector2(w, 0), Vector2(w, h - n),
 				Vector2(w - n, h), Vector2(0, h), Vector2(0, n),
 			])
+		"leaf":
+			var big := float(style.panel_corner_radius)
+			var small := float(style.panel_leaf_small_radius)
+			return _rounded_points_radii(rect, [small, big, small, big])
 		"pixel-stepped":
 			# Pixel：4px 阶梯角多边形；边框 polyline 自然呈阶梯。
 			var st := 4.0
@@ -100,7 +104,7 @@ func _shape_points(rect: Rect2) -> PackedVector2Array:
 			])
 
 func _is_polygon() -> bool:
-	return style.panel_shape in ["notched", "slant", "octagon", "shard", "double-inner-line", "cut-corner-thick", "pixel-stepped"]
+	return style.panel_shape in ["notched", "slant", "octagon", "shard", "double-inner-line", "cut-corner-thick", "pixel-stepped", "leaf"]
 
 func _draw_shadow(rect: Rect2, points: PackedVector2Array) -> void:
 	# 软阴影：用几层偏移形状模拟，不依赖 StyleBox 的矩形假设。
@@ -117,7 +121,7 @@ func _draw_shadow(rect: Rect2, points: PackedVector2Array) -> void:
 			var c := Color(style.panel_shadow_color, alpha)
 			if _is_polygon():
 				var grown := _shape_points(shadow_rect)
-				draw_colored_polygon(grown, c)
+				ThemeDraw.fill(self, grown, c)
 			else:
 				var sb := StyleBoxFlat.new()
 				sb.bg_color = c
@@ -128,7 +132,7 @@ func _draw_shadow(rect: Rect2, points: PackedVector2Array) -> void:
 		var hard_rect := Rect2(style.hard_shadow_offset, rect.size)
 		var hard_color := style.hard_shadow_color
 		if _is_polygon():
-			draw_colored_polygon(_shape_points(hard_rect), hard_color)
+			ThemeDraw.fill(self, _shape_points(hard_rect), hard_color)
 		else:
 			var sb := StyleBoxFlat.new()
 			sb.bg_color = hard_color
@@ -140,9 +144,27 @@ func _draw_base(rect: Rect2, points: PackedVector2Array) -> void:
 	# 渐变用顶点色插值，不再逐行 draw_rect（逐行会在缩放后出现扫描线纹）。
 	var radius := 0.0 if _is_polygon() else float(style.panel_corner_radius)
 	var shape := points if radius <= 0.0 else _rounded_points(rect, radius)
-	draw_colored_polygon(shape, style.panel_bg_color)
+	ThemeDraw.fill(self, shape, style.panel_bg_color)
 	if style.panel_gradient:
 		_draw_polygon_gradient(shape, rect, style.panel_gradient_top, style.panel_gradient_bottom)
+
+## 逐角圆角轮廓点，radii 顺序：右上、右下、左下、左上。
+func _rounded_points_radii(rect: Rect2, radii: Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var lim := minf(rect.size.x, rect.size.y) * 0.5
+	var starts := [-PI * 0.5, 0.0, PI * 0.5, PI]
+	for c in 4:
+		var r := minf(float(radii[c]), lim)
+		var center: Vector2
+		match c:
+			0: center = Vector2(rect.end.x - r, rect.position.y + r)
+			1: center = Vector2(rect.end.x - r, rect.end.y - r)
+			2: center = Vector2(rect.position.x + r, rect.end.y - r)
+			_: center = Vector2(rect.position.x + r, rect.position.y + r)
+		for i in 9:
+			var a: float = starts[c] + PI * 0.5 * float(i) / 8.0
+			out.append(center + Vector2(cos(a), sin(a)) * r)
+	return out
 
 ## 圆角矩形轮廓点（每角 8 段），供顶点色渐变使用。
 func _rounded_points(rect: Rect2, radius: float) -> PackedVector2Array:
@@ -174,7 +196,7 @@ func _draw_polygon_gradient(points: PackedVector2Array, rect: Rect2, top: Color,
 	var colors := PackedColorArray()
 	for p in points:
 		colors.append(top.lerp(bottom, clampf((p.y - rect.position.y) / rect.size.y, 0.0, 1.0)))
-	draw_polygon(points, colors)
+	ThemeDraw.fill_colors(self, points, colors)
 
 ## 计算多边形在指定 y 上的左右边界（只用于当前四种轮廓）。
 func _span_at_y(points: PackedVector2Array, y: float) -> Vector2:
@@ -440,6 +462,8 @@ func _draw_ornaments(rect: Rect2, font: Font) -> void:
 			var c := style.corner_ornament_color
 			draw_line(Vector2(0, 12), Vector2(26, 12), c, 2.0)
 			draw_line(Vector2(rect.size.x - 26, rect.size.y - 12), Vector2(rect.size.x, rect.size.y - 12), c, 2.0)
+		"bracket":
+			_draw_brackets(rect)
 		"astrolabe":
 			_draw_astrolabe(rect)
 		"butterfly":
@@ -499,7 +523,7 @@ func _draw_tapered_frame(rect: Rect2) -> void:
 	_draw_taper_line(Vector2(10.0, 1.0), Vector2(rect.size.x - 10.0, 1.0), c)
 	_draw_taper_line(Vector2(10.0, rect.size.y - 1.0), Vector2(rect.size.x - 10.0, rect.size.y - 1.0), Color(c, c.a * 0.55))
 	# 两端小菱星
-	draw_colored_polygon(PackedVector2Array([
+	ThemeDraw.fill(self, PackedVector2Array([
 		Vector2(8, 1), Vector2(11, 4), Vector2(8, 7), Vector2(5, 4)
 	]), Color(c, 0.55))
 
@@ -531,7 +555,7 @@ func _draw_astrolabe(rect: Rect2) -> void:
 		var ang := TAU * float(i) / 16.0
 		var rr := radius * (0.92 if i % 2 == 0 else 0.30)
 		star.append(Vector2(cos(ang), sin(ang)) * rr)
-	draw_colored_polygon(star, Color(c, 0.10))
+	ThemeDraw.fill(self, star, Color(c, 0.10))
 	var star_closed := star.duplicate()
 	star_closed.append(star[0])
 	draw_polyline(star_closed, Color(c, 0.85), 1.0, true)
@@ -546,17 +570,34 @@ func _draw_butterfly(rect: Rect2) -> void:
 	draw_set_transform(center, 0.0, Vector2(flap, 1.0))
 	var upper := Color(c, 0.75)
 	var lower := Color(c, 0.55)
-	draw_colored_polygon(PackedVector2Array([
+	ThemeDraw.fill(self, PackedVector2Array([
 		Vector2(0, 0), Vector2(-18, -13), Vector2(-25, -2), Vector2(-13, 4), Vector2(0, 1)
 	]), upper)
-	draw_colored_polygon(PackedVector2Array([
+	ThemeDraw.fill(self, PackedVector2Array([
 		Vector2(0, 0), Vector2(18, -13), Vector2(25, -2), Vector2(13, 4), Vector2(0, 1)
 	]), Color(c, 0.9))
-	draw_colored_polygon(PackedVector2Array([
+	ThemeDraw.fill(self, PackedVector2Array([
 		Vector2(0, 2), Vector2(-13, 8), Vector2(-9, 17), Vector2(0, 8)
 	]), lower)
-	draw_colored_polygon(PackedVector2Array([
+	ThemeDraw.fill(self, PackedVector2Array([
 		Vector2(0, 2), Vector2(13, 8), Vector2(9, 17), Vector2(0, 8)
 	]), Color(c, 0.65))
 	draw_line(Vector2(0, -2), Vector2(0, 12), Color(1, 1, 1, 0.85), 1.2)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## 四角 L 形括线：臂长 corner_ornament_size、线宽 2、内缩 corner_bracket_inset。
+func _draw_brackets(rect: Rect2) -> void:
+	var c := style.corner_ornament_color
+	var arm := float(maxi(4, style.corner_ornament_size))
+	var i := float(style.corner_bracket_inset)
+	var w := 2.0
+	var l := rect.position.x + i
+	var t := rect.position.y + i
+	var r := rect.end.x - i
+	var b := rect.end.y - i
+	for corner in [[Vector2(l, t), 1.0, 1.0], [Vector2(r, t), -1.0, 1.0], [Vector2(l, b), 1.0, -1.0], [Vector2(r, b), -1.0, -1.0]]:
+		var p: Vector2 = corner[0]
+		var sx: float = corner[1]
+		var sy: float = corner[2]
+		draw_polyline(PackedVector2Array([p + Vector2(0, sy * arm), p, p + Vector2(sx * arm, 0)]), c, w, true)

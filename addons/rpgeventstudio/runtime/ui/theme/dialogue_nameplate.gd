@@ -322,10 +322,10 @@ func _draw_shape(r: Rect2, color: Color) -> void:
 			Vector2(r.end.x - s, r.end.y),
 			Vector2(r.position.x, r.end.y),
 		])
-		draw_colored_polygon(p, color)
+		ThemeDraw.fill(self, p, color)
 		return
 	if style.nameplate_style == "blade":
-		draw_colored_polygon(_blade_points(r), color)
+		ThemeDraw.fill(self, _blade_points(r), color)
 		return
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = color
@@ -351,7 +351,7 @@ func _draw_parallelogram() -> void:
 		Vector2(r.end.x - s, r.end.y),
 		Vector2(r.position.x, r.end.y),
 	])
-	draw_colored_polygon(p, style.nameplate_bg)
+	ThemeDraw.fill(self, p, style.nameplate_bg)
 	if style.nameplate_border_width > 0 and style.nameplate_border.a > 0:
 		var closed := p.duplicate()
 		closed.append(p[0])
@@ -434,9 +434,9 @@ func _draw_poetic() -> void:
 func _draw_blade() -> void:
 	var r := _panel_rect()
 	if style.nameplate_shadow_color.a > 0.0:
-		draw_colored_polygon(_blade_points(Rect2(style.nameplate_shadow_offset, size)), style.nameplate_shadow_color)
+		ThemeDraw.fill(self, _blade_points(Rect2(style.nameplate_shadow_offset, size)), style.nameplate_shadow_color)
 	var p := _blade_points(r)
-	draw_colored_polygon(p, style.nameplate_bg)
+	ThemeDraw.fill(self, p, style.nameplate_bg)
 	draw_line(p[0], p[1], Color(style.nameplate_accent, 0.9), 2.0, true)
 	draw_line(p[3], p[2], Color(style.nameplate_accent, 0.45), 1.0, true)
 	var fs := style.speaker_font_size
@@ -462,10 +462,10 @@ func _draw_ribbon() -> void:
 	draw_circle(bow_center + Vector2(-loop_r * 0.85, 0), loop_r, style.nameplate_accent)
 	draw_circle(bow_center + Vector2(loop_r * 0.85, 0), loop_r, style.nameplate_accent)
 	draw_circle(bow_center, loop_r * 0.62, style.nameplate_bg)
-	draw_colored_polygon(PackedVector2Array([
+	ThemeDraw.fill(self, PackedVector2Array([
 		bow_center + Vector2(-2, loop_r * 0.5), bow_center + Vector2(-7, loop_r * 1.8), bow_center + Vector2(0, loop_r * 1.3)
 	]), Color(style.nameplate_accent, 0.85))
-	draw_colored_polygon(PackedVector2Array([
+	ThemeDraw.fill(self, PackedVector2Array([
 		bow_center + Vector2(2, loop_r * 0.5), bow_center + Vector2(7, loop_r * 1.8), bow_center + Vector2(0, loop_r * 1.3)
 	]), Color(style.nameplate_accent, 0.85))
 
@@ -501,7 +501,7 @@ func _draw_crescent(center: Vector2, radius: float, color: Color, flip: bool) ->
 	draw_arc(center, radius * 0.82, from, to, 24, color, maxf(2.0, radius * 0.72), true)
 
 func _draw_diamond(center: Vector2, radius: float, color: Color) -> void:
-	draw_colored_polygon(PackedVector2Array([
+	ThemeDraw.fill(self, PackedVector2Array([
 		center + Vector2(0, -radius),
 		center + Vector2(radius, 0),
 		center + Vector2(0, radius),

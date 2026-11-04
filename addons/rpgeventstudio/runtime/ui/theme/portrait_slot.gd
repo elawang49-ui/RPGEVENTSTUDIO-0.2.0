@@ -149,7 +149,7 @@ func _draw_shadow(r: Rect2) -> void:
 		"circle":
 			draw_circle(sr.get_center(), minf(sr.size.x, sr.size.y) * 0.5, c)
 		"angular", "blood":
-			draw_colored_polygon(_notch_points(sr, 7.0), c)
+			ThemeDraw.fill(self, _notch_points(sr, 7.0), c)
 		_:
 			var sb := StyleBoxFlat.new()
 			sb.bg_color = c
@@ -161,7 +161,7 @@ func _draw_backdrop(r: Rect2) -> void:
 		"circle":
 			draw_circle(r.get_center(), minf(r.size.x, r.size.y) * 0.5, style.portrait_bg)
 		"angular", "blood":
-			draw_colored_polygon(_notch_points(r, 7.0), style.portrait_bg)
+			ThemeDraw.fill(self, _notch_points(r, 7.0), style.portrait_bg)
 		"polaroid":
 			var sb := StyleBoxFlat.new()
 			sb.bg_color = Color(1, 1, 1, 1)

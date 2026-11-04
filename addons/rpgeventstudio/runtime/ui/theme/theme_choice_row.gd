@@ -162,6 +162,7 @@ func _notification(what: int) -> void:
 		_layout_button()
 		queue_redraw()
 
+const MONO_FONT := "res://addons/rpgeventstudio/fonts/JetBrainsMono-Regular.ttf"
 const V5_STYLES := ["paper-sign", "keycap-index", "pill-solid", "skew-strip", "underline-list", "glass-row", "ink-stroke", "pixel-box", "chat-chip", "leaf-row"]
 
 ## v5 样式始终自绘（即使选项面板是 panel 模式），保证 pixel-box 等不被 StyleBox 圆角覆盖。
@@ -224,7 +225,7 @@ func _draw() -> void:
 			_draw_leaf_row(r, fill, text_color, border_color, border_w)
 		_:
 			_draw_flat(r, fill, text_color, border_color, border_w)
-	if hovered and not selected and style.choice_style not in ["filament", "underline-list", "ink-stroke", "glass-row", "pixel-box", "paper-sign", "chat-chip"]:
+	if hovered and not selected and style.choice_style not in ["filament", "underline-list", "ink-stroke", "glass-row", "pixel-box", "paper-sign", "chat-chip", "skew-strip"]:
 		draw_line(Vector2(r.position.x + 2.0, r.position.y + 5.0), Vector2(r.position.x + 2.0, r.end.y - 5.0),
 			Color(style.choice_accent_color, 0.9), 2.0, true)
 	_draw_select_fx(r, text_color)
@@ -257,7 +258,7 @@ func _draw_skew(r: Rect2, fill: Color, _text_color: Color, border: Color, border
 		Vector2(r.end.x - slant, r.end.y),
 		Vector2(r.position.x, r.end.y),
 	])
-	draw_colored_polygon(p, fill)
+	ThemeDraw.fill(self, p, fill)
 	if border_w > 0.0:
 		draw_line(p[0], p[3], border, border_w, true)
 		draw_line(p[3], p[2], Color(border, border.a * 0.55), maxf(1.0, border_w - 1.0), true)
@@ -276,7 +277,7 @@ func _draw_notch(r: Rect2, fill: Color, _text_color: Color, border: Color, borde
 		Vector2(r.position.x, r.end.y),
 		Vector2(r.position.x, r.position.y + n),
 	])
-	draw_colored_polygon(p, fill)
+	ThemeDraw.fill(self, p, fill)
 	if border_w > 0.0:
 		draw_line(p[3], p[4], border, border_w, true)
 		draw_line(p[4], p[5], border, border_w * 0.6, true)
@@ -302,7 +303,7 @@ func _draw_note(r: Rect2, fill: Color, _text_color: Color, border: Color, border
 		Vector2(r.end.x - border_w, r.position.y + border_w),
 		Vector2(r.end.x - border_w, r.position.y + border_w + fold),
 	])
-	draw_colored_polygon(p, Color(style.accent_color, 0.35))
+	ThemeDraw.fill(self, p, Color(style.accent_color, 0.35))
 
 func _draw_wing(r: Rect2, fill: Color, _text_color: Color, border: Color, border_w: float) -> void:
 	var steps := 24
@@ -358,8 +359,8 @@ func _draw_spindle(r: Rect2, fill: Color, _text_color: Color, border: Color, bor
 		var shifted := PackedVector2Array()
 		for point in p:
 			shifted.append(point + style.choice_shadow_offset)
-		draw_colored_polygon(shifted, style.choice_shadow_color)
-	draw_colored_polygon(p, fill)
+		ThemeDraw.fill(self, shifted, style.choice_shadow_color)
+	ThemeDraw.fill(self, p, fill)
 	if border_w > 0.0:
 		var closed := p.duplicate()
 		closed.append(p[0])
@@ -389,7 +390,7 @@ func _draw_swallowtail(r: Rect2, fill: Color, _text_color: Color, border: Color,
 		sb.bg_color = style.choice_shadow_color
 		sb.set_corner_radius_all(style.choice_corner_radius)
 		draw_style_box(sb, sr)
-	draw_colored_polygon(p, fill)
+	ThemeDraw.fill(self, p, fill)
 	if border_w > 0.0:
 		draw_line(p[0], p[4], border, border_w, true)
 		draw_line(p[1], p[2], Color(border, 0.45), 1.0, true)
@@ -417,8 +418,8 @@ func _draw_crystal(r: Rect2, fill: Color, _text_color: Color, border: Color, bor
 		var shifted := PackedVector2Array()
 		for point in p:
 			shifted.append(point + style.choice_shadow_offset)
-		draw_colored_polygon(shifted, style.choice_shadow_color)
-	draw_colored_polygon(p, fill)
+		ThemeDraw.fill(self, shifted, style.choice_shadow_color)
+	ThemeDraw.fill(self, p, fill)
 	if border_w > 0.0:
 		draw_line(p[0], p[3], border, border_w, true)
 		draw_line(p[0], p[1], Color(border, 0.55), 1.0, true)
@@ -497,7 +498,7 @@ func _draw_marker(r: Rect2, text_color: Color) -> void:
 		"tri":
 			# 三角光标只出现在选中行：普通行无符号（Codex/Tide 设计）。
 			if selected:
-				draw_colored_polygon(PackedVector2Array([
+				ThemeDraw.fill(self, PackedVector2Array([
 					Vector2(cx - s * 0.5, cy - s * 0.8), Vector2(cx - s * 0.5, cy + s * 0.8), Vector2(cx + s * 0.7, cy),
 				]), mcolor)
 		"diamond":
@@ -522,33 +523,32 @@ func _draw_marker(r: Rect2, text_color: Color) -> void:
 			pass
 
 func _marker_diamond(center: Vector2, radius: float, color: Color) -> void:
-	draw_colored_polygon(PackedVector2Array([
+	ThemeDraw.fill(self, PackedVector2Array([
 		center + Vector2(0, -radius), center + Vector2(radius, 0),
 		center + Vector2(0, radius), center + Vector2(-radius, 0),
 	]), color)
 
-func _marker_leaf(center: Vector2, radius: float, color: Color) -> void:
-	# 叶片：两瓣圆弧组成尖椭圆 + 一条叶脉。
-	var p := PackedVector2Array()
-	for i in 13:
-		var a := PI * 2.0 * float(i) / 12.0
-		var w := sin(a) * radius * 0.62
-		var h := -cos(a) * radius * 1.15
-		p.append(center + Vector2(w * (0.6 + 0.4 * cos(a)), h))
-	draw_colored_polygon(p, color)
-	draw_line(center + Vector2(0, -radius * 0.9), center + Vector2(0, radius * 0.95), Color(1, 1, 1, 0.35), 1.0)
+func _marker_leaf(center: Vector2, _radius: float, _color: Color) -> void:
+	# 柳叶形（两段圆弧），10×10 外接框；普通行 olive-300（choice_border_color）、选中 accent。
+	var c := style.choice_accent_color if selected else style.choice_border_color
+	if hovered and not selected:
+		c = style.choice_accent_color.lerp(style.choice_border_color, 0.5)
+	ThemeDraw.fill(self, ThemeDraw.leaf_points(center, 13.0, 6.0, -PI * 0.25), c)
 
 ## 数字编号是内容：仅 number/index/keycap 允许走文字。
 func _draw_marker_text(text: String, r: Rect2, text_color: Color, box: Rect2 = Rect2()) -> void:
 	if _font == null:
 		_font = style.resolve_choice_font()
+	var font := _font
+	if style.choice_style in ["skew-strip", "keycap-index"] and ResourceLoader.exists(MONO_FONT):
+		font = load(MONO_FONT)
 	var fs := mini(style.choice_marker_size, style.choice_font_size)
-	var tw := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var origin := Vector2(r.position.x + 12.0, (r.size.y + float(fs)) * 0.5 - 2.0)
 	if box.size.x > 1.0:
 		origin = Vector2(box.position.x + (box.size.x - tw) * 0.5,
-			box.position.y + (box.size.y - _font.get_height(fs)) * 0.5 + _font.get_ascent(fs))
-	draw_string(_font, origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, text_color if selected else Color(style.choice_accent_color, 0.9))
+			box.position.y + (box.size.y - font.get_height(fs)) * 0.5 + font.get_ascent(fs))
+	draw_string(font, origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, text_color if selected else Color(style.choice_accent_color, 0.9))
 
 func _draw_heart_marker(r: Rect2, text_color: Color) -> void:
 	var c := Color(style.choice_accent_color, 0.9)
@@ -561,7 +561,7 @@ func _draw_heart_marker(r: Rect2, text_color: Color) -> void:
 	var s := 5.0
 	draw_circle(Vector2(cx - s * 0.55, cy - s * 0.25), s * 0.62, c)
 	draw_circle(Vector2(cx + s * 0.55, cy - s * 0.25), s * 0.62, c)
-	draw_colored_polygon(PackedVector2Array([
+	ThemeDraw.fill(self, PackedVector2Array([
 		Vector2(cx - s * 1.12, cy - s * 0.18),
 		Vector2(cx + s * 1.12, cy - s * 0.18),
 		Vector2(cx, cy + s * 1.15),
@@ -589,25 +589,28 @@ func _draw_keycap_index(r: Rect2, fill: Color, _text_color: Color, border: Color
 		# 选中：左侧加一条实心指示段。
 		draw_rect(Rect2(r.position.x, r.position.y, 4.0, r.size.y), style.choice_accent_color, true)
 
-## Tide 斜切条：平行四边 + 选中时白色错位投影（由 shadow_offset/choice_accent 驱动）。
+## Tide 斜切条：选中=cyan 实底 + 其后 choice_shadow_offset 偏移的白色同形后层；
+## 普通行=半透明 navy 底 + 左侧 3px cyan-700 竖条（choice_border_color）。
 func _draw_skew_strip(r: Rect2, fill: Color, _text_color: Color, border: Color, border_w: float) -> void:
 	var slant := minf(tan(deg_to_rad(14.0)) * r.size.y, r.size.x * 0.2)
+	var shadow_off := style.choice_shadow_offset if selected else Vector2.ZERO
+	var body := Rect2(r.position, r.size - Vector2(absf(shadow_off.x), absf(shadow_off.y)))
 	var p := PackedVector2Array([
-		Vector2(r.position.x + slant, r.position.y),
-		Vector2(r.end.x, r.position.y),
-		Vector2(r.end.x - slant, r.end.y),
-		Vector2(r.position.x, r.end.y),
+		Vector2(body.position.x + slant, body.position.y),
+		Vector2(body.end.x, body.position.y),
+		Vector2(body.end.x - slant, body.end.y),
+		Vector2(body.position.x, body.end.y),
 	])
 	if selected and style.choice_shadow_color.a > 0.0:
 		var shifted := PackedVector2Array()
 		for point in p:
-			shifted.append(point + Vector2(4.0, 3.0))
-		draw_colored_polygon(shifted, style.choice_shadow_color)
-	draw_colored_polygon(p, fill)
-	if border_w > 0.0:
-		draw_line(p[0], p[3], border, border_w, true)
-		draw_line(p[3], p[2], Color(border, border.a * 0.5), maxf(1.0, border_w - 1.0), true)
-		draw_line(p[0], p[1], Color(border, border.a * 0.4), 1.0, true)
+			shifted.append(point + shadow_off)
+		ThemeDraw.fill(self, shifted, style.choice_shadow_color)
+	ThemeDraw.fill(self, p, fill)
+	if not selected and border_w > 0.0:
+		# 左侧竖条沿斜边内侧：取斜边起点内移 2px 的 3px 宽平行四边形。
+		var bar := PackedVector2Array([p[0] + Vector2(2, 0), p[0] + Vector2(2 + border_w, 0), p[3] + Vector2(2 + border_w, 0), p[3] + Vector2(2, 0)])
+		ThemeDraw.fill(self, bar, border)
 
 ## Ember/Ink 无框列表：不画盒子，仅底部线；选中时横线加深。
 func _draw_underline_list(r: Rect2, _fill: Color, _text_color: Color, border: Color, _border_w: float) -> void:
@@ -771,7 +774,7 @@ func _draw_select_fx(r: Rect2, text_color: Color) -> void:
 		"shift":
 			# 整条右移已由 selected_shift 承担；有 marker 时不再叠加第二个箭头。
 			if style.choice_marker == "none":
-				draw_colored_polygon(PackedVector2Array([
+				ThemeDraw.fill(self, PackedVector2Array([
 					Vector2(r.position.x + 6.0, r.size.y * 0.5 - 5.0),
 					Vector2(r.position.x + 6.0, r.size.y * 0.5 + 5.0),
 					Vector2(r.position.x + 6.0 + 8.0 * p, r.size.y * 0.5),

@@ -1,12 +1,18 @@
 extends SceneTree
-## 第二批主题真实窗口验收截图（1280×820 / 1152×648）：
-##   godot --path . --script res://tools/theme_presets_shots.gd -- 1280 820
-## 输出：docs/images/ui-theme-presets-v2/<W>x<H>/
+## ATELIER v5 主题验收截图（真实分辨率离屏渲染）：
+##   godot --path . --script res://tools/theme_presets_shots.gd -- 1920 1080
+##   godot --path . --script res://tools/theme_presets_shots.gd -- 1280 720
+## 输出：docs/images/ui-theme-presets-v5/<W>x<H>/
+##
+## 渲染方式：开发机屏幕放不下 1920×1080 窗口，因此用 SubViewport 离屏渲染——
+## size = 目标分辨率，size_2d_override = 1280×720 + stretch，与项目 canvas_items
+## 缩放等效（UI 按逻辑 1280×720 布局，按目标分辨率真实光栅化，不做任何事后缩放）。
 ##
 ## 截图走真实 StudioRuntime 默认 DialoguePresenter；另外用 EventRunner 跑一次
 ## show_text，验证运行时事件驱动链路。编辑器页截图实例化真实 DialogueThemeView。
 
-const OUT_ROOT := "res://docs/images/ui-theme-presets-v2"
+const OUT_ROOT := "res://docs/images/ui-theme-presets-v5"
+const BASE := Vector2i(1280, 720)
 const PORTRAIT := "res://addons/rpgeventstudio/samples/ui/sample_portrait.png"
 
 const SPEAKERS := {
@@ -66,6 +72,7 @@ var _portrait_cache := {}
 var _backdrop_layer: CanvasLayer
 var _presenter: Node
 var _runtime: Node
+var _vp: SubViewport
 var _portrait: Texture2D
 
 func _init() -> void:
@@ -76,11 +83,18 @@ func _run() -> void:
 	if args.size() >= 2:
 		_w = int(args[0])
 		_h = int(args[1])
-	root.size = Vector2i(_w, _h)
-	DisplayServer.window_set_size(Vector2i(_w, _h))
-	DisplayServer.window_set_position(Vector2i(0, 0))
-	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true)
-	DisplayServer.window_move_to_foreground()
+	# 离屏 SubViewport：窗口本身大小无关紧要。
+	_vp = SubViewport.new()
+	_vp.name = "ShotViewport"
+	_vp.size = Vector2i(_w, _h)
+	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_vp.transparent_bg = false
+	if Vector2i(_w, _h) != BASE:
+		_vp.size_2d_override = BASE
+		_vp.size_2d_override_stretch = true
+	if "oversampling_override" in _vp:
+		_vp.set("oversampling_override", float(_h) / float(BASE.y))
+	root.add_child(_vp)
 	_final_dir = "%s/%dx%d" % [OUT_ROOT, _w, _h]
 	_out_dir = "res://.godot/theme_shots_tmp/%dx%d" % [_w, _h]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out_dir))
@@ -94,6 +108,10 @@ func _run() -> void:
 		quit(1)
 		return
 	_presenter = _runtime.get("default_presenter")
+	# 默认展示层搬进离屏视口：运行时事件链路不变，只是渲染目标换成 SubViewport。
+	_presenter.reparent(_vp)
+	await process_frame
+	_presenter.call("_on_viewport_resized")
 
 	# 真实运行时事件：show_text 走 EventRunner → presenter。
 	await _shot_runtime_event()
@@ -133,7 +151,7 @@ func _backdrop_for(id: String) -> void:
 	var info := DialogueThemePresets.meta(id)
 	var layer := CanvasLayer.new()
 	layer.layer = 1
-	root.add_child(layer)
+	_vp.add_child(layer)
 	_backdrop_layer = layer
 	var bg := Backdrop.new()
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -249,7 +267,7 @@ func _shot_editor(preset_index: int) -> void:
 	await create_timer(0.2).timeout
 	var layer := CanvasLayer.new()
 	layer.layer = 100
-	root.add_child(layer)
+	_vp.add_child(layer)
 	var bg := ColorRect.new()
 	bg.color = Color(0.09, 0.10, 0.13)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -276,7 +294,7 @@ func _shot_editor_preview_mode() -> void:
 	await create_timer(0.2).timeout
 	var layer := CanvasLayer.new()
 	layer.layer = 100
-	root.add_child(layer)
+	_vp.add_child(layer)
 	var bg := ColorRect.new()
 	bg.color = Color(0.09, 0.10, 0.13)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -300,53 +318,73 @@ func _shot_editor_preview_mode() -> void:
 	await create_timer(0.2).timeout
 	_presenter.visible = true
 
-## 透明底剪影占位立绘：椭圆头 + 圆肩躯干，一侧强调色边缘光（参考设计稿剪影画法）。
+## 透明底半身剪影占位立绘（QA 用，但要像样）：
+## 2x 超采样后缩小得到抗锯齿边；身体自上而下明暗渐变；一侧柔和边缘光；整体 0.92 不透明。
+## 形体：略小的头 + 发型外轮廓 + 颈 + 自然溜肩躯干，按距离场合成。
 func _silhouette_for(id: String) -> Texture2D:
 	if _portrait_cache.has(id):
 		return _portrait_cache[id]
 	var info := DialogueThemePresets.meta(id)
 	var colors: Array = info.get("colors", ["#333333", "#cccccc"])
 	var theme := DialogueThemePresets.create(id)
-	var body := Color.from_string(str(info.get("stage_bottom", "#333333")), Color(0.2, 0.2, 0.2)).darkened(0.25)
-	if body.get_luminance() > 0.5:
-		body = body.darkened(0.45)
+	var body := Color.from_string(str(info.get("stage_bottom", "#333333")), Color(0.2, 0.2, 0.2)).darkened(0.35)
+	if body.get_luminance() > 0.45:
+		body = body.darkened(0.5)
 	var rim := Color.from_string(str(colors[1]), Color.WHITE)
-	var rim_right := theme.portrait_placement != "large-right"
-	var w := 290
-	var h := 372
+	var rim_dir := 1.0 if theme.portrait_placement != "large-right" else -1.0
+	var ss := 2
+	var w := 300 * ss
+	var h := 390 * ss
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
-	var head_c := Vector2(w * 0.5, 62.0)
-	var head_r := Vector2(48.0, 57.0)
+	var cx := float(w) * 0.5
+	var u := float(ss)
 	for y in h:
+		var fy := float(y)
 		for x in w:
-			var inside := false
-			var edge := 0.0
-			var p := Vector2(x, y)
-			var hd := ((p - head_c) / head_r).length()
-			if hd <= 1.0:
-				inside = true
-				edge = hd
-			elif y >= 104 and y < 140 and absf(x - w * 0.5) <= 20.0:
-				inside = true
-			elif y >= 130:
-				# 圆肩躯干：顶部半椭圆、下方直落到底。
-				var tx := absf(x - w * 0.5) / 121.0
-				var ty := (float(y) - 130.0) / 110.0
-				var lim := 1.0 if ty >= 1.0 else sqrt(maxf(0.0, 1.0 - (1.0 - ty) * (1.0 - ty)))
-				if tx <= lim:
-					inside = true
-					edge = tx / maxf(lim, 0.001)
-			if not inside:
+			var fx := float(x)
+			var d := _silhouette_sdf(fx / u, fy / u, cx / u)
+			if d > 1.5:
 				continue
-			var c := body
-			var side := (float(x) - w * 0.5) / (w * 0.5)
-			if (rim_right and side > 0.0) or (not rim_right and side < 0.0):
-				c = body.lerp(rim, clampf((edge - 0.72) / 0.28, 0.0, 1.0) * 0.8)
+			# 1.5px（原尺寸）alpha 渐变边。
+			var a := clampf(0.5 - d / 1.5, 0.0, 1.0) if d > -0.75 else 1.0
+			var t := fy / float(h)
+			var c := body.lightened(0.10 * (1.0 - t)).darkened(0.18 * t)
+			# 柔和边缘光：越靠近边缘、越偏向光源一侧越亮（无硬切）。
+			var side := clampf(((fx - cx) / (float(w) * 0.42)) * rim_dir, -1.0, 1.0)
+			var edge := clampf(1.0 + d / 10.0, 0.0, 1.0)
+			var rim_k := smoothstep(0.1, 1.0, side) * edge * edge * 0.75
+			c = c.lerp(rim, rim_k)
+			c.a = a * 0.92
 			img.set_pixel(x, y, c)
+	img.resize(w / ss, h / ss, Image.INTERPOLATE_LANCZOS)
 	var tex := ImageTexture.create_from_image(img)
 	_portrait_cache[id] = tex
 	return tex
+
+## 半身像近似距离场（原尺寸 300×390 坐标，负=内部，单位 px）。
+func _silhouette_sdf(x: float, y: float, cx: float) -> float:
+	var p := Vector2(x - cx, y)
+	# 头：椭圆（半径 40×48），中心 y=92。
+	var head := _ellipse_sd(p - Vector2(0, 92), Vector2(40, 48))
+	# 发型：略大的偏上椭圆 + 一侧垂发。
+	var hair := _ellipse_sd(p - Vector2(-3, 80), Vector2(47, 50))
+	var lock := _ellipse_sd(p - Vector2(-34, 128), Vector2(14, 40))
+	# 颈。
+	var neck := maxf(absf(p.x) - 16.0, absf(p.y - 152.0) - 22.0)
+	# 躯干：溜肩——上沿为宽椭圆，向下竖直落到底。
+	var shoulder := _ellipse_sd(p - Vector2(0, 236), Vector2(122, 70))
+	var trunk := maxf(absf(p.x) - (104.0 + (p.y - 236.0) * 0.08), 236.0 - p.y)
+	var torso := minf(shoulder, trunk)
+	return _smin(_smin(minf(head, hair), lock, 6.0), _smin(neck, torso, 14.0), 10.0)
+
+func _ellipse_sd(p: Vector2, r: Vector2) -> float:
+	var k := (p / r).length()
+	return (k - 1.0) * minf(r.x, r.y)
+
+func _smin(a: float, b: float, k: float) -> float:
+	var hh := clampf(0.5 + 0.5 * (b - a) / k, 0.0, 1.0)
+	return lerpf(b, a, hh) - k * hh * (1.0 - hh)
 
 func _name(suffix: String) -> String:
 	return "%s/%s_%dx%d.png" % [_out_dir, suffix, _w, _h]
@@ -356,12 +394,15 @@ func _shot(path: String) -> void:
 	# await 会一直挂起。强制绘制一帧再取纹理，保证批量截图能跑完。
 	await create_timer(0.08).timeout
 	RenderingServer.force_draw(true)
-	var image := root.get_texture().get_image()
+	var image := _vp.get_texture().get_image()
 	if image == null:
 		_failed += 1
 		return
+	# 真实分辨率渲染：尺寸不符直接判失败，绝不事后缩放。
 	if image.get_width() != _w or image.get_height() != _h:
-		image.resize(_w, _h, Image.INTERPOLATE_LANCZOS)
+		push_error("[THEME_SHOTS] 渲染尺寸 %dx%d ≠ 目标 %dx%d" % [image.get_width(), image.get_height(), _w, _h])
+		_failed += 1
+		return
 	var error := image.save_png(path)
 	if error == OK:
 		_written.append(path)

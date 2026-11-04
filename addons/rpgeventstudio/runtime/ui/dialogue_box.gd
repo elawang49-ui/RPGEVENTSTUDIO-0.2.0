@@ -1200,6 +1200,11 @@ func _input(event: InputEvent) -> void:
 
 # ── 内部 ─────────────────────────────────────────────────
 
+## 步进展开用：Object.set 不支持 "scale:y" 这种子属性路径，必须显式赋值。
+func _set_panel_scale_y(value: float) -> void:
+	if _panel != null:
+		_panel.scale.y = value
+
 func _reset_panel_transform() -> void:
 	_panel.modulate.a = 1.0
 	_panel.offset_left = 0.0
@@ -1267,7 +1272,7 @@ func _show_panel_with_animation() -> void:
 			_panel_tween = create_tween()
 			var step_dur := minf(dur, 0.4) / 4.0
 			for s in [0.25, 0.5, 0.75, 1.0]:
-				_panel_tween.tween_callback(Callable(_panel, "set").bind("scale:y", s))
+				_panel_tween.tween_callback(_set_panel_scale_y.bind(s))
 				_panel_tween.tween_interval(step_dur)
 			if nameplate_in:
 				_nameplate.modulate.a = 0.0
@@ -1446,15 +1451,15 @@ class AdvanceIndicator extends Control:
 		var s := minf(size.x, size.y) * 0.34
 		match style.advance_indicator:
 			"tri":
-				draw_colored_polygon(PackedVector2Array([
+				ThemeDraw.fill(self, PackedVector2Array([
 					Vector2(cx - s * 0.7, cy - s), Vector2(cx - s * 0.7, cy + s), Vector2(cx + s, cy),
 				]), c)
 			"tri-down":
-				draw_colored_polygon(PackedVector2Array([
+				ThemeDraw.fill(self, PackedVector2Array([
 					Vector2(cx - s, cy - s * 0.7), Vector2(cx + s, cy - s * 0.7), Vector2(cx, cy + s),
 				]), c)
 			"diamond":
-				draw_colored_polygon(PackedVector2Array([
+				ThemeDraw.fill(self, PackedVector2Array([
 					Vector2(cx, cy - s), Vector2(cx + s, cy), Vector2(cx, cy + s), Vector2(cx - s, cy),
 				]), c)
 			"dot":
@@ -1472,12 +1477,7 @@ class AdvanceIndicator extends Control:
 					var h := s * (0.6 + 0.4 * i)
 					draw_rect(Rect2(x, cy - h, w, h * 2.0), c, true)
 			"leaf":
-				var p := PackedVector2Array()
-				for i in 13:
-					var a := PI * 2.0 * float(i) / 12.0
-					p.append(Vector2(cx, cy) + Vector2(sin(a) * s * 0.55, -cos(a) * s))
-				draw_colored_polygon(p, c)
-				draw_line(Vector2(cx, cy - s * 0.8), Vector2(cx, cy + s * 0.8), Color(1, 1, 1, 0.35), 1.0)
+				ThemeDraw.fill(self, ThemeDraw.leaf_points(Vector2(cx, cy), s * 2.2, s * 1.0, -PI * 0.25), c)
 			_:
 				pass
 
@@ -1506,6 +1506,12 @@ class HintKeys extends Control:
 		var key_fs := maxi(10, fs - 1)
 		var key_font := mono_font if mono_font != null else body_font
 		var keycap := style.hint_style != "text"
+		# 对比度：提示文字/键帽字对其底色 ≥ 4.5:1（WCAG AA），不足时向黑/白推。
+		var bg := style.panel_gradient_bottom if style.panel_gradient else style.panel_bg_color
+		bg.a = 1.0
+		var key_bg := bg.lerp(style.hint_color, 0.14)
+		var verb_color := ensure_contrast(style.hint_color, bg)
+		var key_text := ensure_contrast(style.hint_color, key_bg)
 		# 先测总宽，再从右向左排布。
 		var items: Array = []
 		var total := 0.0
@@ -1541,13 +1547,31 @@ class HintKeys extends Control:
 				var tw := key_font.get_string_size(key, HORIZONTAL_ALIGNMENT_LEFT, -1, key_fs).x
 				var base := kr.position.y + (kr.size.y - 1.0 - key_font.get_height(key_fs)) * 0.5 + key_font.get_ascent(key_fs)
 				draw_string(key_font, Vector2(kr.position.x + (kw - tw) * 0.5, base), key,
-					HORIZONTAL_ALIGNMENT_LEFT, -1, key_fs, style.hint_color.lightened(0.15) if keycap else style.hint_color)
+					HORIZONTAL_ALIGNMENT_LEFT, -1, key_fs, key_text if keycap else verb_color)
 				x += kw + (5.0 if verb != "" else 0.0)
 			if verb != "":
 				var vb := cy - body_font.get_height(fs) * 0.5 + body_font.get_ascent(fs)
-				draw_string(body_font, Vector2(x, vb), verb, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, style.hint_color)
+				draw_string(body_font, Vector2(x, vb), verb, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, verb_color)
 				x += vw
 			x += 14.0
+
+	static func _lum(c: Color) -> float:
+		var f := func(v: float) -> float: return v / 12.92 if v <= 0.03928 else pow((v + 0.055) / 1.055, 2.4)
+		return 0.2126 * f.call(c.r) + 0.7152 * f.call(c.g) + 0.0722 * f.call(c.b)
+
+	static func contrast(a: Color, b: Color) -> float:
+		var la := _lum(a)
+		var lb := _lum(b)
+		return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
+
+	static func ensure_contrast(fg: Color, bg: Color, target: float = 4.5) -> Color:
+		var c := Color(fg, 1.0)
+		var toward := Color.BLACK if _lum(bg) > 0.4 else Color.WHITE
+		var t := 0.0
+		while contrast(c, bg) < target and t < 1.0:
+			t += 0.05
+			c = Color(fg, 1.0).lerp(toward, t)
+		return c
 
 # ── 聊天气泡（v5 Nocturne）：左上 4px、其余 14px 圆角 ───────────────
 
