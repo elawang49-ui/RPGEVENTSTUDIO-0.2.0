@@ -364,6 +364,14 @@ func _apply_style() -> void:
 		_choices_panel.add_theme_stylebox_override("panel", bare)
 		_choices_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_choices_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	elif _choice_layout() == "separate":
+		# 独立窗口：装饰层主题的默认 panel 底是透明的，这里给独立选项窗口显式底/边。
+		var win := StyleBoxFlat.new()
+		win.bg_color = Color(style.panel_bg_color, maxf(0.92, style.panel_bg_color.a))
+		win.border_color = style.choice_border_color if style.choice_border_color.a > 0.0 else style.panel_border_color
+		win.set_border_width_all(maxi(1, style.choice_border_width))
+		win.set_corner_radius_all(0)
+		_choices_panel.add_theme_stylebox_override("panel", win)
 	_choice_margin.add_theme_constant_override("margin_left", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_right", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_top", style.choice_margin)
@@ -713,7 +721,7 @@ func get_choice() -> int:
 func _create_choice_rows(texts: PackedStringArray) -> void:
 	# 旧面板式选项没有行绘制层：编号直接进文字；bare 模式由
 	# ThemeChoiceRow 的标记系统负责序号/符号。
-	var legacy_numbered := style == null or not style.uses_bare_choices()
+	var legacy_numbered := style == null or (not style.uses_bare_choices() and not ThemeChoiceRow.V5_STYLES.has(style.choice_style))
 	for index in texts.size():
 		var row := ThemeChoiceRow.new()
 		row.name = "Choice%d" % index

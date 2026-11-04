@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://nypoqtlmon27"
-path="res://.godot/imported/FusionPixel12px-zh_hans.woff2-287602b757f3598dba1166890ba78158.fontdata"
+uid="uid://cjh3myprunpqw"
+path="res://.godot/imported/FusionPixel12px-zh_hans.ttf-36d5c2b9dc41b473974970234a913662.fontdata"
 
 [deps]
 
-source_file="res://addons/rpgeventstudio/fonts/FusionPixel12px-zh_hans.woff2"
-dest_files=["res://.godot/imported/FusionPixel12px-zh_hans.woff2-287602b757f3598dba1166890ba78158.fontdata"]
+source_file="res://addons/rpgeventstudio/fonts/FusionPixel12px-zh_hans.ttf"
+dest_files=["res://.godot/imported/FusionPixel12px-zh_hans.ttf-36d5c2b9dc41b473974970234a913662.fontdata"]
 
 [params]
 

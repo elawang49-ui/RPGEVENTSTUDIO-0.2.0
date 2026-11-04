@@ -322,7 +322,14 @@ class Backdrop extends Control:
 				# 底图统一保持干净渐变+暗角：网格/点阵/星座这类大尺度
 				# 装饰会让截图失去整体感，面板本身才是展示对象。
 				pass
-		# 暗角
-		for i in 10:
-			var a := 0.02 + i * 0.012
-			draw_rect(Rect2(i * 8, i * 8, size.x - i * 16, size.y - i * 16), Color(0, 0, 0, a), false, 16.0)
+		# 柔和暗角：四边各自向内渐隐的渐层，不出现矩形轮廓线。
+		var vsteps := 18
+		var depth := 64.0
+		for i in vsteps:
+			var a := 0.05 * (1.0 - float(i) / float(vsteps))
+			var off := depth * float(i) / float(vsteps)
+			var band := depth / float(vsteps) + 1.0
+			draw_rect(Rect2(0, off, size.x, band), Color(0, 0, 0, a), true)
+			draw_rect(Rect2(0, size.y - off - band, size.x, band), Color(0, 0, 0, a), true)
+			draw_rect(Rect2(off, 0, band, size.y), Color(0, 0, 0, a * 0.7), true)
+			draw_rect(Rect2(size.x - off - band, 0, band, size.y), Color(0, 0, 0, a * 0.7), true)

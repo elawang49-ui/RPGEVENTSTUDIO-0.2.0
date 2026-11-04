@@ -24,6 +24,8 @@ var _title_width := 0.0
 var _font: Font
 var _tag_font_size := 12
 var _title_font_size := 11
+## 朱印铭牌固定边长（px）。
+const SEAL_SIDE := 54.0
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -146,17 +148,15 @@ func fit_to_content() -> void:
 				title_label.position = Vector2(pad_x + _text_width + 12.0, pad_y + 4.0 + text_height - _title_font_size - 2.0)
 				title_label.size = Vector2(_title_width, float(_title_font_size + 4))
 		"seal":
-			# 方形朱印：称号在印面下方。
-			var side := maxf(_text_width + pad_x * 2.0, text_height + pad_y * 2.0 + 6.0)
+			# 方形朱印：固定 54px 见方，竖排文字由 _draw 逐字绘制，称号在印面下方。
+			var side := SEAL_SIDE
 			var h := side + (float(_title_font_size) + 6.0 if _title.strip_edges() != "" else 0.0)
 			_set_size(Vector2(side, h))
-			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			label.position = Vector2(0, pad_y + 2.0)
-			label.size = Vector2(side, text_height)
+			label.visible = false
 			if title_label != null:
 				title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				title_label.position = Vector2(0, side + 1.0)
-				title_label.size = Vector2(side, float(_title_font_size + 3))
+				title_label.position = Vector2(-24.0, side + 1.0)
+				title_label.size = Vector2(side + 48.0, float(_title_font_size + 3))
 		"floating":
 			var w := maxf(_text_width, _title_width) + 8.0
 			var h := text_height + (float(_title_font_size) + 5.0 if _title.strip_edges() != "" else 0.0) + 4.0
@@ -518,15 +518,30 @@ func _draw_plaque() -> void:
 		draw_rect(inner, Color(style.nameplate_accent, 0.55), false, 1.0)
 	_draw_speaker_tracked()
 
-## 方形朱印（Ink）：实底方印 + 内白描边，名字居中阴文；旋转由 nameplate_rotation 承担。
+## 方形朱印（Ink）：固定约 54px 见方实底 + 内白描边；名字竖排逐字阴文（最多 3 字，
+## 超长自动缩字号但不低于 14）；旋转由 nameplate_rotation 承担。
 func _draw_seal_plate() -> void:
-	var side := minf(size.x, size.y)
+	var side := SEAL_SIDE
 	var r := Rect2(Vector2((size.x - side) * 0.5, 0), Vector2(side, side))
 	if style.nameplate_shadow_color.a > 0.0:
 		draw_rect(Rect2(r.position + style.nameplate_shadow_offset, r.size), style.nameplate_shadow_color, true)
 	draw_rect(r, style.nameplate_bg, true)
 	draw_rect(r.grow(-2.5), Color(1, 1, 1, 0.5), false, 1.0)
-	_draw_speaker_tracked()
+	# 竖排：最多取 3 字上下堆叠；按可用高度压缩字号（下限 14）。
+	var chars := _speaker
+	if chars.length() > 3:
+		chars = chars.substr(0, 3)
+	var n := maxi(1, chars.length())
+	var cell := (side - 10.0) / float(n)
+	var fs := clampi(int(minf(float(style.speaker_font_size), cell * 0.92)), 14, style.speaker_font_size)
+	var total := float(fs) * float(n)
+	var y := r.position.y + (side - total) * 0.5
+	for i in n:
+		var ch := chars[i]
+		var cw := _font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(_font, Vector2(r.position.x + (side - cw) * 0.5, y + _font.get_ascent(fs)),
+			ch, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, style.nameplate_text_color)
+		y += float(fs)
 
 ## 无底悬浮（Frost）：无牌面，仅文字与称号；带一圈极淡的背光保证可读。
 func _draw_floating() -> void:

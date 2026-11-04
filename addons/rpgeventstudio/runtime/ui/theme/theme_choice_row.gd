@@ -99,7 +99,7 @@ func _apply_style() -> void:
 		if style.choice_marker == "keycap":
 			marker_pad = maxi(marker_pad, int(float(style.choice_marker_size) * 1.3) + 18)
 	var box := StyleBoxFlat.new()
-	if style.uses_bare_choices():
+	if _custom_draw():
 		box.bg_color = Color(0, 0, 0, 0)
 		box.border_color = Color(0, 0, 0, 0)
 		box.set_border_width_all(0)
@@ -153,8 +153,14 @@ func _notification(what: int) -> void:
 		_layout_button()
 		queue_redraw()
 
+const V5_STYLES := ["paper-sign", "keycap-index", "pill-solid", "skew-strip", "underline-list", "glass-row", "ink-stroke", "pixel-box", "chat-chip", "leaf-row"]
+
+## v5 样式始终自绘（即使选项面板是 panel 模式），保证 pixel-box 等不被 StyleBox 圆角覆盖。
+func _custom_draw() -> bool:
+	return style != null and (style.uses_bare_choices() or style.choice_style in V5_STYLES)
+
 func _draw() -> void:
-	if style == null or not style.uses_bare_choices() or size.x <= 1.0 or size.y <= 1.0:
+	if style == null or not _custom_draw() or size.x <= 1.0 or size.y <= 1.0:
 		return
 	var shift := -float(style.choice_selected_shift) if selected else 0.0
 	var r := Rect2(Vector2(shift, 0), Vector2(size.x - absf(shift), size.y))
@@ -477,9 +483,11 @@ func _draw_marker(r: Rect2, text_color: Color) -> void:
 		"bar":
 			draw_rect(Rect2(r.position.x + 10.0, r.position.y + 5.0, 3.0, r.size.y - 10.0), mcolor, true)
 		"tri":
-			draw_colored_polygon(PackedVector2Array([
-				Vector2(cx - s * 0.5, cy - s * 0.8), Vector2(cx - s * 0.5, cy + s * 0.8), Vector2(cx + s * 0.7, cy),
-			]), mcolor)
+			# 三角光标只出现在选中行：普通行无符号（Codex/Tide 设计）。
+			if selected:
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(cx - s * 0.5, cy - s * 0.8), Vector2(cx - s * 0.5, cy + s * 0.8), Vector2(cx + s * 0.7, cy),
+				]), mcolor)
 		"diamond":
 			_marker_diamond(Vector2(cx, cy), s * 0.55, mcolor)
 		"square":
@@ -724,12 +732,13 @@ func _draw_select_fx(r: Rect2, text_color: Color) -> void:
 			var h := (r.size.y - 12.0) * p
 			draw_rect(Rect2(r.position.x + 3.0, r.end.y - 6.0 - h, 3.0, h), accent, true)
 		"shift":
-			# 整条右移已由 selected_shift 承担；这里叠加一个渐隐箭头块。
-			draw_colored_polygon(PackedVector2Array([
-				Vector2(r.position.x + 6.0, r.size.y * 0.5 - 5.0),
-				Vector2(r.position.x + 6.0, r.size.y * 0.5 + 5.0),
-				Vector2(r.position.x + 6.0 + 8.0 * p, r.size.y * 0.5),
-			]), Color(accent, 0.5 + 0.5 * p))
+			# 整条右移已由 selected_shift 承担；有 marker 时不再叠加第二个箭头。
+			if style.choice_marker == "none":
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(r.position.x + 6.0, r.size.y * 0.5 - 5.0),
+					Vector2(r.position.x + 6.0, r.size.y * 0.5 + 5.0),
+					Vector2(r.position.x + 6.0 + 8.0 * p, r.size.y * 0.5),
+				]), Color(accent, 0.5 + 0.5 * p))
 		"glow":
 			draw_rect(r.grow(1.0), Color(accent, 0.35 * sin(p * PI)), false, 3.0)
 		"stamp-line":

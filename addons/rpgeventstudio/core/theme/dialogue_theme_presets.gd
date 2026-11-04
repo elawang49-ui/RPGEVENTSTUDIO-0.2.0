@@ -21,7 +21,7 @@ const FONT_QINGKE := "res://addons/rpgeventstudio/fonts/ZCOOLQingKeHuangYou-Regu
 const FONT_XIAOWEI := "res://addons/rpgeventstudio/fonts/ZCOOLXiaoWei-Regular.ttf"
 const FONT_BRUSH := "res://addons/rpgeventstudio/fonts/MaShanZheng-Regular.ttf"
 const FONT_MONO := "res://addons/rpgeventstudio/fonts/JetBrainsMono-Regular.ttf"
-const FONT_PIXEL := "res://addons/rpgeventstudio/fonts/FusionPixel12px-zh_hans.woff2"
+const FONT_PIXEL := "res://addons/rpgeventstudio/fonts/FusionPixel12px-zh_hans.ttf"
 
 # ── 旧 id → v5 迁移表 ────────────────────────────────────
 ## 旧预设按视觉族谱归入最近的 v5 预设：视觉参数仍保留在旧 .tres 字段里，
@@ -847,12 +847,14 @@ static func _ink(theme: RpgEventStudioTheme) -> void:
 	theme.speaker_color = _hex("FFF4F1")
 	theme.hint_color = _hex("746D66")
 	theme.speaker_title = "墨痕客"
+	theme.content_margin_left = 110
+	theme.content_margin_top = 34
 	theme.nameplate_style = "seal"
 	theme.nameplate_bg = _hex("AB6045")
 	theme.nameplate_text_color = _hex("FFF4F1")
 	theme.nameplate_accent = _hex("CC795D")
 	theme.nameplate_rotation = -4
-	theme.nameplate_offset = Vector2(22, -30)
+	theme.nameplate_offset = Vector2(30, -14)
 	theme.choice_layout = "top"
 	theme.choice_align = "left"
 	theme.choice_panel_style = "bare"
@@ -904,7 +906,7 @@ static func _pixel(theme: RpgEventStudioTheme) -> void:
 	theme.speaker_color = _hex("D5A550")
 	theme.hint_color = _hex("7D8ECE")
 	theme.speaker_title = "LV.12 旅人"
-	theme.nameplate_style = "float"
+	theme.nameplate_style = "plaque"
 	theme.nameplate_bg = _hex("242C4A")
 	theme.nameplate_border = _hex("D5A550")
 	theme.nameplate_border_width = 2
@@ -974,7 +976,8 @@ static func _nocturne(theme: RpgEventStudioTheme) -> void:
 	theme.nameplate_radius = 10
 	theme.nameplate_text_color = _hex("F4DAB0")
 	theme.nameplate_accent = _hex("D5A550")
-	theme.nameplate_offset = Vector2(10, -34)
+	theme.nameplate_offset = Vector2(10, -2)
+	theme.content_margin_top = 46
 	theme.choice_layout = "chat"
 	theme.choice_align = "right"
 	theme.choice_panel_style = "bare"
