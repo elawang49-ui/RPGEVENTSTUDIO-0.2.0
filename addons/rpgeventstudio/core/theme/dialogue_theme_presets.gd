@@ -296,10 +296,10 @@ static func _base(theme: RpgEventStudioTheme) -> void:
 	theme.panel_left = 0.07
 	theme.panel_right = 0.93
 	theme.panel_bottom = 0.94
-	theme.content_margin_left = 30
-	theme.content_margin_right = 28
-	theme.content_margin_top = 20
-	theme.content_margin_bottom = 12
+	theme.content_margin_left = 32
+	theme.content_margin_right = 32
+	theme.content_margin_top = 22
+	theme.content_margin_bottom = 14
 	theme.text_min_height = 76
 	theme.choice_left = 0.58
 	theme.choice_right = 0.93
@@ -352,9 +352,6 @@ static func _sacred(theme: RpgEventStudioTheme) -> void:
 	theme.pattern_style = "none"
 	theme.accent_color = ACC_BRASS
 	theme.accent_secondary = Color(0.478, 0.388, 0.235, 1)
-	theme.content_margin_left = 30
-	theme.content_margin_right = 28
-	theme.content_margin_top = 22
 	theme.font_style = "serif"
 	theme.body_font_flavor = "serif"
 	theme.text_color = T_DARK
@@ -497,7 +494,7 @@ static func _cool(theme: RpgEventStudioTheme) -> void:
 	theme.panel_gradient = true
 	theme.panel_gradient_top = Color(INK_DEEP, 0.97)
 	theme.panel_gradient_bottom = Color(INK_SOFT, 0.97)
-	theme.pattern_style = "grid"
+	theme.pattern_style = "none"
 	theme.pattern_color = Color(ACC_AMBER, 0.08)
 	theme.pattern_spacing = 16
 	theme.hard_shadow_color = Color(ACC_OX, 0.50)
@@ -581,9 +578,6 @@ static func _minimal(theme: RpgEventStudioTheme) -> void:
 	theme.hint_color = Color(ACC_FOG, 0.9)
 	theme.font_style = "sans"
 	theme.body_font_flavor = "sans"
-	theme.content_margin_left = 32
-	theme.content_margin_right = 32
-	theme.content_margin_top = 20
 	theme.nameplate_style = "column"
 	theme.nameplate_bg = Color(0, 0, 0, 0)
 	theme.nameplate_border = Color(0, 0, 0, 0)
@@ -658,9 +652,6 @@ static func _biscuit(theme: RpgEventStudioTheme) -> void:
 	theme.hint_color = COCOA
 	theme.font_style = "sans"
 	theme.body_font_flavor = "rounded"
-	theme.content_margin_left = 30
-	theme.content_margin_right = 28
-	theme.content_margin_top = 22
 	theme.nameplate_style = "wood"
 	theme.nameplate_bg = COCOA
 	theme.nameplate_border = PAPER
@@ -741,9 +732,6 @@ static func _crimson(theme: RpgEventStudioTheme) -> void:
 	theme.hint_color = Color(ACC_OX, 0.9)
 	theme.font_style = "sans"
 	theme.body_font_flavor = "sans"
-	theme.content_margin_left = 32
-	theme.content_margin_right = 30
-	theme.content_margin_top = 22
 	theme.nameplate_style = "blood"
 	theme.nameplate_bg = ACC_OX
 	theme.nameplate_border = Color(0, 0, 0, 0)
@@ -794,6 +782,8 @@ static func _astrolabe(theme: RpgEventStudioTheme) -> void:
 	_base(theme)
 	theme.preset_series = 4
 	theme.panel_top = 0.50
+	theme.content_margin_left = 96
+	theme.content_margin_top = 24
 	theme.panel_bg_color = Color(0.071, 0.102, 0.180, 0.96)
 	theme.panel_border_color = Color(ACC_GILT, 0.95)
 	theme.panel_border_width = 2
@@ -819,10 +809,6 @@ static func _astrolabe(theme: RpgEventStudioTheme) -> void:
 	theme.ornament_rotation_speed = 10.0
 	theme.accent_color = ACC_GILT
 	theme.accent_secondary = Color(0.557, 0.663, 0.812, 1)
-	theme.content_margin_left = 96
-	theme.content_margin_right = 30
-	theme.content_margin_top = 24
-	theme.content_margin_bottom = 12
 	theme.text_min_height = 80
 	theme.font_style = "serif"
 	theme.body_font_flavor = "serif"
@@ -889,10 +875,6 @@ static func _macaron(theme: RpgEventStudioTheme) -> void:
 	theme.corner_ornament = "none"
 	theme.accent_color = ACC_ROSE
 	theme.accent_secondary = Color(0.945, 0.839, 0.855, 1)
-	theme.content_margin_left = 28
-	theme.content_margin_right = 26
-	theme.content_margin_top = 30
-	theme.content_margin_bottom = 14
 	theme.text_min_height = 80
 	theme.font_style = "sans"
 	theme.body_font_flavor = "rounded"
@@ -937,6 +919,9 @@ static func _morpho(theme: RpgEventStudioTheme) -> void:
 	_base(theme)
 	theme.preset_series = 4
 	theme.panel_top = 0.52
+	theme.content_margin_left = 36
+	theme.content_margin_right = 40
+	theme.content_margin_top = 26
 	theme.panel_bg_color = Color(0.039, 0.106, 0.200, 0.97)
 	theme.panel_border_color = Color(0, 0, 0, 0)
 	theme.panel_border_width = 0
@@ -957,10 +942,6 @@ static func _morpho(theme: RpgEventStudioTheme) -> void:
 	theme.ornament_rotation_speed = 2.2
 	theme.accent_color = ACC_AEGEAN
 	theme.accent_secondary = Color(0.071, 0.412, 0.800, 1)
-	theme.content_margin_left = 36
-	theme.content_margin_right = 40
-	theme.content_margin_top = 30
-	theme.content_margin_bottom = 14
 	theme.text_min_height = 82
 	theme.font_style = "sans"
 	theme.body_font_flavor = "sans"
@@ -1007,6 +988,9 @@ static func _feather(theme: RpgEventStudioTheme) -> void:
 	_base(theme)
 	theme.preset_series = 4
 	theme.panel_top = 0.48
+	theme.content_margin_left = 40
+	theme.content_margin_right = 40
+	theme.content_margin_top = 26
 	theme.panel_bg_color = Color(INK, 0.12)
 	theme.panel_border_color = Color(0, 0, 0, 0)
 	theme.panel_border_width = 0
@@ -1024,10 +1008,6 @@ static func _feather(theme: RpgEventStudioTheme) -> void:
 	theme.corner_ornament = "none"
 	theme.accent_color = ACC_GILTSOFT
 	theme.accent_secondary = ACC_FOG
-	theme.content_margin_left = 40
-	theme.content_margin_right = 40
-	theme.content_margin_top = 30
-	theme.content_margin_bottom = 14
 	theme.text_min_height = 84
 	theme.font_style = "serif"
 	theme.body_font_flavor = "serif"

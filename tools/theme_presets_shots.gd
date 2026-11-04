@@ -312,43 +312,10 @@ class Backdrop extends Control:
 				for i in 9:
 					var a := deg_to_rad(200.0 + i * 10.0)
 					draw_line(Vector2(size.x * 0.35, 0), Vector2(size.x * 0.35, size.y) + Vector2(cos(a), sin(a)) * size.length(), Color(0.9, 0.82, 0.65, 0.05), 18.0)
-			"cute":
-				var y := 20.0
-				while y < size.y:
-					var x := 20.0
-					while x < size.x:
-						draw_circle(Vector2(x, y), 2.2, Color(1.0, 0.55, 0.63, 0.10))
-						x += 30.0
-					y += 30.0
-			"cool", "crimson":
-				var y := 0.0
-				while y < size.y:
-					draw_line(Vector2(0, y), Vector2(size.x, y), Color(accent, 0.06), 1.0)
-					y += 24.0
-				var x := 0.0
-				while x < size.x:
-					draw_line(Vector2(x, 0), Vector2(x, size.y), Color(accent, 0.06), 1.0)
-					x += 24.0
-			"minimal":
-				for i in 6:
-					draw_line(Vector2(0, size.y * 0.25 + i * 6), Vector2(size.x, size.y * 0.25 + i * 6), Color(1, 1, 1, 0.02), 1.0)
-			"astrolabe":
-				var stars := [Vector2(0.10, 0.18), Vector2(0.20, 0.11), Vector2(0.32, 0.24), Vector2(0.46, 0.14), Vector2(0.58, 0.27), Vector2(0.72, 0.16), Vector2(0.86, 0.28)]
-				for i in stars.size():
-					var p := Vector2(stars[i].x * size.x, stars[i].y * size.y)
-					draw_circle(p, 1.8, Color(0.957, 0.906, 0.773, 0.55))
-					if i > 0:
-						var q := Vector2(stars[i - 1].x * size.x, stars[i - 1].y * size.y)
-						draw_dashed_line(q, p, Color(0.957, 0.906, 0.773, 0.28), 1.0, 2.0)
-			"biscuit":
-				var y := 0.0
-				while y < size.y:
-					draw_line(Vector2(0, y), Vector2(size.x, y), Color(0.65, 0.49, 0.32, 0.10), 1.0)
-					y += 24.0
-				var x := 0.0
-				while x < size.x:
-					draw_line(Vector2(x, 0), Vector2(x, size.y), Color(0.65, 0.49, 0.32, 0.10), 1.0)
-					x += 24.0
+			_:
+				# 底图统一保持干净渐变+暗角：网格/点阵/星座这类大尺度
+				# 装饰会让截图失去整体感，面板本身才是展示对象。
+				pass
 		# 暗角
 		for i in 10:
 			var a := 0.02 + i * 0.012
