@@ -24,6 +24,9 @@ var _select_progress := 0.0:
 		_select_progress = value
 		queue_redraw()
 var _select_tween: Tween
+var _selected_at_ms := 0
+## 截图/验收用：冻结步进闪烁在亮相位，静态帧必定可见光标。
+static var freeze_blink := false
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(0, 44)
@@ -58,6 +61,8 @@ func configure(theme: RpgEventStudioTheme, choice_index: int, text: String) -> v
 func set_selected(value: bool) -> void:
 	var was := selected
 	selected = value
+	if selected and not was:
+		_selected_at_ms = Time.get_ticks_msec()
 	if button != null:
 		button.button_pressed = value
 	if selected and not was and style != null and not style.motion_reduced:
@@ -535,20 +540,33 @@ func _marker_leaf(center: Vector2, _radius: float, _color: Color) -> void:
 		c = style.choice_accent_color.lerp(style.choice_border_color, 0.5)
 	ThemeDraw.fill(self, ThemeDraw.leaf_points(center, 13.0, 6.0, -PI * 0.25), c)
 
+static var _mono_cache: Font
+
+## 等宽编号字体。直接 draw_string 导入的 JetBrains Mono FontFile 在 ScrollContainer 裁剪下
+## 会画成实心块（Compatibility 渲染器），包一层 FontVariation 后正常，字形数据仍是 JetBrains Mono。
+static func _mono_font() -> Font:
+	if _mono_cache == null:
+		var base: Font = load(MONO_FONT) if ResourceLoader.exists(MONO_FONT) else ThemeDB.fallback_font
+		var v := FontVariation.new()
+		v.base_font = base
+		_mono_cache = v
+	return _mono_cache
+
 ## 数字编号是内容：仅 number/index/keycap 允许走文字。
 func _draw_marker_text(text: String, r: Rect2, text_color: Color, box: Rect2 = Rect2()) -> void:
 	if _font == null:
 		_font = style.resolve_choice_font()
 	var font := _font
-	if style.choice_style in ["skew-strip", "keycap-index"] and ResourceLoader.exists(MONO_FONT):
-		font = load(MONO_FONT)
+	if style.choice_style in ["skew-strip", "keycap-index"]:
+		font = _mono_font()
 	var fs := mini(style.choice_marker_size, style.choice_font_size)
 	var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var origin := Vector2(r.position.x + 12.0, (r.size.y + float(fs)) * 0.5 - 2.0)
 	if box.size.x > 1.0:
 		origin = Vector2(box.position.x + (box.size.x - tw) * 0.5,
 			box.position.y + (box.size.y - font.get_height(fs)) * 0.5 + font.get_ascent(fs))
-	draw_string(font, origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, text_color if selected else Color(style.choice_accent_color, 0.9))
+	var normal_color := style.choice_index_color if style.choice_index_color.a > 0.0 else Color(style.choice_accent_color, 0.9)
+	draw_string(font, origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, text_color if selected else normal_color)
 
 func _draw_heart_marker(r: Rect2, text_color: Color) -> void:
 	var c := Color(style.choice_accent_color, 0.9)
@@ -700,16 +718,26 @@ func _ink_alpha_weight(t: float) -> float:
 func _draw_pixel_box(r: Rect2, _fill: Color, _text_color: Color, _border: Color, _border_w: float) -> void:
 	if not selected:
 		return
-	if not style.motion_reduced and (Time.get_ticks_msec() / 400) % 2 == 1:
-		return
-	var px := 3.0
-	var cx := r.position.x + 10.0
+	# 步进闪烁：选中瞬间（t=0）为亮相位，此后每 400ms 切换；截图可冻结在亮相位。
+	if not style.motion_reduced and not freeze_blink:
+		var elapsed := Time.get_ticks_msec() - _selected_at_ms
+		if (elapsed / 400) % 2 == 1:
+			return
+	# 8×12 像素箭头：4 列 2px 方块，高 12/10/6/2，位于文字左侧 10px。
+	var text_x := r.position.x + float(_content_left())
+	var x0 := text_x - 10.0 - 8.0
 	var cy := floorf(r.size.y * 0.5)
 	var c := style.choice_selected_color
-	# 三列阶梯：高 5/3/1 格，拼成向右的像素三角。
-	for col in 3:
-		var rows := 5 - col * 2
-		draw_rect(Rect2(cx + float(col) * px, cy - float(rows) * px * 0.5, px, float(rows) * px), c, true)
+	var heights := [12.0, 10.0, 6.0, 2.0]
+	for col in 4:
+		var hh: float = heights[col]
+		draw_rect(Rect2(x0 + float(col) * 2.0, cy - hh * 0.5, 2.0, hh), c, true)
+
+func _content_left() -> int:
+	if button == null:
+		return 12
+	var sb := button.get_theme_stylebox("normal")
+	return int(sb.content_margin_left) if sb != null else 12
 
 func _process(_delta: float) -> void:
 	if selected and style != null and style.choice_style == "pixel-box":

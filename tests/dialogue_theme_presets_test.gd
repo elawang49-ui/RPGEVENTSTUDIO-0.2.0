@@ -308,6 +308,10 @@ func _test_each_preset() -> void:
 				"%s 选项落位符合布局" % id)
 		_check(rows.size() == 3 and rows[0].selected and not rows[1].selected,
 			"%s 默认选中第一项" % id)
+		var any_hover := false
+		for row in rows:
+			any_hover = any_hover or row.hovered
+		_check(not any_hover and not rows[2].selected, "%s 选项态只有当前行选中、无悬停残留" % id)
 		if rows.size() == 3:
 			rows[1].call("set_hovered", true)
 			await process_frame

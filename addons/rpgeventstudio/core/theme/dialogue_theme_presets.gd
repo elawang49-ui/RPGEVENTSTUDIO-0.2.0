@@ -704,7 +704,8 @@ static func _tide(theme: RpgEventStudioTheme) -> void:
 	theme.choice_accent_color = _hex("50BEDA")
 	theme.choice_marker = "index"
 	theme.choice_marker_width = 26
-	theme.choice_marker_size = 13
+	theme.choice_marker_size = 12
+	theme.choice_index_color = Color(_hex("84D5EC"), 0.7)
 	theme.choice_shadow_color = _hex("F7FAFF")
 	theme.choice_shadow_offset = Vector2(6, 6)
 	theme.select_anim = "shift"

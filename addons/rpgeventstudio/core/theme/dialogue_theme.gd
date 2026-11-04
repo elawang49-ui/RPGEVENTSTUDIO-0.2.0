@@ -141,6 +141,8 @@ extends Resource
 ## none / number / glyph / crosshair / seal / heart / bar / tri / diamond / square / index / keycap / leaf
 @export_enum("none", "number", "glyph", "crosshair", "seal", "heart", "bar", "tri", "diamond", "square", "index", "keycap", "leaf") var choice_marker: String = "none"
 @export var choice_marker_glyph: String = "✦"
+## 编号（01/02）普通行颜色；透明表示沿用 choice_accent_color（0.9 不透明）。
+@export var choice_index_color: Color = Color(0, 0, 0, 0)
 @export_range(0, 32, 1) var choice_marker_width: int = 0
 ## 选项列表整体停在对话框上方的距离（px）。
 @export_range(0, 40, 1) var choice_gap: int = 18

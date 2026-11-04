@@ -94,7 +94,12 @@ func _run() -> void:
 		_vp.size_2d_override_stretch = true
 	if "oversampling_override" in _vp:
 		_vp.set("oversampling_override", float(_h) / float(BASE.y))
+	# 离屏视口不接收 GUI 输入：真实鼠标位置不会让任何选项进入悬停态。
+	_vp.gui_disable_input = true
 	root.add_child(_vp)
+	Input.warp_mouse(Vector2(-100, -100))
+	# 静态帧冻结光标闪烁在亮相位。
+	ThemeChoiceRow.freeze_blink = true
 	_final_dir = "%s/%dx%d" % [OUT_ROOT, _w, _h]
 	_out_dir = "res://.godot/theme_shots_tmp/%dx%d" % [_w, _h]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out_dir))
@@ -187,13 +192,18 @@ func _shot_preset(id: String, choices: bool) -> void:
 	if choices:
 		_presenter.call("show_choices", "接下来要怎么做？", CHOICES.get(id, []))
 		await create_timer(0.25).timeout
-		# 选中第二项，并让第三项保持悬停：截图能同时看出 selected / hover。
+		# 选中第二项；不模拟悬停（离屏视口已禁用 GUI 输入，鼠标不会落到任何行上）。
 		_presenter.set("_choice_index", 1)
 		_presenter.call("_update_choice_highlight")
-		var rows: Array = _presenter.get("_choice_rows")
-		if rows.size() >= 3 and rows[2] != null:
-			rows[2].call("set_hovered", true)
 		await create_timer(0.25).timeout
+		# 截图态断言：只有 _choice_index 行 selected，所有行 hovered=false。
+		var rows: Array = _presenter.get("_choice_rows")
+		var idx := int(_presenter.get("_choice_index"))
+		for i in rows.size():
+			var row = rows[i]
+			if bool(row.get("hovered")) or bool(row.get("selected")) != (i == idx):
+				push_error("[THEME_SHOTS] %s 选项态异常：第 %d 行 selected=%s hovered=%s" % [id, i, row.get("selected"), row.get("hovered")])
+				_failed += 1
 		await _shot(_name("%s_choices" % id))
 	else:
 		await _show_text(id)
