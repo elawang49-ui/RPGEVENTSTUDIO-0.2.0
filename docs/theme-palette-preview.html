@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>统一色彩方案 · 当前 vs 提案 v2</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #14161c; color: #cfd4dc; font: 14px/1.5 "PingFang SC", "Microsoft YaHei", sans-serif; }
+  h1 { font-size: 20px; margin: 24px 32px 4px; }
+  .sub { margin: 0 32px 8px; color: #8a8f9a; font-size: 13px; max-width: 900px; }
+  .ramp { margin: 8px 32px 20px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .ramp i { width: 54px; height: 22px; border-radius: 4px; border: 1px solid #0006; display:inline-block; }
+  .ramp em { font-style: normal; font-size: 10px; color: #7d838f; margin: 0 12px 0 4px; }
+  .preset { margin: 0 32px 30px; }
+  .preset h2 { font-size: 15px; margin: 0 0 10px; color: #e8e4d8; font-weight: 600; }
+  .preset h2 small { color: #8a8f9a; font-weight: 400; margin-left: 10px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { border-radius: 10px; overflow: hidden; border: 1px solid #2a2e38; }
+  .card .tag { padding: 6px 12px; font-size: 11px; letter-spacing: .5px; background: #1d2029; color: #9aa0ad; }
+  .stage { padding: 110px 5% 26px; display: flex; flex-direction: column; justify-content: flex-end; min-height: 270px; position: relative; }
+  .box { position: relative; border-style: solid; }
+  .np { position: absolute; top: -14px; left: 18px; padding: 3px 14px; font-size: 13px; font-weight: 600; border-style: solid; white-space: nowrap; }
+  .txt { padding: 18px 20px 8px; font-size: 14px; min-height: 44px; }
+  .hint { text-align: right; padding: 0 20px 9px; font-size: 10px; opacity: .85; }
+  .choices { position: absolute; right: 4%; top: 16px; width: 46%; display: flex; flex-direction: column; gap: 7px; }
+  .ch { padding: 7px 14px; font-size: 12.5px; border-style: solid; }
+</style>
+</head>
+<body>
+<h1>统一色彩方案 v2</h1>
+<p class="sub">原则：<b>一套墨/纸基底 + 一族低饱和强调色</b>。暗色主题共用同一墨色（#14171D/#0C0F14），
+亮色主题共用同一暖纸（#F7F1E6）；正文两色全局统一（墨上羊皮纸 #E9E2D4 / 纸上赭墨 #3B322C）；
+每套预设只带 1~2 个同一族群的哑光强调色（≈55–65% 明度、去荧光）。左 = 当前，右 = 统一方案。</p>
+<div class="ramp" id="ramp"></div>
+<div id="app"></div>
+<script>
+// ── 统一基础 ─────────────────────────────────────────
+const INK = "#14171D", INK_DEEP = "#0C0F14", PAPER = "#F7F1E6", PAPER_DIM = "#EFE5D3";
+const T_DARK = "#E9E2D4", T_LIGHT = "#3B322C";
+// ── 统一强调色族（哑光明度 55–65%）─────────────────────
+const A = {
+  brass:"#B08D57", persimmon:"#D9718A", amber:"#D9A441", teal:"#3FBFB5",
+  fog:"#8A9199", sage:"#5E8B7E", ox:"#A63A4A", gilt:"#C29A4A",
+  rose:"#C27E8A", aegean:"#3A8FB7", giltsoft:"#B7A077"
+};
+// 每套：stage 背景 / 面板 / 强调 / 铭牌 / 选项(普通底,选中底)
+const U = {
+  sacred:   {stage:["#222C3E","#0A0D14"], panel:INK,      ac:A.brass,    np:"#1A1F28", ch:"#1A212B", cs:"#3A3226"},
+  cute:     {stage:["#E8DFD2","#D9CBB8"], panel:PAPER,    ac:A.persimmon,np:A.persimmon, ch:PAPER,   cs:A.persimmon},
+  cool:     {stage:["#101318","#141B26"], panel:INK_DEEP, ac:A.amber,    np:A.amber,   ch:"#161B23", cs:A.amber, ac2:A.teal},
+  minimal:  {stage:["#262A30","#121418"], panel:"rgba(20,23,29,.78)", ac:A.fog, np:"transparent", ch:"rgba(20,23,29,.78)", cs:"#3B414A"},
+  biscuit:  {stage:["#5E6B5F","#3E4A41"], panel:PAPER,    ac:A.sage,     np:"#5A4A42", ch:PAPER,    cs:"#E4CFA6"},
+  crimson:  {stage:["#33101A","#0A0608"], panel:INK_DEEP, ac:A.ox,       np:A.ox,      ch:"#181114", cs:A.ox},
+  astrolabe:{stage:["#1E2A48","#090D19"], panel:"#121A2E",ac:A.gilt,     np:"transparent", ch:"#141D33", cs:"#EDE0C0"},
+  macaron:  {stage:["#54404A","#3A2E35"], panel:"#FBF4EA",ac:A.rose,     np:A.rose,    ch:"#FBF4EA", cs:A.rose},
+  morpho:   {stage:["#0E2A50","#050B18"], panel:"#0A1B33", ac:A.aegean,  np:"#F4FAFF", ch:"#0E2550", cs:"#F4FAFF"},
+  feather:  {stage:["#22242E","#0C0D12"], panel:"rgba(20,22,28,.85)", ac:A.giltsoft, np:"transparent", ch:"rgba(20,22,28,.85)", cs:"rgba(183,160,119,.30)"},
+};
+// ── 当前（摘录自预设工厂）────────────────────────────
+const O = {
+  sacred:   {stage:["#263147","#080B12"], panel:"#0E131F", ac:"#E5D1A7", np:"#10182B", ch:"#0B0F19", cs:"#212838"},
+  cute:     {stage:["#CDEFFD","#FFF3D6"], panel:"#FFFDF9", ac:"#FF6B93", np:"#FF6B93", ch:"#FFFDF9", cs:"#FF7597"},
+  cool:     {stage:["#0B0D13","#1D1128"], panel:"#0A0C12", ac:"#FCEE09", np:"#FCEE09", ch:"#0C0F18", cs:"#FCEE09", ac2:"#00F0FF"},
+  minimal:  {stage:["#2B3038","#121418"], panel:"rgba(10,12,15,.75)", ac:"#FFFFFF", np:"transparent", ch:"rgba(10,12,15,.75)", cs:"#3A3F47"},
+  biscuit:  {stage:["#4F6D5A","#395144"], panel:"#FDF8EE", ac:"#78C2AD", np:"#5C3A21", ch:"#FDF8EE", cs:"#FFE8B6"},
+  crimson:  {stage:["#3B0813","#070507"], panel:"#0B090C", ac:"#E6002E", np:"#0B090C", ch:"#0E0B0F", cs:"#E6002E"},
+  astrolabe:{stage:["#273863","#090D19"], panel:"#141B33", ac:"#D4AF37", np:"#141B33", ch:"#131A30", cs:"#F4E7C5"},
+  macaron:  {stage:["#5E4352","#42303B"], panel:"#FFF8F0", ac:"#F28B9F", np:"#F28B9F", ch:"#FFF8F0", cs:"#F28B9F"},
+  morpho:   {stage:["#0D3B8C","#040B1C"], panel:"#071326", ac:"#00D4FF", np:"#FFFFFF", ch:"#0A1E3E", cs:"#FFFFFF"},
+  feather:  {stage:["#262936","#0C0D12"], panel:"rgba(17,19,26,.85)", ac:"#C8B282", np:"transparent", ch:"rgba(17,19,26,.85)", cs:"rgba(200,178,130,.25)"},
+};
+const META = [
+  ["sacred","终焉圣堂","黄铜 #B08D57 — 同族旧金系"],["cute","晴空波普","柿红 #D9718A — 哑光粉"],
+  ["cool","幻影机能","琥珀+湖绿双强调（去荧光）"],["minimal","寂静地平线","雾灰 #8A9199"],
+  ["biscuit","焦糖曲奇","铜绿 #5E8B7E"],["crimson","猩红处决","氧化血 #A63A4A"],
+  ["astrolabe","月神星轨","鎏金 #C29A4A"],["macaron","天使茶会","灰粉 #C27E8A"],
+  ["morpho","深海幻蝶","海青 #3A8FB7（P3R 调低荧光）"],["feather","白鸦诗篇","软金 #B7A077"],
+];
+const SAMPLE = {np:"角色名 · 示例", text:"「这是一段示例台词，用于对比新旧配色的可读性与气质。」", chs:["选项一：接受提议","选项二：继续追问","选项三：保持沉默"]};
+function card(id, side){
+  const c = side==="u" ? U[id] : O[id];
+  const unified = side==="u";
+  const light = c.panel === PAPER || c.panel === "#FBF4EA" || c.panel === "#FDF8EE" || c.panel === "#FFFDF9";
+  const text = unified ? (light ? T_LIGHT : T_DARK)
+    : (light ? "#4A3238" : "#E2E6F0");
+  const cst = (id==="cool"||id==="morpho"||id==="astrolabe") ? (light?"#fff":"#101418") : (light?"#fff":text);
+  const chselText = (c.cs===c.ac || c.cs==="#F4FAFF" || c.cs==="#EDE0C0" || c.cs==="#F4E7C5" || c.cs==="#FFFFFF" || c.cs==="#FCEE09" || c.cs===A.amber || c.cs===A.rose || c.cs===A.ox || c.cs==="#E6002E" || c.cs==="#FF7597") ? (light||c.cs==="#F4FAFF"||c.cs==="#EDE0C0"||c.cs==="#F4E7C5"||c.cs==="#FFFFFF"||c.cs==="#FCEE09"||c.cs===A.amber ? "#101418" : "#fff") : text;
+  return `<div class="card"><div class="tag">${unified?"统一方案":"当前"}</div>
+  <div class="stage" style="background:linear-gradient(180deg,${c.stage[0]},${c.stage[1]})">
+    <div class="choices">
+      <div class="ch" style="background:${c.ch};color:${text};border:1px solid ${c.ac}66;border-radius:8px">${SAMPLE.chs[0]}</div>
+      <div class="ch" style="background:${c.cs};color:${chselText};border:1.5px solid ${c.ac};border-radius:8px">${SAMPLE.chs[1]}</div>
+      <div class="ch" style="background:${c.ch};color:${text};border:1px solid ${c.ac}66;border-radius:8px">${SAMPLE.chs[2]}</div>
+    </div>
+    <div class="box" style="background:${c.panel};border:1.5px solid ${c.ac}88;border-radius:10px">
+      <div class="np" style="background:${c.np==="transparent"?c.panel:c.np};color:${c.np==="transparent"?c.ac:(id==="cute"||id==="macaron"||id==="cool"||id==="crimson"||id==="morpho"?(unified?(id==="cool"||id==="morpho"?"#101418":"#fff"):(id==="morpho"||id==="cool"?"#0B0D13":"#fff")):T_DARK)};border:1px solid ${c.ac};border-radius:4px">${SAMPLE.np}</div>
+      <div class="txt" style="color:${text}">${SAMPLE.text}</div>
+      <div class="hint" style="color:${c.ac}">空格 / 鼠标左键 / 手柄 A</div>
+    </div>
+  </div></div>`;
+}
+document.getElementById("ramp").innerHTML =
+  `<em>基底</em>` + [INK,INK_DEEP,PAPER,PAPER_DIM,T_DARK,T_LIGHT].map(c=>`<i style="background:${c}" title="${c}"></i>`).join("")
+  + `<em>强调色族</em>` + Object.values(A).map(c=>`<i style="background:${c}" title="${c}"></i>`).join("");
+document.getElementById("app").innerHTML = META.map(([id,name,note])=>`
+<div class="preset"><h2>${name}<small>${note}</small></h2>
+<div class="pair">${card(id,"o")}${card(id,"u")}</div></div>`).join("");
+</script>
+</body>
+</html>
