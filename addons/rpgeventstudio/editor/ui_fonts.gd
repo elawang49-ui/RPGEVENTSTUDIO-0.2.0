@@ -9,10 +9,5 @@ const TITLE := 20
 const SECTION := 16
 const BODY := 14
 const NOTE := 12
-const AUX := 12
 const BUTTON := 14
 const DEBUG := 13
-
-## 中文最小可读字号。
-static func min_readable() -> int:
-	return 12

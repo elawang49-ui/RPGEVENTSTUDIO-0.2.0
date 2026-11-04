@@ -1122,9 +1122,6 @@ func _page_end_line() -> int:
 		end = mini(total, start + 1)
 	return end
 
-func _visible_lines() -> int:
-	return maxi(1, _page_end_line() - _page_line)
-
 func _next_page() -> void:
 	var total := _text_label.get_line_count()
 	if total <= 0:

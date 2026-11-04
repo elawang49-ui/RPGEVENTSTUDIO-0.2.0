@@ -238,10 +238,6 @@ func _on_filesystem_changed() -> void:
 			_list_panel.call("refresh")
 	)
 
-func refresh_event_list() -> void:
-	if _list_panel != null:
-		_list_panel.call("refresh")
-
 func _open_event(definition: EventDefinition) -> void:
 	if _panel != null and definition != null:
 		_panel.call("open_definition", definition, null)
@@ -253,12 +249,6 @@ func open_story_tab() -> void:
 	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
 	if _main_tabs != null:
 		_main_tabs.current_tab = 2
-
-## 打开「审计」标签页（全工程剧情资源审计）。
-func open_audit_tab() -> void:
-	EditorInterface.set_main_screen_editor(L10n.ui("graph.title"))
-	if _main_tabs != null:
-		_main_tabs.current_tab = 3
 
 func _open_graph(graph: LevelGraph) -> void:
 	if graph == null:

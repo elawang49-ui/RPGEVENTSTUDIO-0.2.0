@@ -771,7 +771,6 @@ trace.col.time,时间,Time
 trace.col.kind,类型,Kind
 trace.col.summary,摘要,Summary
 trace.col.result,结果,Result
-trace.empty,暂无追踪记录。执行事件后这里会显示时间线。,No trace yet. Run an event to see the timeline.
 trace.status,显示 {shown}/{total} 条 · 缓冲 {capacity} · 丢弃 {dropped},Showing {shown}/{total} · capacity {capacity} · dropped {dropped}
 trace.exported,已导出：{path},Exported: {path}
 trace.export_failed,导出失败,Export failed

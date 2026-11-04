@@ -7,7 +7,7 @@ export GODOT_BIN=/path/to/Godot
 python3 tools/test_runner.py --all
 ```
 
-运行器先完成首次导入，生成全局类名缓存和翻译资源，再运行22个 headless套件、6个真实编辑器套件和12个故障注入控制。精确检查数登记在 `tools/test_counts.json`；每个原有套件保留，新增检查只增加数量。完整输出在 `.godot/test-results/`。只有退出码、汇总、断言数量、CASE完成度与诊断检查全部通过才算通过。
+运行器先完成首次导入，生成全局类名缓存和翻译资源，再运行24个 headless套件、6个真实编辑器套件和12个故障注入控制。精确检查数登记在 `tools/test_counts.json`；每个原有套件保留，新增检查只增加数量。完整输出在 `.godot/test-results/`。只有退出码、汇总、断言数量、CASE完成度与诊断检查全部通过才算通过。
 
 手动跑单一 GDScript 前先执行：
 

@@ -166,7 +166,7 @@ def main():
     if args.fresh:
         destination = work / "fresh"
         subprocess.run(["git", "clone", "--no-local", "--single-branch", "--branch",
-                        "release/0.2.0-rc1", str(ROOT), str(destination)], check=True, capture_output=True)
+                        "release/0.2.0", str(ROOT), str(destination)], check=True, capture_output=True)
         log = work / "fresh-tests.log"
         with log.open("w") as stream:
             proc = subprocess.run([sys.executable, "-u", "tools/test_runner.py", "--all"],

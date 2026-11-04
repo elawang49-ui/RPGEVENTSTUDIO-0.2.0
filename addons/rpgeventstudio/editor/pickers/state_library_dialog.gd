@@ -71,15 +71,6 @@ func new_state(seed_key: String = "") -> void:
 	_select(key)
 	state_saved.emit(key)
 
-func rename_current(display_name: String) -> void:
-	if _current == null:
-		return
-	_current.display_name = display_name
-	_flush()
-	_rebuild()
-	_select(_current.key)
-	state_saved.emit(_current.key)
-
 # ── 界面 ─────────────────────────────────────────────────
 
 func _build() -> void:
