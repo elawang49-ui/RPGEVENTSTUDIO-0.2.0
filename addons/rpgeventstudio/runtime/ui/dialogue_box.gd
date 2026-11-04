@@ -692,8 +692,6 @@ func close_all() -> void:
 		_panel.hide()
 	if _choices_panel != null:
 		_choices_panel.modulate.a = 1.0
-		_choices_panel.offset_top = 0.0
-		_choices_panel.offset_bottom = 0.0
 		_choices_panel.hide()
 	if _nameplate != null:
 		_nameplate.visible = false
@@ -949,39 +947,30 @@ func _hide_panel_with_animation() -> void:
 func _show_choices_panel_with_animation() -> void:
 	_kill_choices_tween()
 	_choices_panel.show()
+	# 注意：选项面板的位置由 _layout_choices_panel 以 position.y 动态管理，
+	# 不能像对话框那样对 offset 做滑入补间——offset 对这个面板就是位置本身，
+	# 补间会与布局互相覆盖。这里只做透明度淡入。
 	if style != null and style.appear_duration > 0.0:
 		_choices_panel.modulate.a = 0.0
-		_choices_panel.offset_top = 8.0
-		_choices_panel.offset_bottom = 8.0
 		_choices_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		_choices_tween.tween_property(_choices_panel, "modulate:a", 1.0, style.appear_duration)
-		_choices_tween.parallel().tween_property(_choices_panel, "offset_top", 0.0, style.appear_duration)
-		_choices_tween.parallel().tween_property(_choices_panel, "offset_bottom", 0.0, style.appear_duration)
 	else:
 		_choices_panel.modulate.a = 1.0
-		_choices_panel.offset_top = 0.0
-		_choices_panel.offset_bottom = 0.0
 
 func _hide_choices_panel_with_animation() -> void:
 	_kill_choices_tween()
 	if style != null and style.disappear_duration > 0.0 and _choices_panel.visible:
 		_choices_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		_choices_tween.tween_property(_choices_panel, "modulate:a", 0.0, style.disappear_duration)
-		_choices_tween.parallel().tween_property(_choices_panel, "offset_top", 5.0, style.disappear_duration)
-		_choices_tween.parallel().tween_property(_choices_panel, "offset_bottom", 5.0, style.disappear_duration)
 		_choices_tween.finished.connect(func() -> void:
 			if _choices_panel != null:
 				_choices_panel.hide()
 				_choices_panel.modulate.a = 1.0
-				_choices_panel.offset_top = 0.0
-				_choices_panel.offset_bottom = 0.0
 				_clear_choice_buttons()
 		)
 	else:
 		_choices_panel.hide()
 		_choices_panel.modulate.a = 1.0
-		_choices_panel.offset_top = 0.0
-		_choices_panel.offset_bottom = 0.0
 		_clear_choice_buttons()
 
 func _kill_panel_tween() -> void:
@@ -997,8 +986,6 @@ func _kill_choices_tween() -> void:
 func _clear_choices() -> void:
 	_kill_choices_tween()
 	_choices_panel.modulate.a = 1.0
-	_choices_panel.offset_top = 0.0
-	_choices_panel.offset_bottom = 0.0
 	_choices_panel.hide()
 	if _choices_scroll != null:
 		_choices_scroll.custom_minimum_size = Vector2(0, 0)
