@@ -1,3 +1,28 @@
+# RPGEVENTSTUDIO 0.2.0
+
+首个正式版本。包含 rc1/rc2 全部修复，并新增主题系统、宿主指令注册与统一输入层。发布基线 `release/0.2.0`，仓库历史完整保留。
+
+## 新增
+
+- **ATELIER v5 对话主题系统**：12 套内置预设，内置 OFL 授权字体（含中文点阵/楷体/等宽），新增主题字段与几何绘制组件，旧主题 id 自动迁移，1080p 分辨率适配（canvas_items+expand）。编辑器「UI 主题」页实时预览、保存/重载/恢复默认。
+- **`register_host_command` 宿主自定义指令注册**：内置指令不可覆盖、同名先到先得；`display_name` 支持 `fallback_name` 回退，`summary` 支持 `{param}` 模板；自定义分类自动进入编辑器「添加指令」菜单。配套 `host_command_test` 19 项。
+- **统一输入与按键自定义**：动作层支持宿主注册与默认键补充；对话推进与菜单确认拆分为独立动作；游戏内 F1 面板可改键盘/鼠标/手柄绑定，改键自动替换同设备旧绑定。
+
+## 工程与验证
+
+- 仓库完成 Phase 0 清理：28 worktree/32 分支收敛为 3 worktree/3 分支，删除 85 张无引用验收截图与一次性调试脚本，零引用死代码移除，文档编号冲突修复。详见 `docs/maintenance/REPOSITORY_CLEANUP_AUDIT.md`。
+- 自动化验收：headless 24 套件 **2109** 项 + editor 6 套件 **233** 项 + 故障注入 **12** 项，全部通过。
+- 首次提供 **Windows 试玩包**（school_demo 演示关卡单文件 EXE）。注意：导出在 macOS 完成，**Windows 原生运行尚未实机验收**，如发现启动问题请反馈。
+- 平台限制沿用：尚未在 Linux 实机完成 GUI 验收；macOS 无法验证 Windows 包运行。
+
+## 许可
+
+不变：自定义 RPGEVENTSTUDIO Source-Available License 1.0，允许商业游戏使用，禁止售卖插件本体及修改版。内置测试/主题字体遵循各自 SIL OFL 1.1。
+
+---
+
+以下为候选版本的修复说明与兼容边界：
+
 # RPGEVENTSTUDIO 0.2.0-rc2
 
 rc2 修复 rc1 上线后暴露的验证与自动播放问题。rc1 的标签和提交历史保留。

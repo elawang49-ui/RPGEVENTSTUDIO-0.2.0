@@ -1,4 +1,4 @@
-# RPGEVENTSTUDIO 0.2.0-rc2 安装与接入
+# RPGEVENTSTUDIO 0.2.0 安装与接入
 
 验证环境：Godot 4.7.2，标准 GDScript 版。不需要 GUT、.NET、Python 或第三方插件来运行游戏。Python 3.9+ 仅用于源码仓库的测试与打包工具。
 
