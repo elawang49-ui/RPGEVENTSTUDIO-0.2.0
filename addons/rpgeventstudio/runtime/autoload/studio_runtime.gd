@@ -233,7 +233,12 @@ func _load_dialogue_theme() -> RpgEventStudioTheme:
 		var loaded := load(DIALOGUE_THEME_PATH)
 		if loaded is RpgEventStudioTheme:
 			# 运行时使用独立副本，避免编辑器页/其他运行时实例改到缓存资源。
-			return (loaded as RpgEventStudioTheme).duplicate(true)
+			var theme := (loaded as RpgEventStudioTheme).duplicate(true)
+			# v5 起旧预设 id 自动迁移（sacred→codex 等），视觉字段保留原值。
+			var migrated := DialogueThemePresets.migrate_preset_id(theme.preset_id)
+			if migrated != theme.preset_id:
+				theme.preset_id = migrated
+			return theme
 		push_warning("[RPGEventStudio] 主题文件不是 RpgEventStudioTheme：%s" % DIALOGUE_THEME_PATH)
 	return RpgEventStudioTheme.new()
 

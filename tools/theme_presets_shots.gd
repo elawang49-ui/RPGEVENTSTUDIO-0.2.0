@@ -10,42 +10,48 @@ const OUT_ROOT := "res://docs/images/ui-theme-presets-v2"
 const PORTRAIT := "res://addons/rpgeventstudio/samples/ui/sample_portrait.png"
 
 const SPEAKERS := {
-	"sacred": "白灰圣女 · 伊莉丝",
-	"cute": "见习魔女 · 莓莓",
-	"cool": "幽灵骇客 · 零",
-	"minimal": "观测者 2B",
-	"biscuit": "面包房主 · 可可",
-	"crimson": "处刑人 · 维克多",
-	"astrolabe": "占星术士 · 塞蕾丝汀",
-	"macaron": "茶会主人 · 爱丽丝",
-	"morpho": "MAKOTO // 结城理",
-	"feather": "守夜诗人 · 奥菲莉娅",
+	"verse": "艾琳",
+	"codex": "艾琳",
+	"terminal": "艾琳",
+	"candy": "见习魔女 · 莓莓",
+	"tide": "领航员 · 深潮",
+	"ember": "守烛人 · 薇拉",
+	"frost": "霜语者 · 伊塔",
+	"ink": "墨痕客 · 无名",
+	"pixel": "旅人 · LOU",
+	"nocturne": "夜行者 · K",
+	"grove": "林间向导 · 苔苔",
+	"tactical": "哨站联络员 · 铁壁",
 }
 
 const TEXTS := {
-	"sacred": "「当最后的星辉落入寂静圣堂，古老的誓言便会苏醒……旅人啊，请告诉我你的抉择。」",
-	"cute": "哇！烤箱里的「星光草莓塔」终于出炉啦～趁热吃掉魔力恢复双倍喔！",
-	"cool": "防火墙只剩最后 12 秒重构。直接切入深层矩阵！",
-	"minimal": "雨停了。录音带转到了尽头，废墟里只剩下机械心脏跳动的回音。",
-	"biscuit": "今天的「薄荷焦糖曲奇」烤得刚刚好！我已经把配方贴在你的手账第 3 页啦～",
-	"crimson": "「午夜的钟声已经敲响了十二下。在绯红之月落下之前，交出你的底牌吧。」",
-	"astrolabe": "「银白星轨已经在第十二宫交汇。命运并非不可改写的石碑，而是一曲等待你拨动琴弦的夜曲。」",
-	"macaron": "欢迎来到午后三点的庭院茶会～要来一块刚烤好的「覆盆子马卡龙」吗？",
-	"morpho": "「午夜零点的影时间已经降临。听见那阵振翅声了吗？那是命运呼唤你的声音。」",
-	"feather": "「森林记住了每一片雪花落下的名字，正如灰烬记住了火焰最初的形状。」",
+	"verse": "「风从钟楼那边吹过来的时候，我就知道你会来。」",
+	"codex": "「风从钟楼那边吹过来的时候，我就知道你会来。」",
+	"terminal": "「风从钟楼那边吹过来的时候，我就知道你会来。」",
+	"candy": "哇！烤箱里的「星光草莓塔」终于出炉啦～趁热吃掉魔力恢复双倍喔！",
+	"tide": "「深潮流向在子夜反转。跟紧我，别在第三道防波堤回头。」",
+	"ember": "「烛火还剩最后一寸。在余烬熄灭之前，说出你藏在灰烬里的名字。」",
+	"frost": "「霜降之前，湖面的冰会先记住每一片雪花落下的形状。」",
+	"ink": "「剑已归鞘，墨还未干。这一笔写完，我们便两不相欠。」",
+	"pixel": "「检测到新的支线任务：在黎明前点亮三座烽火台。」",
+	"nocturne": "「刚看到你的消息。天台的风很大，要上来吗？」",
+	"grove": "「嘘——苔藓睡着了。沿着萤火的方向走，就能找到森林的心。」",
+	"tactical": "「哨站通讯恢复正常。确认坐标后，沿 B 通道撤离，完毕。」",
 }
 
 const CHOICES := {
-	"sacred": ["解开古老封印，倾听回响", "追问关于「契约」的代价", "收起提灯，悄然离开"],
-	"cute": ["尝一口刚出炉的草莓塔", "把配方抄进手账", "先去后院摘薄荷"],
-	"cool": ["接入终端，追踪幽灵信号", "切断防火墙，直接突围", "伪造身份，从维护通道撤离"],
-	"minimal": ["继续回放录音", "检查机械心脏", "关闭终端，回到地面"],
-	"biscuit": ["翻开烘焙手账第 3 页", "帮可可搅拌焦糖", "把曲奇分给门口的猫"],
-	"crimson": ["交出底牌，接受审判", "否认契约，直视逆十字", "保持沉默，等待钟声"],
-	"astrolabe": ["转动星盘，窥探命运的潮汐", "合上诗篇，询问守夜人的来历", "什么也不说，静候黎明"],
-	"macaron": ["品尝伯爵红茶与马卡龙", "询问茶会主人的来历", "悄悄把糖霜曲奇藏进口袋"],
-	"morpho": ["唤醒人格面具，直视影时间", "追踪冥蝶，潜入深海矩阵", "保持沉默，等待零点钟声"],
-	"feather": ["拾起白鸦之羽，继续守夜", "询问奥菲莉娅诗篇的结尾", "合上诗集，静候黎明"],
+	"verse": ["接受这份邀请", "再问问她的来意", "转身离开"],
+	"codex": ["接受这份邀请", "再问问她的来意", "转身离开"],
+	"terminal": ["接入终端，追踪信号", "切断防火墙，直接突围", "记录日志，稍后处理"],
+	"candy": ["尝一口刚出炉的草莓塔", "把配方抄进手账", "先去后院摘薄荷"],
+	"tide": ["跟紧领航员", "检查防波堤的潮汐表", "返回甲板等待信号"],
+	"ember": ["说出灰烬里的名字", "追问烛火的来历", "保持沉默，凝视余烬"],
+	"frost": ["跟随霜语者前行", "询问雪原的边界", "在原地等待天亮"],
+	"ink": ["交出那幅未干的字", "请教他的剑名", "拱手告辞，各走各路"],
+	"pixel": ["接受任务", "查看地图", "整理装备"],
+	"nocturne": ["这就上来", "太晚了，明天吧", "在楼下等你"],
+	"grove": ["跟着萤火走", "问问苔苔森林的事", "先记下这条路"],
+	"tactical": ["确认坐标，开始撤离", "请求火力支援", "保持静默，观察敌情"],
 }
 
 var _w := 1280
@@ -89,16 +95,16 @@ func _run() -> void:
 		await _shot_preset(id, true)
 
 	# 特色补充：无立绘退化 / BBCode 混排 / 长文分页。
-	await _shot_no_portrait("crimson", false)
+	await _shot_no_portrait("ember", false)
 	await _shot_bbcode()
-	await _shot_pagination("biscuit")
+	await _shot_pagination("codex")
 
 	await _shot_editor(1)
-	await _shot_editor(7)
-	await _shot_editor(10)
+	await _shot_editor(3)
+	await _shot_editor(9)
 	if _w <= 1160:
 		await _shot_editor_preview_mode()
-	await _shot_editor(5)
+	await _shot_editor(6)
 
 	print("[THEME_SHOTS] 输出目录：%s" % ProjectSettings.globalize_path(_out_dir))
 	quit(0)
@@ -172,12 +178,12 @@ func _shot_no_portrait(id: String, choices: bool) -> void:
 
 func _shot_bbcode() -> void:
 	_presenter.call("close_all")
-	_backdrop_for("sacred")
+	_backdrop_for("verse")
 	await create_timer(0.15).timeout
-	_apply("sacred", true)
-	var text := "「[b]星辉[/b]落尽时，[color=#E5D1A7]圣堂的钟声[/color]会替你回答。\n[font_size=28]—— 但代价，你准备好了吗？[/font_size]」"
-	await _show_text("sacred", text)
-	await _shot(_name("sacred_bbcode"))
+	_apply("verse", true)
+	var text := "「[b]星辉[/b]落尽时，[color=#C9A878]圣堂的钟声[/color]会替你回答。\n[font_size=28]—— 但代价，你准备好了吗？[/font_size]」"
+	await _show_text("verse", text)
+	await _shot(_name("verse_bbcode"))
 
 func _shot_pagination(id: String) -> void:
 	_presenter.call("close_all")
@@ -196,13 +202,13 @@ func _shot_pagination(id: String) -> void:
 
 func _shot_runtime_event() -> void:
 	_presenter.call("close_all")
-	_backdrop_for("minimal")
+	_backdrop_for("codex")
 	await create_timer(0.15).timeout
-	_apply("minimal", true)
+	_apply("codex", true)
 	var page := EventPage.new()
 	var command := EventCommand.new()
 	command.type = &"show_text"
-	command.params = {"speaker": "观测者 2B", "text": "事件运行时验收：这条对白由 EventRunner → CmdShowText → DialoguePresenter 产生。"}
+	command.params = {"speaker": "艾琳", "text": "事件运行时验收：这条对白由 EventRunner → CmdShowText → DialoguePresenter 产生。"}
 	page.commands = [command]
 	var definition := EventDefinition.new()
 	definition.event_id = &"theme_acceptance"
@@ -238,7 +244,7 @@ func _shot_editor(preset_index: int) -> void:
 	view.call("_on_preset_selected", preset_index)
 	var sample: OptionButton = view.get("_sample")
 	if sample != null:
-		sample.selected = 0 if preset_index in [1, 7, 8, 9, 10] else 3
+		sample.selected = 0 if preset_index in [1, 2, 3, 7, 9, 10] else 3
 		sample.item_selected.emit(sample.selected)
 	await create_timer(0.8).timeout
 	await _shot(_name("theme_editor_%d" % preset_index))

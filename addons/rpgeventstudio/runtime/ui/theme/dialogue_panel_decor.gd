@@ -68,13 +68,39 @@ func _shape_points(rect: Rect2) -> PackedVector2Array:
 				Vector2(0, h * 0.06), Vector2(w * 0.98, 0),
 				Vector2(w, h * 0.88), Vector2(w * 0.02, h),
 			])
+		"double-inner-line":
+			# Ember：四角 14px 切角，边框由 _draw_frame 画双发丝。
+			var n := minf(float(maxi(4, style.panel_notch_size)), minf(w, h) * 0.25)
+			return PackedVector2Array([
+				Vector2(n, 0), Vector2(w - n, 0), Vector2(w, n), Vector2(w, h - n),
+				Vector2(w - n, h), Vector2(n, h), Vector2(0, h - n), Vector2(0, n),
+			])
+		"cut-corner-thick":
+			# Tactical：厚切角（比 double-inner-line 更大缺口，粗描边）。
+			var n := minf(float(maxi(8, style.panel_notch_size * 2)), minf(w, h) * 0.3)
+			return PackedVector2Array([
+				Vector2(n, 0), Vector2(w, 0), Vector2(w, h - n),
+				Vector2(w - n, h), Vector2(0, h), Vector2(0, n),
+			])
+		"pixel-stepped":
+			# Pixel：4px 阶梯角多边形；边框 polyline 自然呈阶梯。
+			var st := 4.0
+			return PackedVector2Array([
+				Vector2(2 * st, 0), Vector2(w - 2 * st, 0), Vector2(w - 2 * st, st),
+				Vector2(w - st, st), Vector2(w - st, 2 * st), Vector2(w, 2 * st),
+				Vector2(w, h - 2 * st), Vector2(w - st, h - 2 * st), Vector2(w - st, h - st),
+				Vector2(w - 2 * st, h - st), Vector2(w - 2 * st, h), Vector2(2 * st, h),
+				Vector2(2 * st, h - st), Vector2(st, h - st), Vector2(st, h - 2 * st),
+				Vector2(0, h - 2 * st), Vector2(0, 2 * st), Vector2(st, 2 * st),
+				Vector2(st, st), Vector2(2 * st, st),
+			])
 		_:
 			return PackedVector2Array([
 				Vector2.ZERO, Vector2(w, 0), Vector2(w, h), Vector2(0, h),
 			])
 
 func _is_polygon() -> bool:
-	return style.panel_shape in ["notched", "slant", "octagon", "shard"]
+	return style.panel_shape in ["notched", "slant", "octagon", "shard", "double-inner-line", "cut-corner-thick", "pixel-stepped"]
 
 func _draw_shadow(rect: Rect2, points: PackedVector2Array) -> void:
 	# 软阴影：用几层偏移形状模拟，不依赖 StyleBox 的矩形假设。
@@ -262,6 +288,46 @@ func _draw_frame(rect: Rect2, points: PackedVector2Array, _font: Font) -> void:
 			sb.set_border_width_all(int(width))
 			sb.set_corner_radius_all(style.panel_corner_radius)
 			draw_style_box(sb, rect)
+
+	# v5 形状自带的附加描边。
+	match style.panel_shape:
+		"double-inner-line":
+			# Ember 双发丝：两条不同间距的细内框，外框由上方 polyline 完成。
+			var c := style.frame_inner_color if style.frame_inner_color.a > 0.0 else Color(style.panel_border_color, 0.6)
+			for gap in [float(maxi(5, style.frame_inner_gap)), float(maxi(9, style.frame_inner_gap + 4))]:
+				var p := _inset_shape_points(points, gap)
+				if p.size() > 1:
+					var closed := p.duplicate()
+					closed.append(p[0])
+					draw_polyline(closed, Color(c, c.a * (0.9 if gap < 8.0 else 0.5)), 1.0, true)
+		"glass":
+			# Frost 玻璃：顶部短高光线 + 内圈淡描边。
+			var seg := minf(72.0, rect.size.x * 0.14)
+			draw_rect(Rect2(rect.position.x + 18.0, 0.0, seg, 2.0), style.accent_color, true)
+			var inner := _inset_rect(rect, 3.0)
+			if inner.size.x > 4.0 and inner.size.y > 4.0:
+				var sb := StyleBoxFlat.new()
+				sb.bg_color = Color(0, 0, 0, 0)
+				sb.border_color = Color(1, 1, 1, 0.10)
+				sb.set_border_width_all(1)
+				sb.set_corner_radius_all(maxi(0, style.panel_corner_radius - 3))
+				draw_style_box(sb, inner)
+		"cut-corner-thick":
+			# Tactical：切角内再压一条强调折线 + 顶部标签条底色。
+			var p := _inset_shape_points(points, float(maxi(6, style.panel_border_width + 3)))
+			if p.size() > 1:
+				var closed := p.duplicate()
+				closed.append(p[0])
+				draw_polyline(closed, Color(style.accent_color, 0.55), 1.0, true)
+		"pixel-stepped":
+			# Pixel：内圈 1px 阶梯暗线，强化像素描边厚度。
+			var p := _inset_shape_points(points, 4.0)
+			if p.size() > 1:
+				var closed := p.duplicate()
+				closed.append(p[0])
+				draw_polyline(closed, Color(style.accent_color, 0.4), 1.0, true)
+		_:
+			pass
 
 	match style.frame_style:
 		"double", "ornament":

@@ -1,0 +1,66 @@
+{
+  "$schema": "atelier/tokens/v1",
+  "layer": "A2-semantic/runtime",
+  "description": "运行时语义层：角色化命名，不含任何品牌色。预设/宿主游戏通过 C-extension 覆盖 accent 层，不得改语义名。",
+  "panel": {
+    "bgDark":    "#14171D",
+    "bgDarkDeep": "#0C0F14",
+    "bgLight":   { "$ref": "base.color.paper" },
+    "bgLightDim": "#EFE5D3",
+    "shadow":    { "$ref": "base.elevation.3" }
+  },
+  "text": {
+    "onDark":   { "$ref": "base.color.parchment" },
+    "onDarkDim": "#BAB4A7",
+    "onLight":  { "$ref": "base.color.ochre" },
+    "hint":     { "from": "accent.default", "alpha": 0.85 }
+  },
+  "accent": {
+    "default":   "#B08D57",
+    "secondary": "#8A9199",
+    "comment": "B-slot：预设层必须提供具体值；缺省用此项保证组件可渲染"
+  },
+  "nameplate": {
+    "bg":     { "from": "accent.default" },
+    "text":   "#FFFFFF",
+    "offset": [20, -28],
+    "padX":   14, "padY": 5,
+    "radius": { "$ref": "base.radius.sm" }
+  },
+  "choice": {
+    "rowHeight": 48,
+    "gap": 12,
+    "panelGap": 18,
+    "radius": { "$ref": "base.radius.md" },
+    "borderWidth": 1,
+    "markerWidth": 24,
+    "selectedShift": 6,
+    "states": {
+      "normal":   { "bgAlpha": 0.72, "borderAlpha": 0.30 },
+      "hover":    { "bgAlpha": 0.94 },
+      "selected": { "borderAlpha": 0.95, "shift": 6 },
+      "disabled": { "alpha": 0.40 }
+    }
+  },
+  "portrait": {
+    "size": 100,
+    "gap": 16,
+    "radius": { "$ref": "base.radius.md" },
+    "borderWidth": 1
+  },
+  "layout": {
+    "panelMarginX": 0.07,
+    "panelBottom": 0.94,
+    "contentMargin": { "left": 32, "right": 32, "top": 22, "bottom": 14 },
+    "textMinHeight": 76
+  },
+  "motion": {
+    "appear":    { "ms": 120, "ease": "cubic-out" },
+    "disappear": { "ms": 80,  "ease": "quad-in" },
+    "typewriter": { "charsPerSecond": 42 }
+  },
+  "type": {
+    "speaker": 22, "body": 22, "hint": 13, "choice": 19,
+    "comment": "运行时字号独立放大——玩家阅读距离远于编辑器"
+  }
+}

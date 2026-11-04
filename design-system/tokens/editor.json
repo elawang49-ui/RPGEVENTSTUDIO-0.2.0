@@ -1,0 +1,54 @@
+{
+  "$schema": "atelier/tokens/v1",
+  "layer": "A2-semantic/editor",
+  "description": "编辑器语义层：只描述角色（surface/text/accent），取值引用 base.json。dark-warm 方向：墨底 + 铜棕强调。",
+  "bg": {
+    "base":    { "$ref": "base.color.inkDeep" },
+    "surface": { "$ref": "base.color.ink" },
+    "raised":  { "$ref": "base.color.inkRaised" },
+    "hover":   "#3D3C36",
+    "pressed": "#171613"
+  },
+  "border": {
+    "default": "#45433C",
+    "soft":    "#35332D",
+    "strong":  "#575449",
+    "focus":   { "$ref": "base.color.copperHi" }
+  },
+  "text": {
+    "primary":   "#EDEAE2",
+    "secondary": "#A39D90",
+    "faint":     "#6E6A5E",
+    "onAccent":  "#F7F1EA",
+    "disabled":  "#54514A"
+  },
+  "accent": {
+    "default": { "$ref": "base.color.copper" },
+    "hover":   { "$ref": "base.color.copperHi" },
+    "pressed": { "$ref": "base.color.copperDeep" },
+    "muted":   "#6B4A3C",
+    "container": "#3A2E26",
+    "onContainer": "#E8C4A8"
+  },
+  "semantic": {
+    "ok":   { "$ref": "base.color.ok" },
+    "warn": { "$ref": "base.color.warn" },
+    "err":  { "$ref": "base.color.err" },
+    "info": { "$ref": "base.color.info" }
+  },
+  "control": {
+    "heightSm": 24,
+    "heightMd": 28,
+    "heightLg": 36,
+    "radius":   { "$ref": "base.radius.sm" },
+    "radiusPanel": { "$ref": "base.radius.md" },
+    "padX": 12, "padY": 6,
+    "gap": 8,
+    "sectionGap": 16
+  },
+  "motion": {
+    "hover":   { "$ref": "base.motion.fast" },
+    "panel":   { "$ref": "base.motion.base" },
+    "tooltip": { "$ref": "base.motion.fast" }
+  }
+}

@@ -40,6 +40,13 @@ var _choices_scroll: ScrollContainer
 var _choices_box: VBoxContainer
 var _fade_rect: ColorRect
 var _fade_tween: Tween
+## v5：大立绘（panel 下层）、inside 布局宿主、推进指示、循环动画时钟。
+var _portrait_large: PanelContainer
+var _portrait_large_tex: TextureRect
+var _inside_choices_host: VBoxContainer
+var _advance: AdvanceIndicator
+var _loop_time := 0.0
+var _nameplate_base_rot := 0.0
 
 var _typing := false
 var _waiting_confirm := false
@@ -188,6 +195,15 @@ func _build_ui() -> void:
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_text_column.add_child(_hint_label)
 
+	# inside 布局：选项收进面板右栏，宿主列固定在内容行末尾。
+	_inside_choices_host = VBoxContainer.new()
+	_inside_choices_host.name = "InsideChoicesHost"
+	_inside_choices_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_inside_choices_host.size_flags_stretch_ratio = 0.62
+	_inside_choices_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_inside_choices_host.visible = false
+	_content_row.add_child(_inside_choices_host)
+
 	_choices_panel = PanelContainer.new()
 	_choices_panel.name = "ChoicePanel"
 	_choices_panel.add_theme_stylebox_override("panel", _make_panel_style())
@@ -215,6 +231,27 @@ func _build_ui() -> void:
 	_nameplate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_nameplate)
 	_nameplate.visible = false
+
+	# 大立绘：位于面板下层（先移入 _fade_rect 之后、_panel 之前）。
+	_portrait_large = PanelContainer.new()
+	_portrait_large.name = "PortraitLarge"
+	_portrait_large.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_portrait_large.clip_contents = true
+	_portrait_large.visible = false
+	_portrait_large_tex = TextureRect.new()
+	_portrait_large_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_portrait_large_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_portrait_large_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_portrait_large.add_child(_portrait_large_tex)
+	_root.add_child(_portrait_large)
+	_root.move_child(_portrait_large, _panel.get_index())
+
+	# 推进指示：几何绘制，浮在面板右下角，不占布局。
+	_advance = AdvanceIndicator.new()
+	_advance.name = "AdvanceIndicator"
+	_advance.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_advance.visible = false
+	_root.add_child(_advance)
 
 func _make_panel_style() -> StyleBoxFlat:
 	if style == null:
@@ -295,8 +332,20 @@ func _apply_style() -> void:
 	_hint_label.add_theme_font_size_override("font_size", style.hint_font_size)
 	_hint_label.add_theme_color_override("font_color", style.hint_color)
 
-	_choices_panel.anchor_left = style.choice_left
-	_choices_panel.anchor_right = style.choice_right
+	# 选项容器归属：inside 收进面板右栏，其余布局仍是 _root 下的浮动面板。
+	_move_choices_to_layout_host()
+	var span := maxf(0.06, style.choice_right - style.choice_left)
+	var center := (style.panel_left + style.panel_right) * 0.5
+	match style.choice_align:
+		"center":
+			_choices_panel.anchor_left = center - span * 0.5
+			_choices_panel.anchor_right = center + span * 0.5
+		"left":
+			_choices_panel.anchor_left = style.panel_left
+			_choices_panel.anchor_right = style.panel_left + span
+		_:
+			_choices_panel.anchor_left = style.choice_left
+			_choices_panel.anchor_right = style.choice_right
 	# 选项面板不再固定在高处：底边贴着对话框上沿，位置由 _layout_choices_panel
 	# 根据当前对话框高度动态计算。choice_top/bottom 只用于限制最大高度。
 	_choices_panel.anchor_top = 0.0
@@ -307,6 +356,14 @@ func _apply_style() -> void:
 	_choices_panel.offset_top = 0
 	_choices_panel.offset_bottom = 0
 	_choices_panel.add_theme_stylebox_override("panel", style.make_choice_panel_style())
+	if _choice_layout() == "inside":
+		# 收进面板右栏时去掉外壳：选项与正文并排，不再套一层对话框皮肤。
+		var bare := StyleBoxFlat.new()
+		bare.bg_color = Color(0, 0, 0, 0)
+		bare.set_border_width_all(0)
+		_choices_panel.add_theme_stylebox_override("panel", bare)
+		_choices_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_choices_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_choice_margin.add_theme_constant_override("margin_left", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_right", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_top", style.choice_margin)
@@ -318,10 +375,56 @@ func _apply_style() -> void:
 
 	_nameplate.set_style(style)
 	_portrait.set_style(style)
+	_nameplate_base_rot = float(style.nameplate_rotation)
 	_apply_portrait_side()
+	_apply_hint_style()
 	_update_portrait_visibility()
 	_update_nameplate_visibility()
+	if _advance != null:
+		_advance.style = style
+		_advance.queue_redraw()
 	_schedule_height_update()
+
+func _choice_layout() -> String:
+	if style == null:
+		return "top"
+	return style.choice_layout
+
+## inside：选项面板搬入面板右栏；其他布局搬回 _root（浮动面板）。
+func _move_choices_to_layout_host() -> void:
+	if _choices_panel == null or _inside_choices_host == null or style == null:
+		return
+	var inside := _choice_layout() == "inside"
+	if inside and _choices_panel.get_parent() != _inside_choices_host:
+		_choices_panel.reparent(_inside_choices_host)
+	elif not inside and _choices_panel.get_parent() != _root:
+		_choices_panel.reparent(_root)
+	_inside_choices_host.visible = inside
+	if inside:
+		_text_column.size_flags_stretch_ratio = 1.0
+
+## 提示样式：text 沿用 Label 纯文字；keycap 给 Label 套键帽 StyleBox；
+## keycap-mono 额外切等宽字体（resolve_font 依据 font_style=mono）。
+func _apply_hint_style() -> void:
+	if _hint_label == null or style == null:
+		return
+	var mode := style.hint_style
+	if mode == "text":
+		_hint_label.remove_theme_stylebox_override("normal")
+		_hint_label.add_theme_font_override("font", style.resolve_body_font())
+		return
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(style.hint_color, 0.14)
+	box.border_color = Color(style.hint_color, 0.75)
+	box.set_border_width_all(1)
+	box.border_width_bottom = 2
+	box.set_corner_radius_all(4)
+	box.content_margin_left = 7.0
+	box.content_margin_right = 7.0
+	box.content_margin_top = 3.0
+	box.content_margin_bottom = 4.0
+	_hint_label.add_theme_stylebox_override("normal", box)
+	_hint_label.add_theme_font_override("font", style.resolve_font() if mode == "keycap-mono" else style.resolve_body_font())
 
 func _apply_portrait_side() -> void:
 	if _content_row == null or _portrait == null or _portrait_gap == null:
@@ -347,6 +450,8 @@ func set_dialogue_portrait(texture: Texture2D) -> void:
 	_portrait_texture = texture
 	if _portrait != null:
 		_portrait.set_portrait(texture)
+		if _portrait_large_tex != null:
+			_portrait_large_tex.texture = texture
 		_update_portrait_visibility()
 		_schedule_height_update()
 
@@ -359,7 +464,16 @@ func has_dialogue_portrait() -> bool:
 func _update_portrait_visibility() -> void:
 	if _portrait == null or style == null:
 		return
-	var can_show := style.portrait_enabled and (_portrait_texture != null or style.portrait_show_placeholder)
+	var placement := style.portrait_placement
+	var has_art := _portrait_texture != null or style.portrait_show_placeholder
+	# 大立绘：独立于槽位，位于面板下层；placement=none 强制全部关闭。
+	var large := placement.begins_with("large-")
+	if _portrait_large != null:
+		_portrait_large.visible = large and style.portrait_enabled and has_art
+		if _portrait_large_tex != null:
+			_portrait_large_tex.texture = _portrait_texture
+		_layout_large_portrait()
+	var can_show := style.portrait_enabled and placement == "slot" and has_art
 	# 窄窗口/矮窗口下优先保证正文：立绘框自动让位，而不是挤压文字。
 	var viewport := _root.get_viewport_rect().size if _root != null else Vector2(1280, 720)
 	var panel_width := viewport.x * maxf(0.1, style.panel_right - style.panel_left)
@@ -369,6 +483,33 @@ func _update_portrait_visibility() -> void:
 	if can_show:
 		_portrait.set_portrait(_portrait_texture)
 	_update_nameplate_visibility()
+
+## 大立绘出框落位：底边贴住面板底并允许下缘出框（出框感），水平按 placement。
+func _layout_large_portrait() -> void:
+	if _portrait_large == null or style == null or _panel == null:
+		return
+	var viewport := _root.get_viewport_rect().size if _root != null else Vector2(1280, 720)
+	var scale := clampf(viewport.x / 1280.0, 0.7, 1.4)
+	var w := 290.0 * scale
+	var h := 372.0 * scale
+	var x := 0.0
+	match style.portrait_placement:
+		"large-left":
+			x = viewport.x * style.panel_left - w * 0.30
+		"large-right":
+			x = viewport.x * style.panel_right - w * 0.70
+		"large-center":
+			x = (viewport.x - w) * 0.5
+		_:
+			return
+	# 底边对齐 panel_bottom + 少量下沉出框。
+	var y := viewport.y * style.panel_bottom + h * 0.10 - h
+	x = clampf(x, -w * 0.25, viewport.x - w * 0.75)
+	_portrait_large.position = Vector2(x, y)
+	_portrait_large.size = Vector2(w, h)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = style.portrait_bg
+	_portrait_large.add_theme_stylebox_override("panel", bg)
 
 # ── 铭牌布局 ─────────────────────────────────────────────
 
@@ -437,6 +578,7 @@ func _on_viewport_resized() -> void:
 	_update_portrait_visibility()
 	_layout_nameplate()
 	_layout_choices_panel()
+	_layout_advance_indicator()
 	_schedule_height_update()
 
 ## 选项底边停在对话框上沿上方 choice_gap 像素处；长对白导致面板上移时
@@ -444,12 +586,31 @@ func _on_viewport_resized() -> void:
 func _layout_choices_panel() -> void:
 	if _choices_panel == null or _panel == null or style == null or not _choices_panel.visible:
 		return
+	if _choice_layout() == "inside":
+		return
 	var h := _choices_panel.size.y
 	if h < 1.0:
 		h = _choices_scroll.custom_minimum_size.y + 2.0 * float(style.choice_margin)
-	var y := _panel.position.y - h - float(style.choice_gap)
+	var y: float
+	if _choice_layout() == "separate":
+		# 独立窗口：固定在视口右上区域，与对话框脱钩。
+		var viewport := _root.get_viewport_rect().size
+		y = viewport.y * style.choice_top
+	else:
+		y = _panel.position.y - h - float(style.choice_gap)
 	var max_y := maxf(8.0, _root.size.y - h - 8.0)
 	_choices_panel.position.y = clampf(y, 8.0, max_y)
+	_layout_advance_indicator()
+
+## 推进指示贴住面板右下角（内侧 12px）；visible 由 show/typing 状态控制。
+func _layout_advance_indicator() -> void:
+	if _advance == null or _panel == null or style == null:
+		return
+	var s := _advance.size
+	if s.x < 1.0:
+		s = Vector2(20, 20)
+	_advance._base_pos = _panel.position + _panel.size - s - Vector2(14, 10)
+	_advance.position = _advance._base_pos
 
 # ── 显示文字 ─────────────────────────────────────────────
 
@@ -482,6 +643,8 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	_auto_deadline = 0
 	_auto_duration = auto_advance
 	_input_cooldown = Time.get_ticks_msec() + 160
+	if _advance != null:
+		_advance.visible = false
 	_clear_choices()
 
 	_show_panel_with_animation()
@@ -567,7 +730,17 @@ func _create_choice_rows(texts: PackedStringArray) -> void:
 				_update_choice_highlight()
 		)
 		row.button.pressed.connect(_on_choice_pressed.bind(index))
-		_choices_box.add_child(row)
+		# 错落缩进：三行循环 18/0/30，包一层 Margin 不动行本身。
+		if style != null and style.choice_stagger:
+			var indents := [18.0, 0.0, 30.0]
+			var wrap := MarginContainer.new()
+			wrap.name = "ChoiceWrap%d" % index
+			wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			wrap.add_theme_constant_override("margin_left", int(indents[index % 3]))
+			wrap.add_child(row)
+			_choices_box.add_child(wrap)
+		else:
+			_choices_box.add_child(row)
 		_choice_rows.append(row)
 		_choice_buttons.append(row.button)
 
@@ -676,8 +849,12 @@ func _update_heights() -> void:
 	var choice_content := _choices_box.get_combined_minimum_size().y
 	var choice_reserved := 2.0 * float(style.choice_margin)
 	var choice_max := maxf(0.0, viewport_size.y * (style.choice_bottom - style.choice_top) - choice_reserved)
+	if _choice_layout() == "inside":
+		# 右栏选项以面板内容区高度为上限。
+		choice_max = maxf(0.0, _panel.size.y - float(style.content_margin_top + style.content_margin_bottom) - choice_reserved - 8.0)
 	_choices_scroll.custom_minimum_size = Vector2(0, clampf(choice_content, 0.0, choice_max))
 	_layout_choices_panel()
+	_layout_advance_indicator()
 	_layout_nameplate()
 
 # ── 关闭 ─────────────────────────────────────────────────
@@ -686,15 +863,15 @@ func close_all() -> void:
 	_kill_panel_tween()
 	_kill_choices_tween()
 	if _panel != null:
-		_panel.modulate.a = 1.0
-		_panel.offset_top = 0.0
-		_panel.offset_bottom = 0.0
+		_reset_panel_transform()
 		_panel.hide()
 	if _choices_panel != null:
 		_choices_panel.modulate.a = 1.0
 		_choices_panel.hide()
 	if _nameplate != null:
 		_nameplate.visible = false
+	if _advance != null:
+		_advance.visible = false
 	_clear_choice_buttons()
 	_typing = false
 	_waiting_confirm = false
@@ -714,6 +891,11 @@ func _process(delta: float) -> void:
 	# 否则短台词/长台词切换时铭牌会停在旧位置并压住立绘。
 	if _nameplate != null and _nameplate.visible:
 		_layout_nameplate()
+	# 循环动画：sway 作用于铭牌（±2°），其余作用于推进指示（组件自绘）。
+	if style != null and not style.motion_reduced:
+		_loop_time += delta
+		if _nameplate != null and _nameplate.visible and style.loop_anim == "sway":
+			_nameplate.rotation_degrees = _nameplate_base_rot + 2.0 * sin(_loop_time * TAU / 2.6)
 	# 首帧 RichTextLabel 尚未换行时 get_content_height() 可能返回旧值，
 	# 导致短台词面板被撑高。内容明显小于当前最小高度时再收敛一次。
 	if _text_label != null and style != null and not _typing:
@@ -760,8 +942,19 @@ func _finish_typing() -> void:
 	_text_label.visible_characters = -1
 	_waiting_confirm = true
 	_hint_label.visible = not editor_preview
+	_update_advance_indicator()
 	_update_page_hint()
 	call_deferred("_update_page_hint")
+
+func _update_advance_indicator() -> void:
+	if _advance == null or style == null:
+		return
+	var show := _panel != null and _panel.visible and _waiting_confirm and style.advance_indicator != "none"
+	_advance.visible = show
+	if show:
+		_advance.style = style
+		_layout_advance_indicator()
+		_advance.queue_redraw()
 
 ## 下一页：用 RichTextLabel 的内部滚动值翻页，但不显示滚动条。
 ## 保留一行重叠，避免分页边界把一行切成两半。
@@ -874,6 +1067,7 @@ func _dismiss_text() -> void:
 		return
 	_waiting_confirm = false
 	_text_done = true
+	_update_advance_indicator()
 	_hide_panel_with_animation()
 
 func _pressed(action: StringName) -> bool:
@@ -892,29 +1086,96 @@ func _input(event: InputEvent) -> void:
 
 # ── 内部 ─────────────────────────────────────────────────
 
+func _reset_panel_transform() -> void:
+	_panel.modulate.a = 1.0
+	_panel.offset_left = 0.0
+	_panel.offset_right = 0.0
+	_panel.offset_top = 0.0
+	_panel.offset_bottom = 0.0
+	_panel.scale = Vector2.ONE
+	_panel.rotation = 0.0
+
 func _show_panel_with_animation() -> void:
 	_kill_panel_tween()
 	_panel.show()
+	_reset_panel_transform()
+	_panel.pivot_offset = _panel.size * 0.5
 	if _nameplate != null and _nameplate.visible:
 		_nameplate.modulate.a = 1.0
-	if style != null and style.appear_duration > 0.0:
-		_panel.modulate.a = 0.0
-		_panel.offset_top = 10.0
-		_panel.offset_bottom = 10.0
-		if _nameplate != null and _nameplate.visible:
-			_nameplate.modulate.a = 0.0
-		_panel_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		_panel_tween.tween_property(_panel, "modulate:a", 1.0, style.appear_duration)
-		_panel_tween.parallel().tween_property(_panel, "offset_top", 0.0, style.appear_duration)
-		_panel_tween.parallel().tween_property(_panel, "offset_bottom", 0.0, style.appear_duration)
-		if _nameplate != null and _nameplate.visible:
-			_panel_tween.parallel().tween_property(_nameplate, "modulate:a", 1.0, style.appear_duration)
-	else:
-		_panel.modulate.a = 1.0
-		_panel.offset_top = 0.0
-		_panel.offset_bottom = 0.0
+	if style == null or style.appear_duration <= 0.0:
 		if _nameplate != null:
 			_nameplate.modulate.a = 1.0
+		return
+	# 减少动态效果：全部入场降级为 120ms 淡入。
+	var reduced := style.motion_reduced
+	var mode := "fade" if reduced else style.panel_entrance
+	var dur := 0.12 if reduced else clampf(
+		float(style.panel_entrance_ms) / 1000.0 if style.panel_entrance_ms > 0 else style.appear_duration,
+		0.05, 0.42)
+	var ease := Tween.EASE_OUT
+	var trans := Tween.TRANS_CUBIC
+	var nameplate_in := _nameplate != null and _nameplate.visible
+	match mode:
+		"none":
+			return
+		"fade":
+			_panel.modulate.a = 0.0
+		"rise":
+			_panel.modulate.a = 0.0
+			_panel.offset_top = 10.0
+			_panel.offset_bottom = 10.0
+		"pop":
+			_panel.modulate.a = 0.0
+			_panel.scale = Vector2(0.92, 0.92)
+			trans = Tween.TRANS_BACK
+		"slide-left":
+			_panel.modulate.a = 0.0
+			_panel.offset_left = -40.0
+			_panel.offset_right = -40.0
+		"wipe":
+			_panel.modulate.a = 0.0
+			_panel.pivot_offset = Vector2(0, _panel.size.y * 0.5)
+			_panel.scale = Vector2(0.0, 1.0)
+		"stamp":
+			_panel.modulate.a = 0.0
+			_panel.scale = Vector2(1.15, 1.15)
+			dur = minf(dur, 0.22)
+		"grow":
+			_panel.modulate.a = 0.0
+			_panel.pivot_offset = Vector2(0, _panel.size.y)
+			_panel.scale = Vector2(0.9, 0.9)
+			trans = Tween.TRANS_BACK
+		"step-open":
+			# 像素步进：纵向 4 步展开，不做连续补间。
+			_panel.modulate.a = 1.0
+			_panel.pivot_offset = Vector2(_panel.size.x * 0.5, _panel.size.y * 0.5)
+			_panel.scale = Vector2(1.0, 0.001)
+			_panel_tween = create_tween()
+			var step_dur := minf(dur, 0.4) / 4.0
+			for s in [0.25, 0.5, 0.75, 1.0]:
+				_panel_tween.tween_callback(Callable(_panel, "set").bind("scale:y", s))
+				_panel_tween.tween_interval(step_dur)
+			if nameplate_in:
+				_nameplate.modulate.a = 0.0
+				_panel_tween.parallel().tween_property(_nameplate, "modulate:a", 1.0, minf(dur, 0.4)).set_delay(step_dur * 3.0)
+			return
+		_:
+			_panel.modulate.a = 0.0
+	if nameplate_in:
+		_nameplate.modulate.a = 0.0
+	_panel_tween = create_tween().set_trans(trans).set_ease(ease)
+	_panel_tween.tween_property(_panel, "modulate:a", 1.0, dur)
+	match mode:
+		"rise":
+			_panel_tween.parallel().tween_property(_panel, "offset_top", 0.0, dur)
+			_panel_tween.parallel().tween_property(_panel, "offset_bottom", 0.0, dur)
+		"slide-left":
+			_panel_tween.parallel().tween_property(_panel, "offset_left", 0.0, dur)
+			_panel_tween.parallel().tween_property(_panel, "offset_right", 0.0, dur)
+		"pop", "wipe", "stamp", "grow":
+			_panel_tween.parallel().tween_property(_panel, "scale", Vector2.ONE, dur)
+	if nameplate_in:
+		_panel_tween.parallel().tween_property(_nameplate, "modulate:a", 1.0, dur)
 
 func _hide_panel_with_animation() -> void:
 	_kill_panel_tween()
@@ -928,18 +1189,14 @@ func _hide_panel_with_animation() -> void:
 		_panel_tween.finished.connect(func() -> void:
 			if _panel != null:
 				_panel.hide()
-				_panel.modulate.a = 1.0
-				_panel.offset_top = 0.0
-				_panel.offset_bottom = 0.0
+				_reset_panel_transform()
 			if _nameplate != null:
 				_nameplate.visible = false
 				_nameplate.modulate.a = 1.0
 		)
 	else:
 		_panel.hide()
-		_panel.modulate.a = 1.0
-		_panel.offset_top = 0.0
-		_panel.offset_bottom = 0.0
+		_reset_panel_transform()
 		if _nameplate != null:
 			_nameplate.visible = false
 			_nameplate.modulate.a = 1.0
@@ -949,11 +1206,22 @@ func _show_choices_panel_with_animation() -> void:
 	_choices_panel.show()
 	# 注意：选项面板的位置由 _layout_choices_panel 以 position.y 动态管理，
 	# 不能像对话框那样对 offset 做滑入补间——offset 对这个面板就是位置本身，
-	# 补间会与布局互相覆盖。这里只做透明度淡入。
+	# 补间会与布局互相覆盖。这里只做透明度淡入（行级 50ms 错峰）。
 	if style != null and style.appear_duration > 0.0:
 		_choices_panel.modulate.a = 0.0
+		var dur := 0.12 if style.motion_reduced else style.appear_duration
 		_choices_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		_choices_tween.tween_property(_choices_panel, "modulate:a", 1.0, style.appear_duration)
+		_choices_tween.tween_property(_choices_panel, "modulate:a", 1.0, dur)
+		# 行级错峰入场：每行晚 50ms 淡入。
+		for i in _choice_rows.size():
+			var row := _choice_rows[i]
+			if not is_instance_valid(row):
+				continue
+			if style.motion_reduced:
+				break
+			row.modulate.a = 0.0
+			var row_tween := create_tween()
+			row_tween.tween_property(row, "modulate:a", 1.0, 0.18).set_delay(0.05 * i)
 	else:
 		_choices_panel.modulate.a = 1.0
 
@@ -1002,3 +1270,99 @@ func _clear_choice_buttons() -> void:
 	_choice_buttons.clear()
 	_choice_rows.clear()
 	_choice_texts = PackedStringArray()
+
+# ── 推进指示（v5）：几何绘制 + 循环动画 ──────────────────
+
+class AdvanceIndicator extends Control:
+	var style: RpgEventStudioTheme
+	var phase := 0.0
+	var _base_pos := Vector2.ZERO
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(20, 20)
+		size = custom_minimum_size
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESIZED:
+			queue_redraw()
+
+	func _process(delta: float) -> void:
+		if style == null or style.motion_reduced or style.loop_anim == "none" or not visible:
+			return
+		phase += delta
+		_apply_loop()
+		queue_redraw()
+
+	## 循环动画幅度上限：位移 ≤4px，旋转 ±2°，透明度不低于 0.35。
+	func _apply_loop() -> void:
+		var t := phase
+		var alpha := 1.0
+		var offset := Vector2.ZERO
+		var rot := 0.0
+		match style.loop_anim:
+			"pulse":
+				alpha = 0.67 + 0.33 * sin(t * TAU / 1.6)
+			"bob":
+				offset.y = 1.5 + 1.5 * sin(t * TAU / 1.2)
+			"nudge":
+				offset.x = 1.5 + 1.5 * sin(t * TAU / 1.0)
+			"blink", "led":
+				alpha = 1.0 if fmod(t, 1.0) < 0.5 else 0.0
+			"flicker":
+				alpha = clampf(0.62 + 0.38 * sin(t * 9.1) * sin(t * 2.3 + 1.7), 0.35, 1.0)
+			"float":
+				offset.y = 2.0 * sin(t * TAU / 3.0)
+			"hop":
+				offset.y = -absf(sin(t * TAU / 0.9)) * 4.0
+			"sway":
+				rot = deg_to_rad(2.0) * sin(t * TAU / 2.6)
+			_:
+				pass
+		modulate.a = alpha
+		position = _base_pos + offset
+		rotation = rot
+
+	func _draw() -> void:
+		if style == null or size.x <= 1.0:
+			return
+		var c := style.hint_color if style.hint_color.a > 0.0 else style.accent_color
+		var cx := size.x * 0.5
+		var cy := size.y * 0.5
+		var s := minf(size.x, size.y) * 0.34
+		match style.advance_indicator:
+			"tri":
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(cx - s * 0.7, cy - s), Vector2(cx - s * 0.7, cy + s), Vector2(cx + s, cy),
+				]), c)
+			"tri-down":
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(cx - s, cy - s * 0.7), Vector2(cx + s, cy - s * 0.7), Vector2(cx, cy + s),
+				]), c)
+			"diamond":
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(cx, cy - s), Vector2(cx + s, cy), Vector2(cx, cy + s), Vector2(cx - s, cy),
+				]), c)
+			"dot":
+				draw_circle(Vector2(cx, cy), s * 0.7, c)
+			"cursor-block":
+				draw_rect(Rect2(cx - s, cy - s * 0.9, s * 2.0, s * 1.8), c, true)
+			"led":
+				draw_rect(Rect2(cx - s * 0.8, cy - s * 0.8, s * 1.6, s * 1.6), c, true)
+				draw_rect(Rect2(cx - s * 0.4, cy - s * 0.4, s * 0.8, s * 0.8), Color(1, 1, 1, 0.4), true)
+			"arrow-step":
+				# 像素阶梯箭头：三层方块递推。
+				for i in 3:
+					var w := s * 0.55
+					var x := cx - s + float(i) * s * 0.7
+					var h := s * (0.6 + 0.4 * i)
+					draw_rect(Rect2(x, cy - h, w, h * 2.0), c, true)
+			"leaf":
+				var p := PackedVector2Array()
+				for i in 13:
+					var a := PI * 2.0 * float(i) / 12.0
+					p.append(Vector2(cx, cy) + Vector2(sin(a) * s * 0.55, -cos(a) * s))
+				draw_colored_polygon(p, c)
+				draw_line(Vector2(cx, cy - s * 0.8), Vector2(cx, cy + s * 0.8), Color(1, 1, 1, 0.35), 1.0)
+			_:
+				pass

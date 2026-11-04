@@ -43,8 +43,9 @@ extends Resource
 @export_range(0, 80, 1) var content_margin_bottom: int = 16
 @export_range(32, 300, 1) var text_min_height: int = 76
 
-## 面板轮廓：rect 传统矩形；notched 斜切缺口；slant 平行四边形；cinema 无边框电影暗角。
-@export_enum("rect", "notched", "slant", "cinema", "octagon", "shard") var panel_shape: String = "rect"
+## 面板轮廓：rect 传统矩形；notched 斜切缺口；slant 平行四边形；cinema 无边框电影暗角；
+## double-inner-line 双发丝内框；glass 玻璃高光；pixel-stepped 阶梯描边；cut-corner-thick 厚切角。
+@export_enum("rect", "notched", "slant", "cinema", "octagon", "shard", "double-inner-line", "glass", "pixel-stepped", "cut-corner-thick") var panel_shape: String = "rect"
 @export_range(0, 32, 1) var panel_notch_size: int = 10
 @export_range(0, 32, 1) var panel_slant_size: int = 12
 ## 双层/装饰边框：plain 单层；double 内缩细线；ornament 细线+角花；
@@ -81,7 +82,10 @@ extends Resource
 # ── 文字 ─────────────────────────────────────────────────
 
 @export_group("文字")
-@export_file("*.ttf", "*.otf") var font_path: String = ""
+@export_file("*.ttf", "*.otf", "*.woff", "*.woff2") var font_path: String = ""
+## 正文/选项字体路径（v5）：为空时回退 font_path。
+@export_file("*.ttf", "*.otf", "*.woff", "*.woff2") var font_path_body: String = ""
+@export_file("*.ttf", "*.otf", "*.woff", "*.woff2") var font_path_choice: String = ""
 @export_enum("sans", "serif", "mono") var font_style: String = "sans"
 @export_range(8, 96, 1) var font_size: int = 17
 @export var text_color: Color = Color(0.90, 0.91, 0.94)
@@ -120,16 +124,18 @@ extends Resource
 @export_range(0, 20, 1) var choice_corner_radius: int = 8
 ## panel：沿用原来的选项面板；bare：每个选项自己成形（胶囊/斜切/纸条等）。
 @export_enum("panel", "bare") var choice_panel_style: String = "panel"
-## rect / pill / skew / note / bar / notch / wing
-@export_enum("rect", "pill", "skew", "note", "bar", "notch", "wing", "spindle", "swallowtail", "crystal", "filament") var choice_style: String = "rect"
+## rect / pill / skew / note / bar / notch / wing / spindle / swallowtail / crystal / filament
+## v5：paper-sign / keycap-index / pill-solid / skew-strip / underline-list / glass-row /
+## ink-stroke / pixel-box / chat-chip / leaf-row。
+@export_enum("rect", "pill", "skew", "note", "bar", "notch", "wing", "spindle", "swallowtail", "crystal", "filament", "paper-sign", "keycap-index", "pill-solid", "skew-strip", "underline-list", "glass-row", "ink-stroke", "pixel-box", "chat-chip", "leaf-row") var choice_style: String = "rect"
 @export_range(0, 20, 1) var choice_skew_degrees: int = 0
 @export_range(0, 20, 1) var choice_selected_shift: int = 0
 @export var choice_hover_bg: Color = Color(0.16, 0.19, 0.26, 0.72)
 @export var choice_hover_text_color: Color = Color(1, 0.95, 0.78)
 @export var choice_accent_color: Color = Color(0.85, 0.75, 0.55)
 @export var choice_selected_border_color: Color = Color(0.85, 0.75, 0.55)
-## none / number / glyph / crosshair / seal
-@export_enum("none", "number", "glyph", "crosshair", "seal", "heart") var choice_marker: String = "none"
+## none / number / glyph / crosshair / seal / heart / bar / tri / diamond / square / index / keycap / leaf
+@export_enum("none", "number", "glyph", "crosshair", "seal", "heart", "bar", "tri", "diamond", "square", "index", "keycap", "leaf") var choice_marker: String = "none"
 @export var choice_marker_glyph: String = "✦"
 @export_range(0, 32, 1) var choice_marker_width: int = 0
 ## 选项列表整体停在对话框上方的距离（px）。
@@ -137,13 +143,24 @@ extends Resource
 @export_range(0, 8, 1) var choice_marker_size: int = 18
 @export var choice_shadow_color: Color = Color(0, 0, 0, 0)
 @export var choice_shadow_offset: Vector2 = Vector2.ZERO
+## 选项布局：top=面板上方独立列表；inside=面板内右栏；chat=聊天气泡；separate=独立窗口。
+## 其中 top 通过 choice_align 细分为 top-right/top-center/top-left。
+@export_enum("top", "inside", "chat", "separate") var choice_layout: String = "top"
+@export_enum("right", "center", "left") var choice_align: String = "right"
+## 错落缩进：每行按序号交替缩进（Tide 类布局）。
+@export var choice_stagger: bool = false
 
 # ── 铭牌 ─────────────────────────────────────────────────
 
 @export_group("铭牌")
 ## inline 旧版标题；float 压线矩形；capsule 胶囊；parallelogram 平行四边形；
-## wood 印章木牌；blood 血封条；column 左栏式（不是压在正文上）。
-@export_enum("inline", "float", "capsule", "parallelogram", "wood", "blood", "column", "ribbon", "header", "blade", "poetic") var nameplate_style: String = "inline"
+## wood 印章木牌；blood 血封条；column 左栏式（不是压在正文上）；
+## v5 新增：plaque 金属铭板；seal 方形朱印；floating 无底悬浮；callsign 两段式代号；phone 聊天头部。
+@export_enum("inline", "float", "capsule", "parallelogram", "wood", "blood", "column", "ribbon", "header", "blade", "poetic", "plaque", "seal", "floating", "callsign", "phone") var nameplate_style: String = "inline"
+## 称号：铭牌内或下方的次级小字（v5）。
+@export var speaker_title: String = ""
+## 铭牌字距（em 单位，按字号换算 px）；0 为默认字距。
+@export_range(0.0, 0.6, 0.01) var speaker_tracking: float = 0.0
 @export var nameplate_bg: Color = Color(0.06, 0.07, 0.10, 0.95)
 @export var nameplate_border: Color = Color(0.80, 0.70, 0.42, 0.85)
 @export_range(0, 8, 1) var nameplate_border_width: int = 1
@@ -192,6 +209,9 @@ extends Resource
 @export var portrait_tint: Color = Color(1, 1, 1, 1)
 ## 无立绘时是否保留占位框（默认 false：布局完整退化）。
 @export var portrait_show_placeholder: bool = false
+## 立绘位置：slot=面板内小头像；large-*=大立绘（新 Control，绘制在面板下层、可出框）；
+## none=强制关闭。portrait_size 只作用于 slot 小头像。
+@export_enum("slot", "large-left", "large-right", "large-center", "none") var portrait_placement: String = "slot"
 
 # ── 动画与转场 ───────────────────────────────────────────
 
@@ -199,6 +219,26 @@ extends Resource
 @export_range(0.0, 2.0, 0.01) var appear_duration: float = 0.18
 @export_range(0.0, 2.0, 0.01) var disappear_duration: float = 0.14
 @export var fade_color: Color = Color(0, 0, 0, 1)
+## 面板入场：fade|rise|pop|slide-left|wipe|stamp|grow|step-open|none；
+## 0 或 "none" 表示直接显示（旧 .tres 兼容：fade 等价于旧 appear 动画）。
+@export_enum("fade", "rise", "pop", "slide-left", "wipe", "stamp", "grow", "step-open", "none") var panel_entrance: String = "fade"
+## 入场时长（ms）；<=0 时使用 appear_duration。上限 420ms。
+@export_range(0, 420, 1) var panel_entrance_ms: int = 0
+## 推进指示/铭牌的循环动画：none|pulse|bob|nudge|blink|flicker|float|hop|sway|led。
+@export_enum("none", "pulse", "bob", "nudge", "blink", "flicker", "float", "hop", "sway", "led") var loop_anim: String = "none"
+## 选中反馈动画：none|grow-line|bar-up|shift|glow|stamp-line|pop|step-cursor。
+@export_enum("none", "grow-line", "bar-up", "shift", "glow", "stamp-line", "pop", "step-cursor") var select_anim: String = "none"
+## 减少动态效果：关闭全部循环动画，入场统一降级为 120ms 淡入。
+@export var motion_reduced: bool = false
+
+# ── 推进指示与按键提示 ───────────────────────────────────
+
+@export_group("推进指示")
+## 推进指示几何形状（全部由绘制组件画，不用字符）：none|tri|tri-down|diamond|dot|
+## cursor-block|led|arrow-step|leaf。
+@export_enum("none", "tri", "tri-down", "diamond", "dot", "cursor-block", "led", "arrow-step", "leaf") var advance_indicator: String = "none"
+## 提示样式：text=普通文字；keycap=键帽（圆角底+边框+字）；keycap-mono=等宽键帽。
+@export_enum("text", "keycap", "keycap-mono") var hint_style: String = "text"
 
 # ── 交互提示 ─────────────────────────────────────────────
 
@@ -231,6 +271,8 @@ var _font_cache: Font
 var _font_cache_key := ""
 var _body_font_cache: Font
 var _body_font_cache_key := ""
+var _choice_font_cache: Font
+var _choice_font_cache_key := ""
 
 ## 主题参数变化后调用，避免编辑器里换字体仍拿到旧缓存。
 func invalidate_font_cache() -> void:
@@ -238,6 +280,17 @@ func invalidate_font_cache() -> void:
 	_font_cache_key = ""
 	_body_font_cache = null
 	_body_font_cache_key = ""
+	_choice_font_cache = null
+	_choice_font_cache_key = ""
+
+## 按路径字段解析字体：路径为空或资源不是 Font 时返回 null（交给上层回退）。
+func _load_font_at(path: String) -> Font:
+	var trimmed := path.strip_edges()
+	if trimmed != "" and ResourceLoader.exists(trimmed):
+		var loaded := load(trimmed)
+		if loaded is Font:
+			return loaded
+	return null
 
 func resolve_font() -> Font:
 	var key := "%s|%s" % [font_path, font_style]
@@ -263,14 +316,14 @@ func resolve_font() -> Font:
 	return font
 
 func resolve_body_font() -> Font:
-	var key := "%s|%s" % [font_path, body_font_flavor]
+	# font_path_body 缺省沿用 font_path：旧 .tres 没有该字段时行为不变。
+	var body_path := font_path_body.strip_edges()
+	if body_path == "":
+		body_path = font_path
+	var key := "%s|%s|%s" % [font_path, body_path, body_font_flavor]
 	if _body_font_cache != null and _body_font_cache_key == key:
 		return _body_font_cache
-	var font: Font = null
-	if font_path.strip_edges() != "" and ResourceLoader.exists(font_path):
-		var loaded := load(font_path)
-		if loaded is Font:
-			font = loaded
+	var font := _load_font_at(body_path)
 	if font == null:
 		var system := SystemFont.new()
 		match body_font_flavor:
@@ -283,6 +336,23 @@ func resolve_body_font() -> Font:
 		font = system
 	_body_font_cache = font
 	_body_font_cache_key = key
+	return font
+
+## 选项字体：font_path_choice → font_path_body → font_path → 正文样式回退。
+func resolve_choice_font() -> Font:
+	var choice_path := font_path_choice.strip_edges()
+	if choice_path == "":
+		choice_path = font_path_body.strip_edges()
+	if choice_path == "":
+		choice_path = font_path
+	var key := "%s|%s|%s" % [choice_path, font_path, body_font_flavor]
+	if _choice_font_cache != null and _choice_font_cache_key == key:
+		return _choice_font_cache
+	var font := _load_font_at(choice_path)
+	if font == null:
+		font = resolve_body_font()
+	_choice_font_cache = font
+	_choice_font_cache_key = key
 	return font
 
 ## 绘制组件是否接管面板底色。预设主题使用绘制组件，以支持渐变、底纹、

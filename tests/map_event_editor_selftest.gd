@@ -172,9 +172,11 @@ func start(plugin: EditorPlugin) -> void:
 		_check(preset_select != null and preset_select.item_count == DialogueThemePresets.ids().size() + 1,
 			"主题页提供插件默认 + 全部预设")
 		if preset_select != null:
+			var first_id := DialogueThemePresets.ids()[0]
+			var fifth_id := DialogueThemePresets.ids()[4]
 			theme_view.call("_on_preset_selected", 1)
 			var preset_theme: RpgEventStudioTheme = theme_view.get("_theme")
-			_check(preset_theme != null and preset_theme.preset_id == "sacred", "选择预设后载入对应主题")
+			_check(preset_theme != null and preset_theme.preset_id == first_id, "选择预设后载入对应主题")
 			var portrait_toggle: CheckButton = theme_view.get("_portrait_toggle")
 			_check(portrait_toggle != null and portrait_toggle.button_pressed == preset_theme.portrait_enabled,
 				"立绘框开关与预设同步")
@@ -182,7 +184,7 @@ func start(plugin: EditorPlugin) -> void:
 			preset_theme.choice_selected_bg = Color(1, 0, 1, 1)
 			theme_view.call("_on_preset_selected", 5)
 			var other: RpgEventStudioTheme = theme_view.get("_theme")
-			_check(other != null and other.preset_id == "biscuit" and other.choice_selected_bg != Color(1, 0, 1, 1),
+			_check(other != null and other.preset_id == fifth_id and other.choice_selected_bg != Color(1, 0, 1, 1),
 				"切换预设不会共享可变配置")
 			theme_view.call("_on_preset_selected", 1)
 			var again: RpgEventStudioTheme = theme_view.get("_theme")

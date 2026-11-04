@@ -41,7 +41,7 @@ const SECTIONS := [
 		{"prop": "content_margin_top", "label": "theme.panel.margin_top", "type": "int", "min": 0, "max": 160, "step": 1},
 		{"prop": "content_margin_bottom", "label": "theme.panel.margin_bottom", "type": "int", "min": 0, "max": 160, "step": 1},
 		{"prop": "text_min_height", "label": "theme.text.min_height", "type": "int", "min": 32, "max": 300, "step": 1},
-		{"prop": "panel_shape", "label": "theme.panel.shape", "type": "option", "options": ["theme.opt.rect", "theme.opt.notched", "theme.opt.slant", "theme.opt.cinema", "theme.opt.octagon", "theme.opt.shard"], "values": ["rect", "notched", "slant", "cinema", "octagon", "shard"]},
+		{"prop": "panel_shape", "label": "theme.panel.shape", "type": "option", "options": ["theme.opt.rect", "theme.opt.notched", "theme.opt.slant", "theme.opt.cinema", "theme.opt.octagon", "theme.opt.shard", "theme.opt.shape_double_inner", "theme.opt.shape_glass", "theme.opt.shape_pixel", "theme.opt.shape_cut_thick"], "values": ["rect", "notched", "slant", "cinema", "octagon", "shard", "double-inner-line", "glass", "pixel-stepped", "cut-corner-thick"]},
 		{"prop": "panel_notch_size", "label": "theme.panel.notch", "type": "int", "min": 0, "max": 32, "step": 1},
 		{"prop": "panel_slant_size", "label": "theme.panel.slant", "type": "int", "min": 0, "max": 32, "step": 1},
 		{"prop": "frame_style", "label": "theme.panel.frame", "type": "option", "options": ["theme.opt.frame_plain", "theme.opt.frame_double", "theme.opt.frame_ornament", "theme.opt.frame_stitch", "theme.opt.frame_blade", "theme.opt.frame_hairline", "theme.opt.frame_armor", "theme.opt.frame_lace", "theme.opt.frame_tapered"], "values": ["plain", "double", "ornament", "stitch", "blade", "hairline", "armor", "lace", "tapered"]},
@@ -102,14 +102,14 @@ const SECTIONS := [
 		{"prop": "choice_border_width", "label": "theme.choice.border_width", "type": "int", "min": 0, "max": 12, "step": 1},
 		{"prop": "choice_corner_radius", "label": "theme.choice.corner", "type": "int", "min": 0, "max": 20, "step": 1},
 		{"prop": "choice_panel_style", "label": "theme.choice.panel_style", "type": "option", "options": ["theme.opt.choice_panel", "theme.opt.choice_bare"], "values": ["panel", "bare"]},
-		{"prop": "choice_style", "label": "theme.choice.shape", "type": "option", "options": ["theme.opt.rect", "theme.opt.pill", "theme.opt.skew", "theme.opt.note", "theme.opt.bar", "theme.opt.notch", "theme.opt.wing", "theme.opt.spindle", "theme.opt.swallowtail", "theme.opt.crystal", "theme.opt.filament"], "values": ["rect", "pill", "skew", "note", "bar", "notch", "wing", "spindle", "swallowtail", "crystal", "filament"]},
+		{"prop": "choice_style", "label": "theme.choice.shape", "type": "option", "options": ["theme.opt.rect", "theme.opt.pill", "theme.opt.skew", "theme.opt.note", "theme.opt.bar", "theme.opt.notch", "theme.opt.wing", "theme.opt.spindle", "theme.opt.swallowtail", "theme.opt.crystal", "theme.opt.filament", "theme.opt.choice_paper", "theme.opt.choice_keycap", "theme.opt.choice_pill_solid", "theme.opt.choice_skew_strip", "theme.opt.choice_underline", "theme.opt.choice_glass", "theme.opt.choice_ink", "theme.opt.choice_pixel", "theme.opt.choice_chat", "theme.opt.choice_leaf"], "values": ["rect", "pill", "skew", "note", "bar", "notch", "wing", "spindle", "swallowtail", "crystal", "filament", "paper-sign", "keycap-index", "pill-solid", "skew-strip", "underline-list", "glass-row", "ink-stroke", "pixel-box", "chat-chip", "leaf-row"]},
 		{"prop": "choice_skew_degrees", "label": "theme.choice.skew", "type": "int", "min": 0, "max": 20, "step": 1},
 		{"prop": "choice_selected_shift", "label": "theme.choice.shift", "type": "int", "min": 0, "max": 20, "step": 1},
 		{"prop": "choice_hover_bg", "label": "theme.choice.hover_bg", "type": "color"},
 		{"prop": "choice_hover_text_color", "label": "theme.choice.hover_text", "type": "color"},
 		{"prop": "choice_accent_color", "label": "theme.choice.accent", "type": "color"},
 		{"prop": "choice_selected_border_color", "label": "theme.choice.selected_border", "type": "color"},
-		{"prop": "choice_marker", "label": "theme.choice.marker", "type": "option", "options": ["theme.opt.none", "theme.opt.marker_number", "theme.opt.marker_glyph", "theme.opt.marker_crosshair", "theme.opt.marker_seal", "theme.opt.marker_heart"], "values": ["none", "number", "glyph", "crosshair", "seal", "heart"]},
+		{"prop": "choice_marker", "label": "theme.choice.marker", "type": "option", "options": ["theme.opt.none", "theme.opt.marker_number", "theme.opt.marker_glyph", "theme.opt.marker_crosshair", "theme.opt.marker_seal", "theme.opt.marker_heart", "theme.opt.marker_bar", "theme.opt.marker_tri", "theme.opt.marker_diamond", "theme.opt.marker_square", "theme.opt.marker_index", "theme.opt.marker_keycap", "theme.opt.marker_leaf"], "values": ["none", "number", "glyph", "crosshair", "seal", "heart", "bar", "tri", "diamond", "square", "index", "keycap", "leaf"]},
 		{"prop": "choice_marker_glyph", "label": "theme.choice.marker_glyph", "type": "text"},
 		{"prop": "choice_marker_width", "label": "theme.choice.marker_width", "type": "int", "min": 0, "max": 32, "step": 1},
 		{"prop": "choice_marker_size", "label": "theme.choice.marker_size", "type": "int", "min": 8, "max": 32, "step": 1},
@@ -118,7 +118,7 @@ const SECTIONS := [
 		{"prop": "choice_gap", "label": "theme.choice.gap", "type": "int", "min": 0, "max": 40, "step": 1},
 	]},
 	{"title": "theme.section.nameplate", "fields": [
-		{"prop": "nameplate_style", "label": "theme.nameplate.style", "type": "option", "options": ["theme.opt.inline", "theme.opt.float", "theme.opt.capsule", "theme.opt.parallelogram", "theme.opt.wood", "theme.opt.blood", "theme.opt.column", "theme.opt.ribbon", "theme.opt.header", "theme.opt.blade", "theme.opt.poetic"], "values": ["inline", "float", "capsule", "parallelogram", "wood", "blood", "column", "ribbon", "header", "blade", "poetic"]},
+		{"prop": "nameplate_style", "label": "theme.nameplate.style", "type": "option", "options": ["theme.opt.inline", "theme.opt.float", "theme.opt.capsule", "theme.opt.parallelogram", "theme.opt.wood", "theme.opt.blood", "theme.opt.column", "theme.opt.ribbon", "theme.opt.header", "theme.opt.blade", "theme.opt.poetic", "theme.opt.plaque", "theme.opt.seal", "theme.opt.floating", "theme.opt.callsign", "theme.opt.phone"], "values": ["inline", "float", "capsule", "parallelogram", "wood", "blood", "column", "ribbon", "header", "blade", "poetic", "plaque", "seal", "floating", "callsign", "phone"]},
 		{"prop": "nameplate_bg", "label": "theme.nameplate.bg", "type": "color"},
 		{"prop": "nameplate_border", "label": "theme.nameplate.border", "type": "color"},
 		{"prop": "nameplate_border_width", "label": "theme.nameplate.border_width", "type": "int", "min": 0, "max": 8, "step": 1},
@@ -433,11 +433,9 @@ func _build_preset_row() -> void:
 	_preset_select.set_item_metadata(0, "")
 	for meta in DialogueThemePresets.PRESETS:
 		var series := int(meta.get("series", 1))
-		var prefix := L10n.ui("theme.preset.series1")
-		if series == 2:
-			prefix = L10n.ui("theme.preset.series2")
-		elif series == 4:
-			prefix = L10n.ui("theme.preset.series4")
+		var prefix := L10n.ui("theme.preset.series%d" % series)
+		if prefix == "theme.preset.series%d" % series:
+			prefix = "S%d" % series
 		_preset_select.add_item("%s · %s" % [prefix, str(meta.get("title", ""))])
 		_preset_select.set_item_metadata(_preset_select.item_count - 1, str(meta.get("id", "")))
 	_preset_select.item_selected.connect(_on_preset_selected)
