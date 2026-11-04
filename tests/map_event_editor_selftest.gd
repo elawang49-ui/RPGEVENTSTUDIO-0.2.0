@@ -165,9 +165,29 @@ func start(plugin: EditorPlugin) -> void:
 		var themed_fields := 0
 		for section in sections:
 			themed_fields += (section as Control).get_child_count()
-		_check(sections.size() == 5 and themed_fields > 40, "主题页控件完整")
+		_check(sections.size() == 7 and themed_fields > 80, "主题页控件完整（7 个分区）")
 		var jump: OptionButton = theme_view.get("_section_jump")
-		_check(jump != null and jump.item_count == sections.size(), "主题页有 5 个分区跳转")
+		_check(jump != null and jump.item_count == sections.size(), "主题页分区跳转覆盖全部分区")
+		var preset_select: OptionButton = theme_view.get("_preset_select")
+		_check(preset_select != null and preset_select.item_count == DialogueThemePresets.ids().size() + 1,
+			"主题页提供插件默认 + 全部预设")
+		if preset_select != null:
+			theme_view.call("_on_preset_selected", 1)
+			var preset_theme: RpgEventStudioTheme = theme_view.get("_theme")
+			_check(preset_theme != null and preset_theme.preset_id == "sacred", "选择预设后载入对应主题")
+			var portrait_toggle: CheckButton = theme_view.get("_portrait_toggle")
+			_check(portrait_toggle != null and portrait_toggle.button_pressed == preset_theme.portrait_enabled,
+				"立绘框开关与预设同步")
+			# 切换预设后再切回：未被保存的修改不能带到另一套预设
+			preset_theme.choice_selected_bg = Color(1, 0, 1, 1)
+			theme_view.call("_on_preset_selected", 5)
+			var other: RpgEventStudioTheme = theme_view.get("_theme")
+			_check(other != null and other.preset_id == "biscuit" and other.choice_selected_bg != Color(1, 0, 1, 1),
+				"切换预设不会共享可变配置")
+			theme_view.call("_on_preset_selected", 1)
+			var again: RpgEventStudioTheme = theme_view.get("_theme")
+			_check(again != null and again.choice_selected_bg != Color(1, 0, 1, 1),
+				"重新载入预设得到出厂值")
 
 		var temp_path := "res://.godot/test_theme_editor.tres"
 		theme_view.set("theme_path", temp_path)

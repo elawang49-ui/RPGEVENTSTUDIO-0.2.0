@@ -3,6 +3,13 @@ class_name DialoguePresenter
 extends CanvasLayer
 ## 运行期对话界面：底部对话框 + 选项列表。
 ## 键盘 / 鼠标 / 手柄都通过 InputService 的动作触发，可在按键设置里改键。
+##
+## 主题架构：
+##   通用 DialoguePresenter（布局/输入/分页/打字机）
+##   + RpgEventStudioTheme（纯数据）
+##   + DialoguePanelDecor / DialogueNameplate / ThemeChoiceRow / DialoguePortraitSlot
+##     （四个可组合绘制组件）
+## 不为任何一套预设创建独立 Presenter。
 
 var input: InputService
 var blocked: bool = false
@@ -14,18 +21,25 @@ var style: RpgEventStudioTheme
 
 var _root: Control
 var _theme_root: Theme
-var _margin: MarginContainer
-var _column: VBoxContainer
-var _choice_margin: MarginContainer
-var _choices_scroll: ScrollContainer
-var _fade_rect: ColorRect
-var _fade_tween: Tween
 var _panel: PanelContainer
+var _panel_decor: DialoguePanelDecor
+var _margin: MarginContainer
+var _content_row: HBoxContainer
+var _portrait: DialoguePortraitSlot
+var _portrait_gap: Control
+var _speaker_spacer: Control
+var _text_column: VBoxContainer
 var _name_label: Label
+var _header_gap: Control
+var _nameplate: DialogueNameplate
 var _text_label: RichTextLabel
 var _hint_label: Label
 var _choices_panel: PanelContainer
+var _choice_margin: MarginContainer
+var _choices_scroll: ScrollContainer
 var _choices_box: VBoxContainer
+var _fade_rect: ColorRect
+var _fade_tween: Tween
 
 var _typing := false
 var _waiting_confirm := false
@@ -45,6 +59,9 @@ var _mouse_click := false
 var _choice_result := -1
 var _choice_index := -1
 var _choice_buttons: Array[Button] = []
+var _choice_rows: Array[ThemeChoiceRow] = []
+var _choice_texts: PackedStringArray = []
+var _portrait_texture: Texture2D
 var _paused_at := -1
 var _panel_tween: Tween
 var _choices_tween: Tween
@@ -105,14 +122,55 @@ func _build_ui() -> void:
 	_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	_root.add_child(_panel)
 
+	# 装饰层必须在内容之前加入：CanvasItem 子节点按顺序绘制。
+	_panel_decor = DialoguePanelDecor.new()
+	_panel_decor.name = "ThemeDecor"
+	_panel.add_child(_panel_decor)
+
 	_margin = MarginContainer.new()
 	_panel.add_child(_margin)
 
-	_column = VBoxContainer.new()
-	_margin.add_child(_column)
+	_content_row = HBoxContainer.new()
+	_content_row.add_theme_constant_override("separation", 0)
+	_content_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_content_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_margin.add_child(_content_row)
 
+	_portrait = DialoguePortraitSlot.new()
+	_portrait.name = "PortraitSlot"
+	_portrait.visible = false
+	_portrait.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_portrait.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_content_row.add_child(_portrait)
+
+	_portrait_gap = Control.new()
+	_portrait_gap.name = "PortraitGap"
+	_portrait_gap.custom_minimum_size = Vector2(0, 0)
+	_portrait_gap.size_flags_vertical = Control.SIZE_FILL
+	_content_row.add_child(_portrait_gap)
+
+	_speaker_spacer = Control.new()
+	_speaker_spacer.name = "SpeakerColumn"
+	_speaker_spacer.custom_minimum_size = Vector2(0, 0)
+	_speaker_spacer.size_flags_vertical = Control.SIZE_FILL
+	_content_row.add_child(_speaker_spacer)
+
+	_text_column = VBoxContainer.new()
+	_text_column.name = "TextColumn"
+	_text_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_text_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_content_row.add_child(_text_column)
+
+	# 旧版 inline 标题：保留在正文列里，旧主题资源外观不变。
 	_name_label = Label.new()
-	_column.add_child(_name_label)
+	_name_label.name = "SpeakerLabel"
+	_text_column.add_child(_name_label)
+
+	# inside 型铭牌（header/blade/poetic）在正文列顶部预留高度。
+	_header_gap = Control.new()
+	_header_gap.name = "HeaderGap"
+	_header_gap.custom_minimum_size = Vector2(0, 0)
+	_text_column.add_child(_header_gap)
 
 	_text_label = RichTextLabel.new()
 	_text_label.bbcode_enabled = true
@@ -123,16 +181,15 @@ func _build_ui() -> void:
 	_text_label.scroll_active = false
 	_text_label.scroll_following = false
 	_text_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_column.add_child(_text_label)
+	_text_column.add_child(_text_label)
 
 	_hint_label = Label.new()
 	_hint_label.text = ""
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_column.add_child(_hint_label)
+	_text_column.add_child(_hint_label)
 
 	_choices_panel = PanelContainer.new()
 	_choices_panel.name = "ChoicePanel"
-	# 锚点在 _apply_style 里设置：顶边固定、高度随选项数量自适应。
 	_choices_panel.add_theme_stylebox_override("panel", _make_panel_style())
 	_root.add_child(_choices_panel)
 
@@ -143,6 +200,7 @@ func _build_ui() -> void:
 	_choices_scroll = ScrollContainer.new()
 	_choices_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_choices_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_choices_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_choice_margin.add_child(_choices_scroll)
 
 	_choices_box = VBoxContainer.new()
@@ -150,6 +208,13 @@ func _build_ui() -> void:
 	# 否则 VBox 只有文字最小宽度，按钮会缩在左侧、面板右侧留出大片空白。
 	_choices_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_choices_scroll.add_child(_choices_box)
+
+	# 铭牌浮在面板之上，是 _root 的直接子节点，避免被 PanelContainer 拉伸。
+	_nameplate = DialogueNameplate.new()
+	_nameplate.name = "Nameplate"
+	_nameplate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_nameplate)
+	_nameplate.visible = false
 
 func _make_panel_style() -> StyleBoxFlat:
 	if style == null:
@@ -187,12 +252,16 @@ func _apply_style() -> void:
 	_panel.offset_top = 0
 	_panel.offset_bottom = 0
 	_panel.add_theme_stylebox_override("panel", style.make_panel_style())
+	_panel_decor.style = style if style.uses_decor_base() else null
+	_panel_decor.visible = style.uses_decor_base()
+
 	_margin.add_theme_constant_override("margin_left", style.content_margin_left)
 	_margin.add_theme_constant_override("margin_right", style.content_margin_right)
 	_margin.add_theme_constant_override("margin_top", style.content_margin_top)
 	_margin.add_theme_constant_override("margin_bottom", style.content_margin_bottom)
-	_column.add_theme_constant_override("separation", style.line_separation)
+	_text_column.add_theme_constant_override("separation", style.line_separation)
 
+	_name_label.add_theme_font_override("font", style.resolve_font())
 	_name_label.add_theme_font_size_override("font_size", style.speaker_font_size)
 	_name_label.add_theme_color_override("font_color", style.speaker_color)
 	# 说话人不是普通正文：一条极细的香槟金标识 + 轻底托，建立清晰的叙事层级。
@@ -212,26 +281,32 @@ func _apply_style() -> void:
 	_name_label.add_theme_constant_override("shadow_offset_x", 0)
 	_name_label.add_theme_constant_override("shadow_offset_y", 1)
 	_text_label.custom_minimum_size = Vector2(0, style.text_min_height)
+	_text_label.add_theme_font_override("normal_font", style.resolve_body_font())
+	_text_label.add_theme_font_override("bold_font", style.resolve_body_font())
+	_text_label.add_theme_font_override("italics_font", style.resolve_body_font())
 	_text_label.add_theme_font_size_override("normal_font_size", style.text_font_size)
+	_text_label.add_theme_font_size_override("bold_font_size", style.text_font_size)
+	_text_label.add_theme_font_size_override("italics_font_size", style.text_font_size)
 	_text_label.add_theme_color_override("default_color", style.text_color)
+	_text_label.add_theme_color_override("font_outline_color", style.text_outline_color)
+	_text_label.add_theme_constant_override("outline_size", style.text_outline_size)
 	_text_label.add_theme_constant_override("line_separation", style.line_separation)
+	_hint_label.add_theme_font_override("font", style.resolve_body_font())
 	_hint_label.add_theme_font_size_override("font_size", style.hint_font_size)
 	_hint_label.add_theme_color_override("font_color", style.hint_color)
 
 	_choices_panel.anchor_left = style.choice_left
 	_choices_panel.anchor_right = style.choice_right
-	# 顶边固定在 choice_top，底边随选项数量自适应下移。
-	_choices_panel.anchor_top = style.choice_top
-	_choices_panel.anchor_bottom = style.choice_top
+	# 选项面板不再固定在高处：底边贴着对话框上沿，位置由 _layout_choices_panel
+	# 根据当前对话框高度动态计算。choice_top/bottom 只用于限制最大高度。
+	_choices_panel.anchor_top = 0.0
+	_choices_panel.anchor_bottom = 0.0
 	_choices_panel.grow_vertical = Control.GROW_DIRECTION_END
 	_choices_panel.offset_left = 0
 	_choices_panel.offset_right = 0
 	_choices_panel.offset_top = 0
 	_choices_panel.offset_bottom = 0
-	# 选项面板背景不透明：地图元素不允许透过面板影响选项文字。
-	var choice_bg := style.make_panel_style()
-	choice_bg.bg_color.a = 1.0
-	_choices_panel.add_theme_stylebox_override("panel", choice_bg)
+	_choices_panel.add_theme_stylebox_override("panel", style.make_choice_panel_style())
 	_choice_margin.add_theme_constant_override("margin_left", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_right", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_top", style.choice_margin)
@@ -240,10 +315,141 @@ func _apply_style() -> void:
 
 	_speed = style.text_speed
 	_fade_rect.color = style.fade_color
-	for button in _choice_buttons:
-		if is_instance_valid(button):
-			button.custom_minimum_size = Vector2(0, style.choice_min_height)
-			button.add_theme_font_size_override("font_size", style.choice_font_size)
+
+	_nameplate.set_style(style)
+	_portrait.set_style(style)
+	_apply_portrait_side()
+	_update_portrait_visibility()
+	_update_nameplate_visibility()
+	_schedule_height_update()
+
+func _apply_portrait_side() -> void:
+	if _content_row == null or _portrait == null or _portrait_gap == null:
+		return
+	if style.portrait_side == "right":
+		# 右立绘：左栏/正文在前，立绘间距在正文与立绘之间。
+		_content_row.move_child(_speaker_spacer, 0)
+		_content_row.move_child(_text_column, 1)
+		_content_row.move_child(_portrait_gap, 2)
+		_content_row.move_child(_portrait, 3)
+	else:
+		# 左立绘：立绘 → 间距 → 左栏 → 正文。
+		_content_row.move_child(_portrait, 0)
+		_content_row.move_child(_portrait_gap, 1)
+		_content_row.move_child(_speaker_spacer, 2)
+		_content_row.move_child(_text_column, 3)
+
+# ── 立绘接口（与角色资源管理解耦） ───────────────────────
+
+## 传入当前说话人的立绘 Texture2D。传 null 等价于 clear。
+## 角色/表情切换由游戏侧或未来的角色资源系统决定，本类不读写 EventCommand。
+func set_dialogue_portrait(texture: Texture2D) -> void:
+	_portrait_texture = texture
+	if _portrait != null:
+		_portrait.set_portrait(texture)
+		_update_portrait_visibility()
+		_schedule_height_update()
+
+func clear_dialogue_portrait() -> void:
+	set_dialogue_portrait(null)
+
+func has_dialogue_portrait() -> bool:
+	return _portrait_texture != null
+
+func _update_portrait_visibility() -> void:
+	if _portrait == null or style == null:
+		return
+	var can_show := style.portrait_enabled and (_portrait_texture != null or style.portrait_show_placeholder)
+	# 窄窗口/矮窗口下优先保证正文：立绘框自动让位，而不是挤压文字。
+	var viewport := _root.get_viewport_rect().size if _root != null else Vector2(1280, 720)
+	var panel_width := viewport.x * maxf(0.1, style.panel_right - style.panel_left)
+	if viewport.x < 620.0 or panel_width < 480.0:
+		can_show = false
+	_portrait.visible = can_show
+	if can_show:
+		_portrait.set_portrait(_portrait_texture)
+	_update_nameplate_visibility()
+
+# ── 铭牌布局 ─────────────────────────────────────────────
+
+func _update_nameplate_visibility() -> void:
+	if _name_label == null or _nameplate == null or style == null:
+		return
+	var speaker := _name_label.text
+	var has_speaker := speaker.strip_edges() != ""
+	var inline := style.nameplate_style == "inline"
+	var inside := _nameplate.is_inside_panel()
+	_name_label.visible = inline and has_speaker
+	_nameplate.visible = (not inline) and has_speaker
+	if not inline:
+		_nameplate.set_speaker(speaker, style.nameplate_tag)
+	if _header_gap != null:
+		_header_gap.custom_minimum_size = Vector2(0, (_nameplate.size.y + 8.0) if (inside and has_speaker) else 0.0)
+	if _speaker_spacer != null:
+		var reserve := 0
+		if style.nameplate_style == "column" and has_speaker:
+			reserve = style.nameplate_column_width + 24
+		_speaker_spacer.custom_minimum_size = Vector2(reserve, 0)
+	if _portrait_gap != null:
+		var gap := float(style.portrait_gap) if _portrait != null and _portrait.visible else 0.0
+		_portrait_gap.custom_minimum_size = Vector2(gap, 0)
+	if _nameplate.visible:
+		_layout_nameplate()
+
+func _layout_nameplate() -> void:
+	if _nameplate == null or _panel == null or style == null or not _nameplate.visible:
+		return
+	var panel_pos := _panel.position
+	if _nameplate.is_inside_panel():
+		var ratio := style.nameplate_width_ratio
+		if ratio > 0.0:
+			_nameplate.apply_layout_width(maxf(120.0, _panel.size.x * ratio))
+		match style.nameplate_style:
+			"poetic":
+				_nameplate.position = Vector2(
+					panel_pos.x + maxf(8.0, (_panel.size.x - _nameplate.size.x) * 0.5),
+					panel_pos.y + float(style.content_margin_top) - 2.0
+				)
+			"blade":
+				_nameplate.position = Vector2(
+					panel_pos.x + float(style.content_margin_left),
+					panel_pos.y + float(style.content_margin_top) - 4.0
+				)
+			_:
+				_nameplate.position = Vector2(
+					panel_pos.x + float(style.content_margin_left),
+					panel_pos.y + float(style.content_margin_top) - 2.0
+				)
+		return
+	if style.nameplate_style == "column":
+		var x := panel_pos.x + float(style.content_margin_left)
+		if _portrait != null and _portrait.visible and style.portrait_side == "left":
+			x += _portrait.size.x + float(style.portrait_gap)
+		var y := panel_pos.y + float(style.content_margin_top) + 2.0
+		_nameplate.position = Vector2(x, y)
+	else:
+		var pos := panel_pos + style.nameplate_offset
+		pos.y = maxf(0.0, pos.y)
+		pos.x = clampf(pos.x, 4.0, maxf(4.0, panel_pos.x + _panel.size.x - _nameplate.size.x - 4.0))
+		_nameplate.position = pos
+
+func _on_viewport_resized() -> void:
+	_update_portrait_visibility()
+	_layout_nameplate()
+	_layout_choices_panel()
+	_schedule_height_update()
+
+## 选项底边停在对话框上沿上方 choice_gap 像素处；长对白导致面板上移时
+## 选项也跟着上移，而不是固定在一个与内容无关的高位置。
+func _layout_choices_panel() -> void:
+	if _choices_panel == null or _panel == null or style == null or not _choices_panel.visible:
+		return
+	var h := _choices_panel.size.y
+	if h < 1.0:
+		h = _choices_scroll.custom_minimum_size.y + 2.0 * float(style.choice_margin)
+	var y := _panel.position.y - h - float(style.choice_gap)
+	var max_y := maxf(8.0, _root.size.y - h - 8.0)
+	_choices_panel.position.y = clampf(y, 8.0, max_y)
 
 # ── 显示文字 ─────────────────────────────────────────────
 
@@ -251,14 +457,17 @@ func show_text(speaker: String, text: String, auto_advance: float = 0.0) -> void
 	last_text = text
 	shown_texts.append(text)
 	_name_label.text = speaker
-	_name_label.visible = speaker.strip_edges() != ""
-	_text_label.text = text
+	var formatted := text
+	if style != null and style.text_align == "center" and text.strip_edges() != "":
+		formatted = "[center]%s[/center]" % text
+	_text_label.text = formatted
 	_text_label.visible_characters = 0
 	_text_label.scroll_active = false
 	_page_line = 0
 	_line_tops.clear()
 	_line_tops_key = ""
 	_hint_label.visible = false
+	_update_nameplate_visibility()
 	last_parsed_text = _text_label.get_parsed_text()
 	last_bbcode_issues = Bbcode.analyze(text)
 	if Bbcode.has_issues(last_bbcode_issues):
@@ -308,6 +517,8 @@ func hide_text() -> void:
 	_text_done = true
 	_waiting_confirm = false
 	_typing = false
+	if _nameplate != null:
+		_nameplate.visible = false
 
 # ── 显示选项 ─────────────────────────────────────────────
 
@@ -320,23 +531,11 @@ func show_choices(prompt: String, options: Array) -> void:
 	_choice_result = -1
 
 	_clear_choice_buttons()
-	for index in options.size():
-		var button := Button.new()
-		# 编号让键盘、鼠标和手柄共用同一套清晰的当前位置提示。
-		button.text = "%02d   %s" % [index + 1, str(options[index])]
-		button.custom_minimum_size = Vector2(0, style.choice_min_height if style != null else 40.0)
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		# 自己管理选中项：不依赖 ui_up/ui_down，这样改键后依然有效
-		button.focus_mode = Control.FOCUS_NONE
-		button.toggle_mode = true
-		button.mouse_entered.connect(func() -> void:
-			if _choice_result < 0:
-				_choice_index = index
-				_update_choice_highlight()
-		)
-		button.pressed.connect(_on_choice_pressed.bind(index))
-		_choices_box.add_child(button)
-		_choice_buttons.append(button)
+	var texts := PackedStringArray()
+	for option in options:
+		texts.append(str(option))
+	_choice_texts = texts
+	_create_choice_rows(texts)
 
 	_show_choices_panel_with_animation()
 	_schedule_height_update()
@@ -347,6 +546,45 @@ func show_choices(prompt: String, options: Array) -> void:
 
 func get_choice() -> int:
 	return _choice_result
+
+func _create_choice_rows(texts: PackedStringArray) -> void:
+	# 旧面板式选项没有行绘制层：编号直接进文字；bare 模式由
+	# ThemeChoiceRow 的标记系统负责序号/符号。
+	var legacy_numbered := style == null or not style.uses_bare_choices()
+	for index in texts.size():
+		var row := ThemeChoiceRow.new()
+		row.name = "Choice%d" % index
+		var text := texts[index]
+		if legacy_numbered:
+			text = "%02d   %s" % [index + 1, text]
+		row.configure(style, index, text)
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.custom_minimum_size = Vector2(0, maxf(row.custom_minimum_size.y, row.button.get_combined_minimum_size().y))
+		# 鼠标悬停同步键盘选中项：三种输入共用同一个当前位置。
+		row.button.mouse_entered.connect(func() -> void:
+			if _choice_result < 0:
+				_choice_index = index
+				_update_choice_highlight()
+		)
+		row.button.pressed.connect(_on_choice_pressed.bind(index))
+		_choices_box.add_child(row)
+		_choice_rows.append(row)
+		_choice_buttons.append(row.button)
+
+func _rebuild_choice_rows() -> void:
+	if _choice_texts.is_empty():
+		return
+	var texts := _choice_texts.duplicate()
+	var keep_index := _choice_index
+	for child in _choices_box.get_children():
+		_choices_box.remove_child(child)
+		child.queue_free()
+	_choice_rows.clear()
+	_choice_buttons.clear()
+	_choice_texts = texts
+	_create_choice_rows(texts)
+	_choice_index = keep_index
+	_update_choice_highlight()
 
 func _on_choice_pressed(index: int) -> void:
 	if _choice_result >= 0 or not _choices_panel.visible or get_tree().paused:
@@ -362,21 +600,19 @@ func _move_choice(delta: int) -> void:
 	_update_choice_highlight()
 
 func _update_choice_highlight() -> void:
-	for index in _choice_buttons.size():
-		var button := _choice_buttons[index]
-		button.button_pressed = index == _choice_index
-		_apply_choice_button_style(button, index == _choice_index)
+	for index in _choice_rows.size():
+		var row := _choice_rows[index]
+		if not is_instance_valid(row):
+			continue
+		row.set_selected(index == _choice_index)
+		_apply_choice_button_style(row.button, index == _choice_index)
 
 func _apply_choice_button_style(button: Button, selected: bool) -> void:
-	if style == null:
+	if style == null or button == null:
 		return
-	var box := style.make_choice_style(selected)
-	button.add_theme_stylebox_override("normal", box)
-	button.add_theme_stylebox_override("hover", box)
-	button.add_theme_stylebox_override("pressed", box)
-	button.add_theme_stylebox_override("focus", box)
+	# 兼容旧测试/外部调用：颜色仍由主题决定；形状由 ThemeChoiceRow 绘制。
 	button.add_theme_color_override("font_color", style.choice_selected_color if selected else style.choice_text_color)
-	button.add_theme_color_override("font_hover_color", style.choice_selected_color)
+	button.add_theme_color_override("font_hover_color", style.choice_selected_color if selected else style.choice_hover_text_color)
 	button.add_theme_color_override("font_pressed_color", style.choice_selected_color)
 	button.add_theme_color_override("font_focus_color", style.choice_selected_color)
 
@@ -400,13 +636,16 @@ func _update_heights() -> void:
 		_height_retries += 1
 		call_deferred("_update_heights")
 		return
+	_update_portrait_visibility()
 	# 对话框：正文高度夹在 [可用高度下限, 可用高度] 之间。
 	# 窗口太矮时连 text_min_height 都放不下，此时优先保证面板不出屏；
-	# 内容仍超过可见高度时开启滚动，不能把正文裁掉。
+	# 内容仍超过可见高度时翻页，不能把正文裁掉。
 	var text_content := float(_text_label.get_content_height())
+	var name_height := _name_label.get_combined_minimum_size().y if _name_label.visible else 0.0
+	var header_height := _header_gap.get_combined_minimum_size().y if _header_gap != null else 0.0
 	var reserved := float(_margin.get_theme_constant("margin_top")) + float(_margin.get_theme_constant("margin_bottom")) \
-		+ _name_label.get_combined_minimum_size().y + _hint_label.get_combined_minimum_size().y \
-		+ 2.0 * float(_column.get_theme_constant("separation"))
+		+ name_height + header_height + _hint_label.get_combined_minimum_size().y \
+		+ 2.0 * float(_text_column.get_theme_constant("separation"))
 	var panel_room := maxf(1.0, viewport_size.y * (style.panel_bottom - style.panel_top) - reserved)
 	var text_min := minf(style.text_min_height, panel_room)
 	var panel_max := maxf(text_min, panel_room)
@@ -438,11 +677,8 @@ func _update_heights() -> void:
 	var choice_reserved := 2.0 * float(style.choice_margin)
 	var choice_max := maxf(0.0, viewport_size.y * (style.choice_bottom - style.choice_top) - choice_reserved)
 	_choices_scroll.custom_minimum_size = Vector2(0, clampf(choice_content, 0.0, choice_max))
-
-func _on_viewport_resized() -> void:
-	# 窗口变化会改写换行/行高；重新贴合高度并按真实行偏移夹住当前页。
-	_height_retries = 0
-	call_deferred("_update_heights")
+	_layout_choices_panel()
+	_layout_nameplate()
 
 # ── 关闭 ─────────────────────────────────────────────────
 
@@ -459,6 +695,8 @@ func close_all() -> void:
 		_choices_panel.offset_top = 0.0
 		_choices_panel.offset_bottom = 0.0
 		_choices_panel.hide()
+	if _nameplate != null:
+		_nameplate.visible = false
 	_clear_choice_buttons()
 	_typing = false
 	_waiting_confirm = false
@@ -473,6 +711,18 @@ func _process(delta: float) -> void:
 	if _panel == null or not _panel.visible:
 		_mouse_click = false
 		return
+
+	# 面板高度会在布局帧结束后才最终确定；铭牌浮在面板外，必须每帧跟随，
+	# 否则短台词/长台词切换时铭牌会停在旧位置并压住立绘。
+	if _nameplate != null and _nameplate.visible:
+		_layout_nameplate()
+	# 首帧 RichTextLabel 尚未换行时 get_content_height() 可能返回旧值，
+	# 导致短台词面板被撑高。内容明显小于当前最小高度时再收敛一次。
+	if _text_label != null and style != null and not _typing:
+		var content := _text_label.get_content_height()
+		if content > 1.0 and _text_label.custom_minimum_size.y > float(style.text_min_height) + 1.0 \
+			and content < _text_label.custom_minimum_size.y - 1.0:
+			_schedule_height_update()
 
 	var now := Time.get_ticks_msec()
 
@@ -489,6 +739,7 @@ func _process(delta: float) -> void:
 		return
 
 	if _choices_panel.visible:
+		_layout_choices_panel()
 		if _pressed(InputService.ACTION_CHOICE_UP):
 			_move_choice(-1)
 		elif _pressed(InputService.ACTION_CHOICE_DOWN):
@@ -621,6 +872,7 @@ func _reset_text_page() -> void:
 func _dismiss_text() -> void:
 	if _has_more_pages():
 		_next_page()
+		_layout_nameplate()
 		return
 	_waiting_confirm = false
 	_text_done = true
@@ -645,18 +897,26 @@ func _input(event: InputEvent) -> void:
 func _show_panel_with_animation() -> void:
 	_kill_panel_tween()
 	_panel.show()
+	if _nameplate != null and _nameplate.visible:
+		_nameplate.modulate.a = 1.0
 	if style != null and style.appear_duration > 0.0:
 		_panel.modulate.a = 0.0
 		_panel.offset_top = 10.0
 		_panel.offset_bottom = 10.0
+		if _nameplate != null and _nameplate.visible:
+			_nameplate.modulate.a = 0.0
 		_panel_tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		_panel_tween.tween_property(_panel, "modulate:a", 1.0, style.appear_duration)
 		_panel_tween.parallel().tween_property(_panel, "offset_top", 0.0, style.appear_duration)
 		_panel_tween.parallel().tween_property(_panel, "offset_bottom", 0.0, style.appear_duration)
+		if _nameplate != null and _nameplate.visible:
+			_panel_tween.parallel().tween_property(_nameplate, "modulate:a", 1.0, style.appear_duration)
 	else:
 		_panel.modulate.a = 1.0
 		_panel.offset_top = 0.0
 		_panel.offset_bottom = 0.0
+		if _nameplate != null:
+			_nameplate.modulate.a = 1.0
 
 func _hide_panel_with_animation() -> void:
 	_kill_panel_tween()
@@ -665,18 +925,26 @@ func _hide_panel_with_animation() -> void:
 		_panel_tween.tween_property(_panel, "modulate:a", 0.0, style.disappear_duration)
 		_panel_tween.parallel().tween_property(_panel, "offset_top", 6.0, style.disappear_duration)
 		_panel_tween.parallel().tween_property(_panel, "offset_bottom", 6.0, style.disappear_duration)
+		if _nameplate != null and _nameplate.visible:
+			_panel_tween.parallel().tween_property(_nameplate, "modulate:a", 0.0, style.disappear_duration)
 		_panel_tween.finished.connect(func() -> void:
 			if _panel != null:
 				_panel.hide()
 				_panel.modulate.a = 1.0
 				_panel.offset_top = 0.0
 				_panel.offset_bottom = 0.0
+			if _nameplate != null:
+				_nameplate.visible = false
+				_nameplate.modulate.a = 1.0
 		)
 	else:
 		_panel.hide()
 		_panel.modulate.a = 1.0
 		_panel.offset_top = 0.0
 		_panel.offset_bottom = 0.0
+		if _nameplate != null:
+			_nameplate.visible = false
+			_nameplate.modulate.a = 1.0
 
 func _show_choices_panel_with_animation() -> void:
 	_kill_choices_tween()
@@ -745,3 +1013,5 @@ func _clear_choice_buttons() -> void:
 		_choices_box.remove_child(child)
 		child.queue_free()
 	_choice_buttons.clear()
+	_choice_rows.clear()
+	_choice_texts = PackedStringArray()

@@ -739,6 +739,9 @@ func _capture_theme_screen() -> void:
 		_main_tabs.current_tab = 1
 		print("[SHOT] theme tab=", _main_tabs.current_tab, " visible=", _main_tabs.visible)
 	if _theme_view != null:
+		var preset_raw := OS.get_environment("THEME_SHOT_PRESET").strip_edges()
+		if preset_raw != "":
+			_theme_view.call("_on_preset_selected", int(preset_raw))
 		var sample = _theme_view.get("_sample")
 		if sample is OptionButton:
 			(sample as OptionButton).selected = 1

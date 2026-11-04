@@ -211,11 +211,29 @@ func apply_dialogue_theme(theme: RpgEventStudioTheme) -> void:
 		default_presenter.set_dialogue_theme(dialogue_theme)
 	dialogue_theme_changed.emit(dialogue_theme)
 
+## 运行时切换预设（不写盘）。预设工厂每次返回新实例，切换不会污染已保存主题。
+## 返回实际生效的主题；未知 id 回退到插件默认外观。
+func apply_dialogue_theme_preset(preset_id: String) -> RpgEventStudioTheme:
+	var theme := DialogueThemePresets.create(preset_id)
+	apply_dialogue_theme(theme)
+	return dialogue_theme
+
+## 把当前说话人的立绘交给默认展示层。与主题/角色资源系统解耦：
+## 传 null 或调用 clear_dialogue_portrait() 即隐藏。
+func set_dialogue_portrait(texture: Texture2D) -> void:
+	if default_presenter != null:
+		default_presenter.set_dialogue_portrait(texture)
+
+func clear_dialogue_portrait() -> void:
+	if default_presenter != null:
+		default_presenter.clear_dialogue_portrait()
+
 func _load_dialogue_theme() -> RpgEventStudioTheme:
 	if ResourceLoader.exists(DIALOGUE_THEME_PATH):
 		var loaded := load(DIALOGUE_THEME_PATH)
 		if loaded is RpgEventStudioTheme:
-			return loaded
+			# 运行时使用独立副本，避免编辑器页/其他运行时实例改到缓存资源。
+			return (loaded as RpgEventStudioTheme).duplicate(true)
 		push_warning("[RPGEventStudio] 主题文件不是 RpgEventStudioTheme：%s" % DIALOGUE_THEME_PATH)
 	return RpgEventStudioTheme.new()
 

@@ -303,9 +303,11 @@ func _drive_dialogue(runtime: Node, choice: int) -> void:
 			continue
 		idle = 0
 		if presenter.get("_choices_panel").visible:
-			var box: VBoxContainer = presenter.get("_choices_box")
-			if box.get_child_count() > choice:
-				var button := box.get_child(choice) as Button
+			# 选项行现在是 ThemeChoiceRow（内部才是 Button）；测试走公开的
+			# _choice_buttons，避免依赖内部容器子节点类型。
+			var buttons: Array = presenter.get("_choice_buttons")
+			if buttons.size() > choice:
+				var button := buttons[choice] as Button
 				if button != null:
 					button.pressed.emit()
 					await process_frame
