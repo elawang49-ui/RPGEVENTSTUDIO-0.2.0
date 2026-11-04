@@ -366,6 +366,9 @@ static func _base(theme: RpgEventStudioTheme) -> void:
 	theme.pattern_style = "none"
 	theme.corner_ornament = "none"
 	theme.corner_glyph = ""
+	# 紧凑提示：默认只有短动词；键帽类预设各自覆盖键名。
+	theme.hint_advance = PackedStringArray(["|继续"])
+	theme.hint_choice = PackedStringArray(["↑↓|选择"])
 
 # ── 1 · 诗篇 Verse（slate × brass）────────────────────────
 
@@ -396,6 +399,7 @@ static func _verse(theme: RpgEventStudioTheme) -> void:
 	theme.text_min_height = 84
 	theme.speaker_title = "白鸦诗人"
 	theme.speaker_tracking = 0.32
+	theme.speaker_title_position = "below"
 	theme.nameplate_style = "floating"
 	theme.nameplate_bg = Color(_hex("090C10"), 0.35)
 	theme.nameplate_text_color = _hex("DDC39C")
@@ -491,6 +495,8 @@ static func _codex(theme: RpgEventStudioTheme) -> void:
 	theme.select_anim = "shift"
 	theme.advance_indicator = "tri-down"
 	theme.hint_style = "keycap"
+	theme.hint_advance = PackedStringArray(["空格|继续"])
+	theme.hint_choice = PackedStringArray(["↑↓|选择", "空格|确认"])
 	theme.panel_entrance = "rise"
 	theme.panel_entrance_ms = 240
 	theme.loop_anim = "bob"
@@ -554,6 +560,8 @@ static func _terminal(theme: RpgEventStudioTheme) -> void:
 	theme.select_anim = "glow"
 	theme.advance_indicator = "cursor-block"
 	theme.hint_style = "keycap-mono"
+	theme.hint_advance = PackedStringArray(["A|确认", "B|记录"])
+	theme.hint_choice = PackedStringArray(["↑↓|选择", "A|确认"])
 	theme.panel_entrance = "wipe"
 	theme.panel_entrance_ms = 220
 	theme.loop_anim = "blink"
@@ -666,8 +674,9 @@ static func _tide(theme: RpgEventStudioTheme) -> void:
 	theme.nameplate_text_color = _hex("070C14")
 	theme.nameplate_accent = _hex("84D5EC")
 	theme.nameplate_offset = Vector2(20, -26)
-	theme.nameplate_shadow_color = _hex("50BEDA")
-	theme.nameplate_shadow_offset = Vector2(3, 3)
+	theme.nameplate_shadow_color = _hex("F7FAFF")
+	theme.nameplate_shadow_offset = Vector2(8, 6)
+	theme.speaker_font_size = 26
 	theme.choice_layout = "top"
 	theme.choice_align = "left"
 	theme.choice_stagger = true
@@ -693,6 +702,8 @@ static func _tide(theme: RpgEventStudioTheme) -> void:
 	theme.select_anim = "shift"
 	theme.advance_indicator = "tri"
 	theme.hint_style = "keycap"
+	theme.hint_advance = PackedStringArray(["A|NEXT"])
+	theme.hint_choice = PackedStringArray(["↑↓|选择", "A|确认"])
 	theme.panel_entrance = "slide-left"
 	theme.panel_entrance_ms = 260
 	theme.loop_anim = "nudge"
@@ -729,7 +740,7 @@ static func _ember(theme: RpgEventStudioTheme) -> void:
 	theme.hint_color = _hex("796B69")
 	theme.speaker_title = "灰烬引路人"
 	theme.nameplate_style = "poetic"
-	theme.nameplate_bg = Color(0, 0, 0, 0)
+	theme.nameplate_bg = _hex("2B201E")
 	theme.nameplate_text_color = _hex("F38B94")
 	theme.nameplate_accent = _hex("DB6976")
 	theme.nameplate_width_ratio = 0.6
@@ -800,7 +811,7 @@ static func _frost(theme: RpgEventStudioTheme) -> void:
 	theme.choice_gap = 22
 	theme.choice_corner_radius = 8
 	theme.choice_normal_bg = Color(_hex("F7FAFF"), 0.55)
-	theme.choice_selected_bg = Color(_hex("E6ECFF"), 0.9)
+	theme.choice_selected_bg = Color(1, 1, 1, 0.96)
 	theme.choice_text_color = _hex("4D535B")
 	theme.choice_selected_color = _hex("242C4A")
 	theme.choice_hover_bg = Color(_hex("ECF4FE"), 0.8)
@@ -809,11 +820,13 @@ static func _frost(theme: RpgEventStudioTheme) -> void:
 	theme.choice_selected_border_color = _hex("6474AE")
 	theme.choice_border_width = 1
 	theme.choice_accent_color = _hex("6474AE")
-	theme.choice_marker = "bar"
-	theme.choice_marker_width = 20
+	theme.choice_marker = "none"
+	theme.choice_marker_width = 14
 	theme.select_anim = "bar-up"
 	theme.advance_indicator = "tri-down"
 	theme.hint_style = "keycap"
+	theme.hint_advance = PackedStringArray(["空格|继续"])
+	theme.hint_choice = PackedStringArray(["↑↓|选择", "空格|确认"])
 	theme.panel_entrance = "rise"
 	theme.panel_entrance_ms = 260
 	theme.loop_anim = "float"
@@ -919,26 +932,29 @@ static func _pixel(theme: RpgEventStudioTheme) -> void:
 	theme.choice_right = 0.94
 	theme.choice_top = 0.08
 	theme.choice_bottom = 0.44
-	theme.choice_panel_style = "panel"
+	theme.choice_panel_style = "bare"
 	theme.choice_style = "pixel-box"
-	theme.choice_separation = 6
+	theme.choice_separation = 4
+	theme.choice_gap = 26
 	theme.choice_min_height = 40
-	theme.choice_margin = 10
-	theme.choice_normal_bg = Color(_hex("242C4A"), 0.95)
-	theme.choice_selected_bg = _hex("D5A550")
-	theme.choice_text_color = _hex("E6ECFF")
-	theme.choice_selected_color = _hex("151B32")
-	theme.choice_hover_bg = _hex("38426B")
+	theme.choice_margin = 14
+	theme.choice_normal_bg = Color(0, 0, 0, 0)
+	theme.choice_selected_bg = Color(0, 0, 0, 0)
+	theme.choice_text_color = _hex("D3DDFE")
+	theme.choice_selected_color = _hex("E7C180")
+	theme.choice_hover_bg = Color(0, 0, 0, 0)
 	theme.choice_hover_text_color = _hex("FAEBD2")
 	theme.choice_border_color = _hex("4D5A8D")
 	theme.choice_selected_border_color = _hex("D5A550")
-	theme.choice_border_width = 2
+	theme.choice_border_width = 0
 	theme.choice_accent_color = _hex("D5A550")
-	theme.choice_marker = "index"
+	theme.choice_marker = "none"
 	theme.choice_marker_size = 15
 	theme.select_anim = "step-cursor"
 	theme.advance_indicator = "arrow-step"
 	theme.hint_style = "keycap-mono"
+	theme.hint_advance = PackedStringArray(["A|继续"])
+	theme.hint_choice = PackedStringArray(["↑↓|选择", "A|确认"])
 	theme.panel_entrance = "step-open"
 	theme.panel_entrance_ms = 400
 	theme.loop_anim = "led"
@@ -961,7 +977,7 @@ static func _nocturne(theme: RpgEventStudioTheme) -> void:
 	theme.panel_gradient_top = Color(_hex("3C243A"), 0.97)
 	theme.panel_gradient_bottom = Color(_hex("271626"), 0.97)
 	theme.accent_color = _hex("D5A550")
-	theme.accent_secondary = _hex("B17EAC")
+	theme.accent_secondary = _hex("583855")
 	theme.font_path = FONT_SANS
 	theme.font_path_body = FONT_SANS
 	theme.font_path_choice = FONT_SANS
@@ -985,13 +1001,13 @@ static func _nocturne(theme: RpgEventStudioTheme) -> void:
 	theme.choice_separation = 8
 	theme.choice_min_height = 40
 	theme.choice_gap = 16
-	theme.choice_normal_bg = Color(_hex("3C243A"), 0.9)
+	theme.choice_normal_bg = Color(_hex("3C243A"), 0.0)
 	theme.choice_selected_bg = Color(_hex("D5A550"), 0.16)
 	theme.choice_text_color = _hex("E0B9DB")
 	theme.choice_selected_color = _hex("FAEBD2")
 	theme.choice_hover_bg = Color(_hex("583855"), 0.9)
 	theme.choice_hover_text_color = _hex("FAEBD2")
-	theme.choice_border_color = _hex("754E72")
+	theme.choice_border_color = _hex("93658F")
 	theme.choice_selected_border_color = _hex("D5A550")
 	theme.choice_border_width = 1
 	theme.choice_accent_color = _hex("D5A550")
@@ -999,6 +1015,8 @@ static func _nocturne(theme: RpgEventStudioTheme) -> void:
 	theme.select_anim = "glow"
 	theme.advance_indicator = "dot"
 	theme.hint_style = "text"
+	theme.hint_advance = PackedStringArray(["|继续"])
+	theme.hint_choice = PackedStringArray(["|点按回复"])
 	theme.panel_entrance = "rise"
 	theme.panel_entrance_ms = 320
 	theme.loop_anim = "hop"
@@ -1120,6 +1138,8 @@ static func _tactical(theme: RpgEventStudioTheme) -> void:
 	theme.select_anim = "shift"
 	theme.advance_indicator = "led"
 	theme.hint_style = "keycap-mono"
+	theme.hint_advance = PackedStringArray(["A|确认"])
+	theme.hint_choice = PackedStringArray(["↑↓|选择", "A|执行"])
 	theme.panel_entrance = "wipe"
 	theme.panel_entrance_ms = 240
 	theme.loop_anim = "led"

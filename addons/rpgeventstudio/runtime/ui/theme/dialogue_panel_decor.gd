@@ -136,50 +136,45 @@ func _draw_shadow(rect: Rect2, points: PackedVector2Array) -> void:
 			draw_style_box(sb, hard_rect)
 
 func _draw_base(rect: Rect2, points: PackedVector2Array) -> void:
+	# 面板底统一走一次顶点色多边形：圆角面板先展开成圆角轮廓点，
+	# 渐变用顶点色插值，不再逐行 draw_rect（逐行会在缩放后出现扫描线纹）。
 	var radius := 0.0 if _is_polygon() else float(style.panel_corner_radius)
-	if radius > 0.0:
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = style.panel_bg_color
-		sb.set_corner_radius_all(int(radius))
-		draw_style_box(sb, rect)
-		if style.panel_gradient:
-			# 圆角面板上不做像素级渐变裁切；用一条低透明度渐变叠在内部，
-			# 视觉上保留上下明暗，又不会在圆角外露出硬边。
-			var inner := rect.grow(-maxf(1.0, radius * 0.25))
-			_draw_vertical_gradient(inner, style.panel_gradient_top, style.panel_gradient_bottom, 48)
-		return
-	if _is_polygon():
-		draw_colored_polygon(points, style.panel_bg_color)
-		if style.panel_gradient:
-			_draw_polygon_gradient(points, rect, style.panel_gradient_top, style.panel_gradient_bottom)
-	else:
-		if style.panel_gradient:
-			_draw_vertical_gradient(rect, style.panel_gradient_top, style.panel_gradient_bottom, 64)
-		else:
-			draw_rect(rect, style.panel_bg_color, true)
+	var shape := points if radius <= 0.0 else _rounded_points(rect, radius)
+	draw_colored_polygon(shape, style.panel_bg_color)
+	if style.panel_gradient:
+		_draw_polygon_gradient(shape, rect, style.panel_gradient_top, style.panel_gradient_bottom)
 
-## 用 1px 横条绘制竖直渐变；比生成纹理更直接，也方便按形状逐行裁剪。
-func _draw_vertical_gradient(rect: Rect2, top: Color, bottom: Color, steps: int) -> void:
+## 圆角矩形轮廓点（每角 8 段），供顶点色渐变使用。
+func _rounded_points(rect: Rect2, radius: float) -> PackedVector2Array:
+	var r := minf(radius, minf(rect.size.x, rect.size.y) * 0.5)
+	var out := PackedVector2Array()
+	var centers := [
+		Vector2(rect.end.x - r, rect.position.y + r),
+		Vector2(rect.end.x - r, rect.end.y - r),
+		Vector2(rect.position.x + r, rect.end.y - r),
+		Vector2(rect.position.x + r, rect.position.y + r),
+	]
+	var start_angles := [-PI * 0.5, 0.0, PI * 0.5, PI]
+	for c in 4:
+		for i in 9:
+			var a: float = start_angles[c] + PI * 0.5 * float(i) / 8.0
+			out.append(centers[c] + Vector2(cos(a), sin(a)) * r)
+	return out
+
+## 竖直渐变：一次 draw_polygon，顶点色按 y 线性插值。
+func _draw_vertical_gradient(rect: Rect2, top: Color, bottom: Color, _steps: int = 0) -> void:
 	if rect.size.y <= 0.0:
 		return
-	var count := maxi(2, steps)
-	for i in count:
-		var t := float(i) / float(count - 1)
-		var color := top.lerp(bottom, t)
-		var y := rect.position.y + rect.size.y * float(i) / float(count)
-		var h := rect.size.y / float(count) + 1.0
-		draw_rect(Rect2(rect.position.x, y, rect.size.x, h), color, true)
+	draw_polygon(PackedVector2Array([rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]),
+		PackedColorArray([top, top, bottom, bottom]))
 
 func _draw_polygon_gradient(points: PackedVector2Array, rect: Rect2, top: Color, bottom: Color) -> void:
-	var h := int(ceil(rect.size.y))
-	if h <= 0:
+	if rect.size.y <= 0.0 or points.size() < 3:
 		return
-	for y in h:
-		var t := float(y) / float(maxi(1, h - 1))
-		var color := top.lerp(bottom, t)
-		var span := _span_at_y(points, float(y) + 0.5)
-		if span.y > span.x:
-			draw_rect(Rect2(span.x, float(y), span.y - span.x, 1.0), color, true)
+	var colors := PackedColorArray()
+	for p in points:
+		colors.append(top.lerp(bottom, clampf((p.y - rect.position.y) / rect.size.y, 0.0, 1.0)))
+	draw_polygon(points, colors)
 
 ## 计算多边形在指定 y 上的左右边界（只用于当前四种轮廓）。
 func _span_at_y(points: PackedVector2Array, y: float) -> Vector2:

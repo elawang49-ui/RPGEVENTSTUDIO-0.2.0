@@ -40,6 +40,7 @@ func _run() -> void:
 	await _test_factory_isolation()
 	await _test_runtime_theme_api()
 	await _test_each_preset()
+	await _test_v5_layout_details()
 	await _test_legacy_theme()
 	await _test_portrait_layout()
 	await _test_window_sizes()
@@ -291,6 +292,10 @@ func _test_each_preset() -> void:
 		if theme.choice_layout == "inside":
 			_check(choices_panel.get_parent() == presenter.get("_inside_choices_host"),
 				"%s 选项收进面板右栏" % id)
+		elif theme.choice_layout == "chat":
+			_check(choices_panel.get_parent() == presenter.get("_text_column")
+				and presenter.get("_choices_box") == presenter.get("_choices_flow"),
+				"%s 聊天回复胶囊横排在面板内" % id)
 		else:
 			var panel_gap: float = panel.position.y - choices_panel.position.y - choices_panel.size.y
 			_check(panel_gap >= 4.0 or theme.choice_layout == "separate",
@@ -328,6 +333,47 @@ func _test_each_preset() -> void:
 		presenter.call("close_all")
 		presenter.queue_free()
 		await process_frame
+
+# ── v5 布局细节：inside 无滚动、像素窗口贴面板、大立绘透明、紧凑提示 ──
+
+func _test_v5_layout_details() -> void:
+	var presenter: DialoguePresenter = await _make_presenter(W1280)
+	presenter.set_dialogue_theme(DialogueThemePresets.create("terminal"))
+	presenter.show_choices("请选择", ["第一项", "第二项", "第三项"])
+	for i in 6:
+		await process_frame
+	var scroll: ScrollContainer = presenter.get("_choices_scroll")
+	var rows: Array = presenter.get("_choice_rows")
+	_check(not scroll.get_v_scroll_bar().visible, "terminal inside 三个选项不出现滚动条")
+	var last: Control = rows[2]
+	_check(last.get_global_rect().end.y <= scroll.get_global_rect().end.y + 1.0, "terminal inside 第三行完整可见")
+	presenter.call("close_all")
+
+	presenter.set_dialogue_theme(DialogueThemePresets.create("pixel"))
+	presenter.show_choices("请选择", ["第一项", "第二项", "第三项"])
+	for i in 6:
+		await process_frame
+	var panel: Control = presenter.get("_panel")
+	var cp: Control = presenter.get("_choices_panel")
+	var gap: float = panel.position.y - cp.position.y - cp.size.y
+	_check(absf(gap - 26.0) <= 2.0, "pixel 独立窗口紧贴面板上方 26px（gap=%.1f）" % gap)
+	_check(presenter.get("_choice_decor").visible, "pixel 独立窗口使用阶梯外框绘制")
+	presenter.call("close_all")
+
+	presenter.set_dialogue_theme(DialogueThemePresets.create("codex"))
+	presenter.set_dialogue_portrait(load(PORTRAIT))
+	presenter.show_text("艾琳", "短句。")
+	presenter.call("_finish_typing")
+	for i in 5:
+		await process_frame
+	var large: PanelContainer = presenter.get("_portrait_large")
+	_check(large.get_theme_stylebox("panel") is StyleBoxEmpty and not large.clip_contents, "大立绘透明无框")
+	_check(large.get_global_rect().end.y > panel.get_global_rect().position.y + panel.size.y * 0.5,
+		"大立绘底边沉到面板中线以下")
+	var hint: Label = presenter.get("_hint_label")
+	_check(hint.text.length() <= 8 and hint.text.contains("继续"), "紧凑提示为短文案（%s）" % hint.text)
+	presenter.queue_free()
+	await process_frame
 
 # ── 旧资源兼容 ───────────────────────────────────────────
 

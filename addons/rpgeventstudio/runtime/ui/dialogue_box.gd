@@ -37,7 +37,12 @@ var _hint_label: Label
 var _choices_panel: PanelContainer
 var _choice_margin: MarginContainer
 var _choices_scroll: ScrollContainer
-var _choices_box: VBoxContainer
+var _choices_box: Container
+var _choices_vbox: VBoxContainer
+var _choices_flow: HFlowContainer
+var _choice_decor: DialoguePanelDecor
+var _bubble: ChatBubble
+var _hint_keys: HintKeys
 var _fade_rect: ColorRect
 var _fade_tween: Tween
 ## v5：大立绘（panel 下层）、inside 布局宿主、推进指示、循环动画时钟。
@@ -194,6 +199,17 @@ func _build_ui() -> void:
 	_hint_label.text = ""
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_text_column.add_child(_hint_label)
+	# 紧凑键帽提示：画在提示行之上（Label 文字保留为可读文本但透明）。
+	_hint_keys = HintKeys.new()
+	_hint_keys.name = "HintKeys"
+	_hint_keys.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_hint_keys.visible = false
+	_hint_label.add_child(_hint_keys)
+	# 聊天气泡：画在装饰层之上、正文之下（装饰层的子节点）。
+	_bubble = ChatBubble.new()
+	_bubble.name = "ChatBubble"
+	_bubble.visible = false
+	_panel_decor.add_child(_bubble)
 
 	# inside 布局：选项收进面板右栏，宿主列固定在内容行末尾。
 	_inside_choices_host = VBoxContainer.new()
@@ -219,11 +235,27 @@ func _build_ui() -> void:
 	_choices_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_choice_margin.add_child(_choices_scroll)
 
-	_choices_box = VBoxContainer.new()
 	# 选项按钮撑满面板宽度：ScrollContainer 只在子节点带 EXPAND 时才把它拉到自身宽度，
 	# 否则 VBox 只有文字最小宽度，按钮会缩在左侧、面板右侧留出大片空白。
-	_choices_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_choices_scroll.add_child(_choices_box)
+	# 竖排（VBox）与聊天胶囊横排（HFlow）两套容器并存，按 choice_layout 切换。
+	var holder := VBoxContainer.new()
+	holder.name = "ChoiceHolder"
+	holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_choices_scroll.add_child(holder)
+	_choices_vbox = VBoxContainer.new()
+	_choices_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	holder.add_child(_choices_vbox)
+	_choices_flow = HFlowContainer.new()
+	_choices_flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_choices_flow.visible = false
+	holder.add_child(_choices_flow)
+	_choices_box = _choices_vbox
+	# 独立选项窗口的外框（像素阶梯描边等）复用面板绘制组件，放在边距容器之前。
+	_choice_decor = DialoguePanelDecor.new()
+	_choice_decor.name = "ChoiceWindowDecor"
+	_choice_decor.visible = false
+	_choices_panel.add_child(_choice_decor)
+	_choices_panel.move_child(_choice_decor, 0)
 
 	# 铭牌浮在面板之上，是 _root 的直接子节点，避免被 PanelContainer 拉伸。
 	_nameplate = DialogueNameplate.new()
@@ -236,11 +268,12 @@ func _build_ui() -> void:
 	_portrait_large = PanelContainer.new()
 	_portrait_large.name = "PortraitLarge"
 	_portrait_large.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_portrait_large.clip_contents = true
+	_portrait_large.clip_contents = false
+	_portrait_large.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_portrait_large.visible = false
 	_portrait_large_tex = TextureRect.new()
 	_portrait_large_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_portrait_large_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_portrait_large_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_portrait_large_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_portrait_large.add_child(_portrait_large_tex)
 	_root.add_child(_portrait_large)
@@ -364,19 +397,26 @@ func _apply_style() -> void:
 		_choices_panel.add_theme_stylebox_override("panel", bare)
 		_choices_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_choices_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	elif _choice_layout() == "separate":
-		# 独立窗口：装饰层主题的默认 panel 底是透明的，这里给独立选项窗口显式底/边。
-		var win := StyleBoxFlat.new()
-		win.bg_color = Color(style.panel_bg_color, maxf(0.92, style.panel_bg_color.a))
-		win.border_color = style.choice_border_color if style.choice_border_color.a > 0.0 else style.panel_border_color
-		win.set_border_width_all(maxi(1, style.choice_border_width))
-		win.set_corner_radius_all(0)
-		_choices_panel.add_theme_stylebox_override("panel", win)
+	elif _choice_layout() == "separate" or _choice_layout() == "chat":
+		# 独立窗口：外框交给 ChoiceWindowDecor（与面板同形，像素主题即阶梯描边）；
+		# 聊天：胶囊直接放在面板内，不要外壳。
+		var clear := StyleBoxEmpty.new()
+		_choices_panel.add_theme_stylebox_override("panel", clear)
 	_choice_margin.add_theme_constant_override("margin_left", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_right", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_top", style.choice_margin)
 	_choice_margin.add_theme_constant_override("margin_bottom", style.choice_margin)
-	_choices_box.add_theme_constant_override("separation", style.choice_separation)
+	var chat := _choice_layout() == "chat"
+	_choices_vbox.visible = not chat
+	_choices_flow.visible = chat
+	_choices_box = _choices_flow if chat else _choices_vbox
+	_choices_vbox.add_theme_constant_override("separation", style.choice_separation)
+	_choices_flow.add_theme_constant_override("h_separation", style.choice_separation)
+	_choices_flow.add_theme_constant_override("v_separation", 6)
+	_choice_decor.visible = _choice_layout() == "separate"
+	_choice_decor.style = style if _choice_decor.visible else null
+	_bubble.visible = false
+	_bubble.style = style
 
 	_speed = style.text_speed
 	_fade_rect.color = style.fade_color
@@ -403,36 +443,58 @@ func _move_choices_to_layout_host() -> void:
 	if _choices_panel == null or _inside_choices_host == null or style == null:
 		return
 	var inside := _choice_layout() == "inside"
+	var chat := _choice_layout() == "chat"
 	if inside and _choices_panel.get_parent() != _inside_choices_host:
 		_choices_panel.reparent(_inside_choices_host)
+	elif chat:
+		# 聊天：回复胶囊行放进正文列、正文之下（提示行之上）。
+		if _choices_panel.get_parent() != _text_column:
+			_choices_panel.reparent(_text_column)
+		_text_column.move_child(_choices_panel, _text_label.get_index() + 1)
+		_choices_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	elif not inside and _choices_panel.get_parent() != _root:
 		_choices_panel.reparent(_root)
 	_inside_choices_host.visible = inside
 	if inside:
 		_text_column.size_flags_stretch_ratio = 1.0
 
-## 提示样式：text 沿用 Label 纯文字；keycap 给 Label 套键帽 StyleBox；
-## keycap-mono 额外切等宽字体（resolve_font 依据 font_style=mono）。
+## 提示样式：未配置紧凑提示（hint_advance 为空，旧主题）时沿用 Label 长文案；
+## 配置后 Label 文字保留为可读文本但透明，由 HintKeys 画「[键帽] 动词」，不画整行底条。
 func _apply_hint_style() -> void:
 	if _hint_label == null or style == null:
 		return
-	var mode := style.hint_style
-	if mode == "text":
-		_hint_label.remove_theme_stylebox_override("normal")
-		_hint_label.add_theme_font_override("font", style.resolve_body_font())
+	_hint_label.remove_theme_stylebox_override("normal")
+	_hint_label.add_theme_font_override("font", style.resolve_body_font())
+	var compact := _compact_hint()
+	_hint_label.add_theme_color_override("font_color", Color(style.hint_color, 0.0) if compact else style.hint_color)
+	_hint_label.custom_minimum_size = Vector2(0, 24 if compact else 0)
+	if _hint_keys != null:
+		_hint_keys.visible = compact
+		_hint_keys.style = style
+		_hint_keys.mono_font = style.resolve_font() if style.hint_style == "keycap-mono" else null
+		_hint_keys.body_font = style.resolve_body_font()
+		_hint_keys.reserve_right = 24.0 if style.advance_indicator != "none" else 0.0
+
+func _compact_hint() -> bool:
+	return style != null and not style.hint_advance.is_empty()
+
+## 设置提示行内容：紧凑模式写入「键|动词」对，Label 同步一份纯文本。
+func _set_hint_pairs(pairs: PackedStringArray, fallback: String) -> void:
+	if not _compact_hint() or pairs.is_empty():
+		_hint_label.text = fallback
+		if _hint_keys != null:
+			_hint_keys.pairs = PackedStringArray()
+			_hint_keys.queue_redraw()
 		return
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color(style.hint_color, 0.14)
-	box.border_color = Color(style.hint_color, 0.75)
-	box.set_border_width_all(1)
-	box.border_width_bottom = 2
-	box.set_corner_radius_all(4)
-	box.content_margin_left = 7.0
-	box.content_margin_right = 7.0
-	box.content_margin_top = 3.0
-	box.content_margin_bottom = 4.0
-	_hint_label.add_theme_stylebox_override("normal", box)
-	_hint_label.add_theme_font_override("font", style.resolve_font() if mode == "keycap-mono" else style.resolve_body_font())
+	var plain := PackedStringArray()
+	for pair in pairs:
+		var parts := pair.split("|")
+		plain.append(" ".join(parts).strip_edges())
+	_hint_label.text = "  ".join(plain)
+	if _hint_keys != null:
+		_hint_keys.pairs = pairs
+		_hint_keys.choice_mode = _choice_texts.size() > 0
+		_hint_keys.queue_redraw()
 
 func _apply_portrait_side() -> void:
 	if _content_row == null or _portrait == null or _portrait_gap == null:
@@ -492,32 +554,36 @@ func _update_portrait_visibility() -> void:
 		_portrait.set_portrait(_portrait_texture)
 	_update_nameplate_visibility()
 
-## 大立绘出框落位：底边贴住面板底并允许下缘出框（出框感），水平按 placement。
+## 大立绘出框落位：透明无框，直接站在舞台上；高约视口 0.55，底边沉到面板中线以下
+## （下半身被面板遮住、头肩出框），水平在面板左/右端内侧约 4%。
 func _layout_large_portrait() -> void:
-	if _portrait_large == null or style == null or _panel == null:
+	if _portrait_large == null or style == null or _panel == null or not _portrait_large.visible:
 		return
 	var viewport := _root.get_viewport_rect().size if _root != null else Vector2(1280, 720)
-	var scale := clampf(viewport.x / 1280.0, 0.7, 1.4)
-	var w := 290.0 * scale
-	var h := 372.0 * scale
+	var h := viewport.y * 0.55
+	var aspect := 0.78
+	if _portrait_texture != null and _portrait_texture.get_height() > 0:
+		aspect = float(_portrait_texture.get_width()) / float(_portrait_texture.get_height())
+	var w := h * aspect
+	var panel_rect := Rect2(_panel.position, _panel.size)
+	if panel_rect.size.x < 1.0:
+		panel_rect = Rect2(Vector2(viewport.x * style.panel_left, viewport.y * style.panel_top),
+			Vector2(viewport.x * (style.panel_right - style.panel_left), viewport.y * (style.panel_bottom - style.panel_top)))
+	var inset := panel_rect.size.x * 0.04
 	var x := 0.0
 	match style.portrait_placement:
 		"large-left":
-			x = viewport.x * style.panel_left - w * 0.30
+			x = panel_rect.position.x + inset
 		"large-right":
-			x = viewport.x * style.panel_right - w * 0.70
+			x = panel_rect.end.x - inset - w
 		"large-center":
-			x = (viewport.x - w) * 0.5
+			x = panel_rect.position.x + (panel_rect.size.x - w) * 0.5
 		_:
 			return
-	# 底边对齐 panel_bottom + 少量下沉出框。
-	var y := viewport.y * style.panel_bottom + h * 0.10 - h
-	x = clampf(x, -w * 0.25, viewport.x - w * 0.75)
+	var y := panel_rect.position.y + panel_rect.size.y * 0.72 - h
 	_portrait_large.position = Vector2(x, y)
 	_portrait_large.size = Vector2(w, h)
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = style.portrait_bg
-	_portrait_large.add_theme_stylebox_override("panel", bg)
+	_portrait_large_tex.size = Vector2(w, h)
 
 # ── 铭牌布局 ─────────────────────────────────────────────
 
@@ -570,6 +636,15 @@ func _layout_nameplate() -> void:
 					panel_pos.y + float(style.content_margin_top) - 2.0
 				)
 		return
+	if style.nameplate_style == "poetic":
+		# 骑边：垂直居中于面板顶边线，水平居中。
+		_nameplate.position = Vector2(panel_pos.x + (_panel.size.x - _nameplate.size.x) * 0.5,
+			panel_pos.y - _nameplate.size.y * 0.5)
+		return
+	if style.nameplate_style == "floating" and style.speaker_title_position == "below":
+		_nameplate.position = Vector2(panel_pos.x + (_panel.size.x - _nameplate.size.x) * 0.5,
+			maxf(0.0, panel_pos.y + style.nameplate_offset.y))
+		return
 	if style.nameplate_style == "column":
 		var x := panel_pos.x + float(style.content_margin_left)
 		if _portrait != null and _portrait.visible and style.portrait_side == "left":
@@ -594,21 +669,33 @@ func _on_viewport_resized() -> void:
 func _layout_choices_panel() -> void:
 	if _choices_panel == null or _panel == null or style == null or not _choices_panel.visible:
 		return
-	if _choice_layout() == "inside":
+	if _choice_layout() == "inside" or _choice_layout() == "chat":
 		return
 	var h := _choices_panel.size.y
 	if h < 1.0:
 		h = _choices_scroll.custom_minimum_size.y + 2.0 * float(style.choice_margin)
-	var y: float
-	if _choice_layout() == "separate":
-		# 独立窗口：固定在视口右上区域，与对话框脱钩。
-		var viewport := _root.get_viewport_rect().size
-		y = viewport.y * style.choice_top
-	else:
-		y = _panel.position.y - h - float(style.choice_gap)
+	# 独立窗口与 top 一样紧贴面板上方（choice_gap），区别只在外框绘制。
+	var y := _panel.position.y - h - float(style.choice_gap)
 	var max_y := maxf(8.0, _root.size.y - h - 8.0)
 	_choices_panel.position.y = clampf(y, 8.0, max_y)
 	_layout_advance_indicator()
+
+## 聊天气泡：包住正文实际宽高（左右各外扩 14、上下 10），只在 chat 布局显示。
+func _layout_bubble() -> void:
+	if _bubble == null or style == null or _text_label == null:
+		return
+	var show := _choice_layout() == "chat" and _panel != null and _panel.visible and _text_label.get_parsed_text().strip_edges() != ""
+	_bubble.visible = show
+	if not show:
+		return
+	var tr := Rect2(_text_label.global_position - _panel.global_position, _text_label.size)
+	var w := minf(tr.size.x, float(_text_label.get_content_width()) + 2.0)
+	var h := minf(tr.size.y, float(_text_label.get_content_height()))
+	var rect := Rect2(tr.position - Vector2(14, 8), Vector2(maxf(40.0, w) + 28.0, maxf(20.0, h) + 16.0))
+	if _bubble.position != rect.position or _bubble.size != rect.size:
+		_bubble.position = rect.position
+		_bubble.size = rect.size
+		_bubble.queue_redraw()
 
 ## 推进指示贴住面板右下角（内侧 12px）；visible 由 show/typing 状态控制。
 func _layout_advance_indicator() -> void:
@@ -616,9 +703,16 @@ func _layout_advance_indicator() -> void:
 		return
 	var s := _advance.size
 	if s.x < 1.0:
-		s = Vector2(20, 20)
-	_advance._base_pos = _panel.position + _panel.size - s - Vector2(14, 10)
-	_advance.position = _advance._base_pos
+		s = Vector2(16, 16)
+	# 紧凑提示可见时紧跟在提示行末尾；否则落在面板右下内侧（内缩 14/12），不压边框。
+	if _hint_label != null and _hint_label.visible and _hint_label.is_inside_tree() and _compact_hint():
+		var hr := _hint_label.get_global_rect()
+		var root_origin := _root.get_global_rect().position
+		_advance._base_pos = Vector2(hr.end.x - s.x, hr.position.y + (hr.size.y - s.y) * 0.5) - root_origin
+	else:
+		_advance._base_pos = _panel.position + _panel.size - s - Vector2(14, 12)
+	if style.motion_reduced or style.loop_anim == "none":
+		_advance.position = _advance._base_pos
 
 # ── 显示文字 ─────────────────────────────────────────────
 
@@ -711,7 +805,7 @@ func show_choices(prompt: String, options: Array) -> void:
 	_show_choices_panel_with_animation()
 	_schedule_height_update()
 	_hint_label.visible = not editor_preview
-	_hint_label.text = L10n.game("game.choice_hint")
+	_set_hint_pairs(style.hint_choice if style != null else PackedStringArray(), L10n.game("game.choice_hint"))
 	_choice_index = 0
 	_update_choice_highlight()
 
@@ -730,6 +824,12 @@ func _create_choice_rows(texts: PackedStringArray) -> void:
 			text = "%02d   %s" % [index + 1, text]
 		row.configure(style, index, text)
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if _choice_layout() == "chat":
+			# 聊天胶囊按文字宽度收缩，HFlow 横向排列、超宽自动换行。
+			var cf := style.resolve_choice_font()
+			row.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			row.min_width = cf.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, style.choice_font_size).x + 48.0
+			row.custom_minimum_size.x = row.min_width
 		row.custom_minimum_size = Vector2(0, maxf(row.custom_minimum_size.y, row.button.get_combined_minimum_size().y))
 		# 鼠标悬停同步键盘选中项：三种输入共用同一个当前位置。
 		row.button.mouse_entered.connect(func() -> void:
@@ -857,9 +957,10 @@ func _update_heights() -> void:
 	var choice_content := _choices_box.get_combined_minimum_size().y
 	var choice_reserved := 2.0 * float(style.choice_margin)
 	var choice_max := maxf(0.0, viewport_size.y * (style.choice_bottom - style.choice_top) - choice_reserved)
-	if _choice_layout() == "inside":
-		# 右栏选项以面板内容区高度为上限。
-		choice_max = maxf(0.0, _panel.size.y - float(style.content_margin_top + style.content_margin_bottom) - choice_reserved - 8.0)
+	if _choice_layout() == "inside" or _choice_layout() == "chat":
+		# 面板内选项：以面板可用高度为上限，面板按 max(正文, 选项列) 自适应长高，
+		# 选项少时不出现滚动条。
+		choice_max = maxf(0.0, panel_room)
 	_choices_scroll.custom_minimum_size = Vector2(0, clampf(choice_content, 0.0, choice_max))
 	_layout_choices_panel()
 	_layout_advance_indicator()
@@ -899,6 +1000,10 @@ func _process(delta: float) -> void:
 	# 否则短台词/长台词切换时铭牌会停在旧位置并压住立绘。
 	if _nameplate != null and _nameplate.visible:
 		_layout_nameplate()
+	if _portrait_large != null and _portrait_large.visible:
+		_layout_large_portrait()
+	_layout_bubble()
+	_layout_advance_indicator()
 	# 循环动画：sway 作用于铭牌（±2°），其余作用于推进指示（组件自绘）。
 	if style != null and not style.motion_reduced:
 		_loop_time += delta
@@ -1058,7 +1163,8 @@ func _clamp_page_line() -> void:
 func _update_page_hint() -> void:
 	if _hint_label == null or not _waiting_confirm:
 		return
-	_hint_label.text = L10n.game("game.advance_more") if _has_more_pages() else L10n.game("game.advance_hint")
+	var fallback := L10n.game("game.advance_more") if _has_more_pages() else L10n.game("game.advance_hint")
+	_set_hint_pairs(style.hint_advance if style != null else PackedStringArray(), fallback)
 
 func _reset_text_page() -> void:
 	_page_line = 0
@@ -1287,7 +1393,7 @@ class AdvanceIndicator extends Control:
 	var _base_pos := Vector2.ZERO
 
 	func _init() -> void:
-		custom_minimum_size = Vector2(20, 20)
+		custom_minimum_size = Vector2(16, 16)
 		size = custom_minimum_size
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -1374,3 +1480,90 @@ class AdvanceIndicator extends Control:
 				draw_line(Vector2(cx, cy - s * 0.8), Vector2(cx, cy + s * 0.8), Color(1, 1, 1, 0.35), 1.0)
 			_:
 				pass
+
+
+# ── 紧凑键帽提示（v5）：右对齐「[键帽] 动词」，键帽高 20、底边 2px 加粗 ─────
+
+class HintKeys extends Control:
+	var style: RpgEventStudioTheme
+	var pairs: PackedStringArray = PackedStringArray()
+	var mono_font: Font
+	var body_font: Font
+	var choice_mode := false
+	var reserve_right := 0.0
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESIZED:
+			queue_redraw()
+
+	func _draw() -> void:
+		if style == null or pairs.is_empty() or body_font == null:
+			return
+		var fs := style.hint_font_size
+		var key_fs := maxi(10, fs - 1)
+		var key_font := mono_font if mono_font != null else body_font
+		var keycap := style.hint_style != "text"
+		# 先测总宽，再从右向左排布。
+		var items: Array = []
+		var total := 0.0
+		for pair in pairs:
+			var parts := pair.split("|")
+			var key := parts[0].strip_edges() if parts.size() > 0 else ""
+			var verb := parts[1].strip_edges() if parts.size() > 1 else ""
+			var kw := 0.0
+			if key != "":
+				kw = key_font.get_string_size(key, HORIZONTAL_ALIGNMENT_LEFT, -1, key_fs).x + 12.0
+				kw = maxf(kw, 20.0)
+			var vw := body_font.get_string_size(verb, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			items.append([key, verb, kw, vw])
+			total += kw + (5.0 if key != "" and verb != "" else 0.0) + vw
+		total += 14.0 * float(maxi(0, items.size() - 1))
+		var x := size.x - reserve_right - total
+		var cy := size.y * 0.5
+		for item in items:
+			var key: String = item[0]
+			var verb: String = item[1]
+			var kw: float = item[2]
+			var vw: float = item[3]
+			if key != "":
+				var kr := Rect2(x, cy - 10.0, kw, 20.0)
+				if keycap:
+					var sb := StyleBoxFlat.new()
+					sb.bg_color = Color(style.hint_color, 0.14)
+					sb.border_color = Color(style.hint_color, 0.7)
+					sb.set_border_width_all(1)
+					sb.border_width_bottom = 2
+					sb.set_corner_radius_all(4)
+					draw_style_box(sb, kr)
+				var tw := key_font.get_string_size(key, HORIZONTAL_ALIGNMENT_LEFT, -1, key_fs).x
+				var base := kr.position.y + (kr.size.y - 1.0 - key_font.get_height(key_fs)) * 0.5 + key_font.get_ascent(key_fs)
+				draw_string(key_font, Vector2(kr.position.x + (kw - tw) * 0.5, base), key,
+					HORIZONTAL_ALIGNMENT_LEFT, -1, key_fs, style.hint_color.lightened(0.15) if keycap else style.hint_color)
+				x += kw + (5.0 if verb != "" else 0.0)
+			if verb != "":
+				var vb := cy - body_font.get_height(fs) * 0.5 + body_font.get_ascent(fs)
+				draw_string(body_font, Vector2(x, vb), verb, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, style.hint_color)
+				x += vw
+			x += 14.0
+
+# ── 聊天气泡（v5 Nocturne）：左上 4px、其余 14px 圆角 ───────────────
+
+class ChatBubble extends Control:
+	var style: RpgEventStudioTheme
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		if style == null:
+			return
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = style.accent_secondary if style.accent_secondary.a > 0.0 else Color(0.35, 0.22, 0.33)
+		sb.corner_radius_top_left = 4
+		sb.corner_radius_top_right = 14
+		sb.corner_radius_bottom_right = 14
+		sb.corner_radius_bottom_left = 14
+		draw_style_box(sb, Rect2(Vector2.ZERO, size))

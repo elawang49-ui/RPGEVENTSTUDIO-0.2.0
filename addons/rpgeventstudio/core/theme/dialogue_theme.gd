@@ -239,6 +239,13 @@ extends Resource
 @export_enum("none", "tri", "tri-down", "diamond", "dot", "cursor-block", "led", "arrow-step", "leaf") var advance_indicator: String = "none"
 ## 提示样式：text=普通文字；keycap=键帽（圆角底+边框+字）；keycap-mono=等宽键帽。
 @export_enum("text", "keycap", "keycap-mono") var hint_style: String = "text"
+## 紧凑提示（v5）："键名|动词" 列表，如 ["空格|继续"]、["A|确认", "B|记录"]；
+## 键名为空（"|继续"）时只显示动词。为空数组时沿用旧的长文案（L10n game.advance_hint）。
+@export var hint_advance: PackedStringArray = PackedStringArray()
+@export var hint_choice: PackedStringArray = PackedStringArray()
+## 称号位置：只对 floating 铭牌生效（right=名右侧小字，below=名下方居中）。
+## plaque/phone 固定在名右侧，seal 固定在印下方，其余铭牌样式不显示称号。
+@export_enum("right", "below") var speaker_title_position: String = "right"
 
 # ── 交互提示 ─────────────────────────────────────────────
 

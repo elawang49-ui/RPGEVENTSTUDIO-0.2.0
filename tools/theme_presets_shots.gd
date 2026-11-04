@@ -57,6 +57,12 @@ const CHOICES := {
 var _w := 1280
 var _h := 820
 var _out_dir := OUT_ROOT
+## 原子写入：截图先写临时目录，全部成功后才逐个覆盖到正式目录；
+## 任何失败都不碰正式目录，也从不删除正式目录里的文件。
+var _final_dir := OUT_ROOT
+var _written: PackedStringArray = []
+var _failed := 0
+var _portrait_cache := {}
 var _backdrop_layer: CanvasLayer
 var _presenter: Node
 var _runtime: Node
@@ -75,8 +81,10 @@ func _run() -> void:
 	DisplayServer.window_set_position(Vector2i(0, 0))
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true)
 	DisplayServer.window_move_to_foreground()
-	_out_dir = "%s/%dx%d" % [OUT_ROOT, _w, _h]
+	_final_dir = "%s/%dx%d" % [OUT_ROOT, _w, _h]
+	_out_dir = "res://.godot/theme_shots_tmp/%dx%d" % [_w, _h]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out_dir))
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_final_dir))
 	_portrait = load(PORTRAIT)
 	await create_timer(0.5).timeout
 
@@ -106,8 +114,17 @@ func _run() -> void:
 		await _shot_editor_preview_mode()
 	await _shot_editor(6)
 
-	print("[THEME_SHOTS] 输出目录：%s" % ProjectSettings.globalize_path(_out_dir))
-	quit(0)
+	if _failed > 0 or _written.is_empty():
+		push_error("[THEME_SHOTS] %d 张截图失败，正式目录保持不变：%s" % [_failed, ProjectSettings.globalize_path(_final_dir)])
+		quit(1)
+		return
+	var copied := 0
+	for tmp_path in _written:
+		var dest := "%s/%s" % [_final_dir, tmp_path.get_file()]
+		if DirAccess.copy_absolute(ProjectSettings.globalize_path(tmp_path), ProjectSettings.globalize_path(dest)) == OK:
+			copied += 1
+	print("[THEME_SHOTS] 已原子覆盖 %d/%d 张 → %s" % [copied, _written.size(), ProjectSettings.globalize_path(_final_dir)])
+	quit(0 if copied == _written.size() else 1)
 
 func _backdrop_for(id: String) -> void:
 	if _backdrop_layer != null:
@@ -134,7 +151,7 @@ func _apply(id: String, portrait: bool = true) -> RpgEventStudioTheme:
 		theme.portrait_enabled = false
 	_presenter.call("set_dialogue_theme", theme)
 	if portrait:
-		_runtime.call("set_dialogue_portrait", _portrait)
+		_runtime.call("set_dialogue_portrait", _silhouette_for(id))
 	else:
 		_runtime.call("clear_dialogue_portrait")
 	return theme
@@ -283,6 +300,54 @@ func _shot_editor_preview_mode() -> void:
 	await create_timer(0.2).timeout
 	_presenter.visible = true
 
+## 透明底剪影占位立绘：椭圆头 + 圆肩躯干，一侧强调色边缘光（参考设计稿剪影画法）。
+func _silhouette_for(id: String) -> Texture2D:
+	if _portrait_cache.has(id):
+		return _portrait_cache[id]
+	var info := DialogueThemePresets.meta(id)
+	var colors: Array = info.get("colors", ["#333333", "#cccccc"])
+	var theme := DialogueThemePresets.create(id)
+	var body := Color.from_string(str(info.get("stage_bottom", "#333333")), Color(0.2, 0.2, 0.2)).darkened(0.25)
+	if body.get_luminance() > 0.5:
+		body = body.darkened(0.45)
+	var rim := Color.from_string(str(colors[1]), Color.WHITE)
+	var rim_right := theme.portrait_placement != "large-right"
+	var w := 290
+	var h := 372
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var head_c := Vector2(w * 0.5, 62.0)
+	var head_r := Vector2(48.0, 57.0)
+	for y in h:
+		for x in w:
+			var inside := false
+			var edge := 0.0
+			var p := Vector2(x, y)
+			var hd := ((p - head_c) / head_r).length()
+			if hd <= 1.0:
+				inside = true
+				edge = hd
+			elif y >= 104 and y < 140 and absf(x - w * 0.5) <= 20.0:
+				inside = true
+			elif y >= 130:
+				# 圆肩躯干：顶部半椭圆、下方直落到底。
+				var tx := absf(x - w * 0.5) / 121.0
+				var ty := (float(y) - 130.0) / 110.0
+				var lim := 1.0 if ty >= 1.0 else sqrt(maxf(0.0, 1.0 - (1.0 - ty) * (1.0 - ty)))
+				if tx <= lim:
+					inside = true
+					edge = tx / maxf(lim, 0.001)
+			if not inside:
+				continue
+			var c := body
+			var side := (float(x) - w * 0.5) / (w * 0.5)
+			if (rim_right and side > 0.0) or (not rim_right and side < 0.0):
+				c = body.lerp(rim, clampf((edge - 0.72) / 0.28, 0.0, 1.0) * 0.8)
+			img.set_pixel(x, y, c)
+	var tex := ImageTexture.create_from_image(img)
+	_portrait_cache[id] = tex
+	return tex
+
 func _name(suffix: String) -> String:
 	return "%s/%s_%dx%d.png" % [_out_dir, suffix, _w, _h]
 
@@ -293,10 +358,15 @@ func _shot(path: String) -> void:
 	RenderingServer.force_draw(true)
 	var image := root.get_texture().get_image()
 	if image == null:
+		_failed += 1
 		return
 	if image.get_width() != _w or image.get_height() != _h:
 		image.resize(_w, _h, Image.INTERPOLATE_LANCZOS)
 	var error := image.save_png(path)
+	if error == OK:
+		_written.append(path)
+	else:
+		_failed += 1
 	print("[THEME_SHOTS] %s -> %d" % [path, error])
 
 # ── 展示背景（只用于截图，不属于插件主题） ────────────────
@@ -306,13 +376,11 @@ class Backdrop extends Control:
 	var bottom_color := Color(0.03, 0.03, 0.04)
 	var accent := Color(1, 1, 1)
 	var pattern := ""
+	var _vignette: GradientTexture2D
 
 	func _draw() -> void:
-		var steps := 80
-		for i in steps:
-			var t := float(i) / float(steps - 1)
-			var c := top_color.lerp(bottom_color, t)
-			draw_rect(Rect2(0, size.y * t, size.x, size.y / float(steps) + 1.0), c, true)
+		draw_polygon(PackedVector2Array([Vector2.ZERO, Vector2(size.x, 0), size, Vector2(0, size.y)]),
+			PackedColorArray([top_color, top_color, bottom_color, bottom_color]))
 		match pattern:
 			"sacred":
 				for i in 9:
@@ -322,14 +390,17 @@ class Backdrop extends Control:
 				# 底图统一保持干净渐变+暗角：网格/点阵/星座这类大尺度
 				# 装饰会让截图失去整体感，面板本身才是展示对象。
 				pass
-		# 柔和暗角：四边各自向内渐隐的渐层，不出现矩形轮廓线。
-		var vsteps := 18
-		var depth := 64.0
-		for i in vsteps:
-			var a := 0.05 * (1.0 - float(i) / float(vsteps))
-			var off := depth * float(i) / float(vsteps)
-			var band := depth / float(vsteps) + 1.0
-			draw_rect(Rect2(0, off, size.x, band), Color(0, 0, 0, a), true)
-			draw_rect(Rect2(0, size.y - off - band, size.x, band), Color(0, 0, 0, a), true)
-			draw_rect(Rect2(off, 0, band, size.y), Color(0, 0, 0, a * 0.7), true)
-			draw_rect(Rect2(size.x - off - band, 0, band, size.y), Color(0, 0, 0, a * 0.7), true)
+		# 径向暗角：单张 GradientTexture2D（中心透明 → 边缘 0.35），一次绘制，无条带。
+		if _vignette == null:
+			var g := Gradient.new()
+			g.set_color(0, Color(0, 0, 0, 0))
+			g.set_color(1, Color(0, 0, 0, 0.35))
+			g.add_point(0.55, Color(0, 0, 0, 0))
+			_vignette = GradientTexture2D.new()
+			_vignette.gradient = g
+			_vignette.fill = GradientTexture2D.FILL_RADIAL
+			_vignette.fill_from = Vector2(0.5, 0.5)
+			_vignette.fill_to = Vector2(1.05, 1.05)
+			_vignette.width = 512
+			_vignette.height = 512
+		draw_texture_rect(_vignette, Rect2(Vector2.ZERO, size), false)

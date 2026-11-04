@@ -15,7 +15,7 @@
     "trace_ui_test": 21,
     "dialogue_layout_test": 19,
     "dialogue_pagination_test": 282,
-    "dialogue_theme_presets_test": 580,
+    "dialogue_theme_presets_test": 587,
     "graph_lifecycle_test": 32,
     "presenter_lifecycle_test": 48,
     "input_coexistence_test": 35,

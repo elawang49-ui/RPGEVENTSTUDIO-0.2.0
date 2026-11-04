@@ -10,6 +10,8 @@ var style: RpgEventStudioTheme:
 		style = value
 		_apply_style()
 var index := 0
+## 横排（聊天胶囊）时由 Presenter 给出的最小宽度；竖排为 0（撑满）。
+var min_width := 0.0
 var selected := false
 var hovered := false
 
@@ -89,15 +91,22 @@ func _apply_style() -> void:
 	if style == null or button == null:
 		return
 	_font = style.resolve_choice_font()
-	custom_minimum_size = Vector2(0, style.choice_min_height)
+	custom_minimum_size = Vector2(min_width, style.choice_min_height)
 	button.add_theme_font_override("font", _font)
 	button.add_theme_font_size_override("font_size", style.choice_font_size)
-	button.alignment = HORIZONTAL_ALIGNMENT_CENTER if style.text_align == "center" else HORIZONTAL_ALIGNMENT_LEFT
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER if (style.text_align == "center" or style.choice_style == "chat-chip") else HORIZONTAL_ALIGNMENT_LEFT
+	# 像素光标步进闪烁需要逐帧重绘；其余样式静态。
+	set_process(selected and style.choice_style == "pixel-box" and not style.motion_reduced)
 	var marker_pad := 12
 	if style.choice_marker != "none":
 		marker_pad = maxi(12, style.choice_marker_width + 10)
 		if style.choice_marker == "keycap":
 			marker_pad = maxi(marker_pad, int(float(style.choice_marker_size) * 1.3) + 18)
+	match style.choice_style:
+		"glass-row":
+			marker_pad = maxi(marker_pad, 22)
+		"pixel-box":
+			marker_pad = maxi(marker_pad, 30)
 	var box := StyleBoxFlat.new()
 	if _custom_draw():
 		box.bg_color = Color(0, 0, 0, 0)
@@ -106,7 +115,7 @@ func _apply_style() -> void:
 		box.set_corner_radius_all(0)
 	else:
 		box = style.make_choice_style(selected)
-	box.content_margin_left = float(marker_pad) if style.text_align != "center" else 12.0
+	box.content_margin_left = float(marker_pad) if (style.text_align != "center" and style.choice_style != "chat-chip") else 12.0
 	box.content_margin_right = 12.0
 	box.content_margin_top = 4.0
 	box.content_margin_bottom = 4.0
@@ -215,7 +224,7 @@ func _draw() -> void:
 			_draw_leaf_row(r, fill, text_color, border_color, border_w)
 		_:
 			_draw_flat(r, fill, text_color, border_color, border_w)
-	if hovered and not selected and style.choice_style not in ["filament", "underline-list", "ink-stroke"]:
+	if hovered and not selected and style.choice_style not in ["filament", "underline-list", "ink-stroke", "glass-row", "pixel-box", "paper-sign", "chat-chip"]:
 		draw_line(Vector2(r.position.x + 2.0, r.position.y + 5.0), Vector2(r.position.x + 2.0, r.end.y - 5.0),
 			Color(style.choice_accent_color, 0.9), 2.0, true)
 	_draw_select_fx(r, text_color)
@@ -417,28 +426,30 @@ func _draw_crystal(r: Rect2, fill: Color, _text_color: Color, border: Color, bor
 		if selected:
 			draw_line(p[1], p[2], Color(0.0, 0.831, 1.0, 0.75), 2.0, true)
 
-func _draw_filament(r: Rect2, text_color: Color) -> void:
-	var font := _font if _font != null else style.resolve_body_font()
+func _draw_filament(r: Rect2, _text_color: Color) -> void:
+	# 普通行纯文字；只有选中行两端出现渐隐金线 + 菱形（grow-line 时随进度生长）。
+	if not selected:
+		return
+	var font := _font if _font != null else style.resolve_choice_font()
 	var fs := style.choice_font_size
 	var center := r.size.y * 0.5
-	var active := selected or hovered
-	if not active:
-		return
-	var alpha := 1.0 if selected else 0.45
-	var gold := Color(style.choice_accent_color, alpha)
+	var gold := style.choice_accent_color
 	var text_size := font.get_string_size(button.text if button != null else "", HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
 	var side_room := (r.size.x - text_size.x) * 0.5
-	if side_room > 58.0:
-		# 两端金丝 + 菱形：全部几何绘制，不用字符装饰。
-		var line_len := minf(56.0, side_room - 46.0)
-		var ly := floorf(center) + 0.5
-		var lx2 := r.size.x * 0.5 - text_size.x * 0.5 - 14.0
-		var rx1 := r.size.x * 0.5 + text_size.x * 0.5 + 14.0
-		draw_line(Vector2(lx2 - line_len, ly), Vector2(lx2, ly), gold, 1.0, true)
-		draw_line(Vector2(rx1, ly), Vector2(rx1 + line_len, ly), gold, 1.0, true)
-		_marker_diamond(Vector2(lx2 - line_len - 7.0, center), 4.0, gold)
-		_marker_diamond(Vector2(rx1 + line_len + 7.0, center), 4.0, gold)
-	_draw_taper_underline(r, gold, alpha)
+	if side_room <= 40.0:
+		return
+	var grow := _select_progress if style.select_anim == "grow-line" and not style.motion_reduced else 1.0
+	var line_len := minf(56.0, side_room - 30.0) * grow
+	var ly := floorf(center) + 0.5
+	var lx2 := r.size.x * 0.5 - text_size.x * 0.5 - 16.0
+	var rx1 := r.size.x * 0.5 + text_size.x * 0.5 + 16.0
+	var clear := Color(gold, 0.0)
+	# 渐隐线：外端透明 → 内端实色（顶点色线段，单次绘制）。
+	draw_polyline_colors(PackedVector2Array([Vector2(lx2 - line_len, ly), Vector2(lx2, ly)]), PackedColorArray([clear, gold]), 1.0, true)
+	draw_polyline_colors(PackedVector2Array([Vector2(rx1, ly), Vector2(rx1 + line_len, ly)]), PackedColorArray([gold, clear]), 1.0, true)
+	if grow >= 0.99:
+		_marker_diamond(Vector2(lx2 - line_len - 6.0, center), 3.5, Color(gold, 0.85))
+		_marker_diamond(Vector2(rx1 + line_len + 6.0, center), 3.5, Color(gold, 0.85))
 
 func _draw_taper_underline(r: Rect2, color: Color, alpha: float) -> void:
 	var steps := 20
@@ -481,7 +492,8 @@ func _draw_marker(r: Rect2, text_color: Color) -> void:
 		"heart":
 			_draw_heart_marker(r, text_color)
 		"bar":
-			draw_rect(Rect2(r.position.x + 10.0, r.position.y + 5.0, 3.0, r.size.y - 10.0), mcolor, true)
+			if selected:
+				_rounded_bar(Rect2(r.position.x + 10.0, r.position.y + 6.0, 3.0, r.size.y - 12.0), mcolor)
 		"tri":
 			# 三角光标只出现在选中行：普通行无符号（Codex/Tide 设计）。
 			if selected:
@@ -606,12 +618,15 @@ func _draw_underline_list(r: Rect2, _fill: Color, _text_color: Color, border: Co
 		line_color = style.choice_selected_border_color
 		w = 2.0
 		# 选中时加一条横向暗红渐变底。
-		var steps := 20
-		for i in steps:
-			var t := float(i) / float(steps - 1)
-			var c := style.choice_selected_bg
-			c.a *= 0.8 * (1.0 - t)
-			draw_rect(Rect2(r.position.x + r.size.x * t, r.position.y, r.size.x / float(steps) + 1.0, r.size.y - 3.0), c, true)
+		var c0 := Color(style.choice_selected_bg, style.choice_selected_bg.a * 0.8)
+		var c1 := Color(style.choice_selected_bg, 0.0)
+		var top := r.position.y
+		var bot := r.end.y - 3.0
+		var mid := r.position.x + r.size.x * 0.5
+		draw_polygon(PackedVector2Array([Vector2(r.position.x, top), Vector2(mid, top), Vector2(mid, bot), Vector2(r.position.x, bot)]),
+			PackedColorArray([c1, c0, c0, c1]))
+		draw_polygon(PackedVector2Array([Vector2(mid, top), Vector2(r.end.x, top), Vector2(r.end.x, bot), Vector2(mid, bot)]),
+			PackedColorArray([c0, c1, c1, c0]))
 	elif hovered:
 		line_color = Color(style.choice_accent_color, 0.7)
 	draw_line(Vector2(r.position.x, y), Vector2(r.end.x, y), line_color, w, true)
@@ -632,7 +647,23 @@ func _draw_glass_row(r: Rect2, fill: Color, _text_color: Color, border: Color, b
 		bb.set_corner_radius_all(style.choice_corner_radius)
 		draw_style_box(bb, r)
 	if selected:
-		draw_rect(Rect2(r.position.x + 3.0, r.position.y + 6.0, 3.0, r.size.y - 12.0), style.choice_accent_color, true)
+		# 柔光：两圈递减透明描边。
+		for i in 2:
+			var glow := StyleBoxFlat.new()
+			glow.bg_color = Color(0, 0, 0, 0)
+			glow.border_color = Color(style.choice_accent_color, 0.18 - 0.08 * i)
+			glow.set_border_width_all(2)
+			glow.set_corner_radius_all(style.choice_corner_radius + 2 + i * 2)
+			draw_style_box(glow, r.grow(2.0 + 2.0 * i))
+		# 选中竖条：bar-up 动画时交给 _draw_select_fx，避免重复。
+		if style.select_anim != "bar-up" or style.motion_reduced:
+			_rounded_bar(Rect2(r.position.x + 6.0, r.position.y + 8.0, 3.0, r.size.y - 16.0), style.choice_accent_color)
+
+func _rounded_bar(rect: Rect2, color: Color) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = color
+	sb.set_corner_radius_all(2)
+	draw_style_box(sb, rect)
 
 ## Ink 墨迹下划线：无框；底部一条两端渐细的墨线，选中时刷出效果由 _select_progress 承担。
 func _draw_ink_stroke(r: Rect2, _fill: Color, _text_color: Color, border: Color, _border_w: float) -> void:
@@ -662,21 +693,24 @@ func _draw_ink_stroke(r: Rect2, _fill: Color, _text_color: Color, border: Color,
 func _ink_alpha_weight(t: float) -> float:
 	return 1.0 - 0.55 * absf(t - 0.5) * 2.0
 
-## Pixel 阶梯描边：4 条 rect 拼出 4px 阶梯边框。
-func _draw_pixel_box(r: Rect2, fill: Color, _text_color: Color, border: Color, border_w: float) -> void:
-	var bw := maxf(1.0, border_w)
-	draw_rect(r, fill, true)
-	if border.a <= 0.0 or bw <= 0.0:
+## Pixel 行：行内不画框；选中行左侧像素箭头光标（方块拼成，0.8s 步进闪烁），无实底高亮。
+func _draw_pixel_box(r: Rect2, _fill: Color, _text_color: Color, _border: Color, _border_w: float) -> void:
+	if not selected:
 		return
-	# 阶梯角：四边各留出 4px 缺口，角部用阶梯方块补齐。
-	var step := 4.0
-	draw_rect(Rect2(r.position.x + step, r.position.y, r.size.x - step * 2.0, bw), border, true)
-	draw_rect(Rect2(r.position.x + step, r.end.y - bw, r.size.x - step * 2.0, bw), border, true)
-	draw_rect(Rect2(r.position.x, r.position.y + step, bw, r.size.y - step * 2.0), border, true)
-	draw_rect(Rect2(r.end.x - bw, r.position.y + step, bw, r.size.y - step * 2.0), border, true)
-	for corner in [r.position, Vector2(r.end.x - step, r.position.y), Vector2(r.position.x, r.end.y - step), Vector2(r.end.x - step, r.end.y - step)]:
-		draw_rect(Rect2(corner + Vector2(step * 0.5, 0), Vector2(step * 0.5, step * 0.5)), border, true)
-		draw_rect(Rect2(corner + Vector2(0, step * 0.5), Vector2(step * 0.5, step * 0.5)), border, true)
+	if not style.motion_reduced and (Time.get_ticks_msec() / 400) % 2 == 1:
+		return
+	var px := 3.0
+	var cx := r.position.x + 10.0
+	var cy := floorf(r.size.y * 0.5)
+	var c := style.choice_selected_color
+	# 三列阶梯：高 5/3/1 格，拼成向右的像素三角。
+	for col in 3:
+		var rows := 5 - col * 2
+		draw_rect(Rect2(cx + float(col) * px, cy - float(rows) * px * 0.5, px, float(rows) * px), c, true)
+
+func _process(_delta: float) -> void:
+	if selected and style != null and style.choice_style == "pixel-box":
+		queue_redraw()
 
 ## Nocturne 回复胶囊：右端圆角胶囊，选中加描边与淡底。
 func _draw_chat_chip(r: Rect2, fill: Color, _text_color: Color, border: Color, border_w: float) -> void:
@@ -719,7 +753,9 @@ func _draw_select_fx(r: Rect2, text_color: Color) -> void:
 	var accent := style.choice_selected_border_color if style.choice_selected_border_color.a > 0.0 else style.choice_accent_color
 	match style.select_anim:
 		"grow-line":
-			# 两端金线从文字向外生长。
+			# 两端金线从文字向外生长（filament 已在自身绘制里处理，避免双线）。
+			if style.choice_style == "filament":
+				return
 			var font := _font if _font != null else style.resolve_choice_font()
 			var tw := font.get_string_size(button.text if button != null else "", HORIZONTAL_ALIGNMENT_LEFT, -1, style.choice_font_size).x
 			var len := minf(56.0, maxf(0.0, (r.size.x - tw) * 0.5 - 18.0)) * p
@@ -728,9 +764,10 @@ func _draw_select_fx(r: Rect2, text_color: Color) -> void:
 			draw_line(Vector2(cx - tw * 0.5 - 12.0, cy), Vector2(cx - tw * 0.5 - 12.0 - len, cy), accent, 1.0, true)
 			draw_line(Vector2(cx + tw * 0.5 + 12.0, cy), Vector2(cx + tw * 0.5 + 12.0 + len, cy), accent, 1.0, true)
 		"bar-up":
-			# 左侧指示条由下往上长出。
-			var h := (r.size.y - 12.0) * p
-			draw_rect(Rect2(r.position.x + 3.0, r.end.y - 6.0 - h, 3.0, h), accent, true)
+			# 左侧 3px 圆角指示条由下往上长出。
+			var h := (r.size.y - 16.0) * p
+			if h > 1.0:
+				_rounded_bar(Rect2(r.position.x + 6.0, r.end.y - 8.0 - h, 3.0, h), style.choice_accent_color)
 		"shift":
 			# 整条右移已由 selected_shift 承担；有 marker 时不再叠加第二个箭头。
 			if style.choice_marker == "none":

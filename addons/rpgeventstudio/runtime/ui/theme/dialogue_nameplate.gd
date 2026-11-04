@@ -26,6 +26,8 @@ var _tag_font_size := 12
 var _title_font_size := 11
 ## 朱印铭牌固定边长（px）。
 const SEAL_SIDE := 54.0
+## 骑边铭牌两侧翼展（菱形 + 渐隐线）。
+const POETIC_WING := 104.0
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -60,7 +62,7 @@ func set_speaker(speaker: String, tag: String = "") -> void:
 	queue_redraw()
 
 func is_inside_panel() -> bool:
-	return style != null and style.nameplate_style in ["header", "blade", "poetic"]
+	return style != null and style.nameplate_style in ["header", "blade"]
 
 func fit_to_content() -> void:
 	if label == null or style == null:
@@ -126,12 +128,13 @@ func fit_to_content() -> void:
 			label.position = Vector2(pad_x + _glyph_width, pad_y + 1.0)
 			label.size = Vector2(_text_width + 2.0, text_height)
 		"poetic":
+			# 骑边铭牌（Ember）：名牌居中压在面板顶边线上，两侧各 6px 菱形 + 90px 渐隐细线。
 			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			var w := maxf(_text_width + _glyph_width * 2.0 + 96.0, 360.0)
+			var w := _text_width + pad_x * 2.0 + POETIC_WING * 2.0
 			var h := text_height + pad_y * 2.0
 			_set_size(Vector2(w, h))
-			label.position = Vector2(0, pad_y)
-			label.size = Vector2(w, text_height)
+			label.position = Vector2(POETIC_WING, pad_y)
+			label.size = Vector2(_text_width + pad_x * 2.0, text_height)
 		"ribbon":
 			var w := _text_width + _glyph_width + pad_x * 2.0 + 8.0
 			var h := text_height + pad_y * 2.0
@@ -158,16 +161,31 @@ func fit_to_content() -> void:
 				title_label.position = Vector2(-24.0, side + 1.0)
 				title_label.size = Vector2(side + 48.0, float(_title_font_size + 3))
 		"floating":
-			var w := maxf(_text_width, _title_width) + 8.0
-			var h := text_height + (float(_title_font_size) + 5.0 if _title.strip_edges() != "" else 0.0) + 4.0
-			_set_size(Vector2(w, h))
-			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			label.position = Vector2(0, 2.0)
-			label.size = Vector2(w, text_height)
-			if title_label != null:
-				title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-				title_label.position = Vector2(0, text_height + 4.0)
-				title_label.size = Vector2(w, float(_title_font_size + 3))
+			var has_title := _title.strip_edges() != ""
+			if style.speaker_title_position == "below":
+				# 名下方居中（Verse）。
+				var w := maxf(_text_width, _title_width) + 8.0
+				var h := text_height + (float(_title_font_size) + 5.0 if has_title else 0.0) + 4.0
+				_set_size(Vector2(w, h))
+				label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				label.position = Vector2(0, 2.0)
+				label.size = Vector2(w, text_height)
+				if title_label != null:
+					title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+					title_label.position = Vector2(0, text_height + 4.0)
+					title_label.size = Vector2(w, float(_title_font_size + 3))
+			else:
+				# 名右侧小字，基线对齐（Frost）。
+				var w := _text_width + 12.0 + (_title_width if has_title else 0.0) + 8.0
+				var h := text_height + 6.0
+				_set_size(Vector2(w, h))
+				label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+				label.position = Vector2(4.0, 3.0)
+				label.size = Vector2(_text_width + 2.0, text_height)
+				if title_label != null:
+					title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+					title_label.position = Vector2(_text_width + 14.0, 3.0 + text_height - float(_title_font_size) - 6.0)
+					title_label.size = Vector2(_title_width, float(_title_font_size + 4))
 		"callsign":
 			var w := _text_width + _tag_width + pad_x * 2.0 + 16.0
 			var h := text_height + pad_y * 2.0 + 4.0
@@ -190,7 +208,9 @@ func fit_to_content() -> void:
 			label.position = Vector2(pad_x + _glyph_width, pad_y)
 			label.size = Vector2(_text_width + 2.0, text_height)
 	if title_label != null:
-		title_label.visible = _title.strip_edges() != ""
+		# 只有这几种铭牌有称号位，其余样式（capsule/parallelogram/callsign/poetic…）不显示称号，
+		# 避免小字压在名字上。
+		title_label.visible = _title.strip_edges() != "" and style.nameplate_style in ["plaque", "seal", "floating", "phone"]
 	queue_redraw()
 
 ## 字距（em→px）：speaker_tracking 按字号换算；逐字宽度求和供测量与绘制共用。
@@ -395,22 +415,21 @@ func _draw_header() -> void:
 		draw_string(_font, Vector2(line_end - 8.0, cy + 4.0), "✦", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(style.nameplate_accent, 0.7))
 
 func _draw_poetic() -> void:
-	var fs := style.speaker_font_size
-	var cy := size.y * 0.5
-	var glyph_w := _font.get_string_size(style.nameplate_glyph if style.nameplate_glyph != "" else "☽", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-	var left_x := float(style.nameplate_padding_x)
-	var right_x := size.x - float(style.nameplate_padding_x) - glyph_w
-	_draw_crescent(Vector2(left_x + glyph_w * 0.42, cy), fs * 0.34, style.nameplate_accent, false)
-	_draw_crescent(Vector2(right_x + glyph_w * 0.42, cy), fs * 0.34, style.nameplate_accent, true)
-	var center := size.x * 0.5
-	var text_left := center - _text_width * 0.5 - 8.0
-	var text_right := center + _text_width * 0.5 + 8.0
-	var left_line_start := float(style.nameplate_padding_x) + glyph_w + 6.0
-	if text_left > left_line_start + 4.0:
-		_draw_tapered_line(left_line_start, text_left, cy, style.nameplate_accent, true)
-	var right_line_end := right_x - 6.0
-	if right_line_end > text_right + 4.0:
-		_draw_tapered_line(text_right, right_line_end, cy, style.nameplate_accent, false)
+	var cy := floorf(size.y * 0.5) + 0.5
+	var box := Rect2(POETIC_WING, 0, size.x - POETIC_WING * 2.0, size.y)
+	# 名牌底色 = 面板色，遮住面板顶边线。
+	var bg := style.nameplate_bg if style.nameplate_bg.a > 0.0 else style.panel_gradient_top
+	draw_rect(box, Color(bg, 1.0), true)
+	var c := style.nameplate_accent
+	var clear := Color(c, 0.0)
+	# 左：渐隐线（外透明→内实）+ 菱形；右对称。
+	var lx := box.position.x - 6.0
+	_draw_diamond(Vector2(lx, cy), 3.0, c)
+	draw_polyline_colors(PackedVector2Array([Vector2(lx - 96.0, cy), Vector2(lx - 6.0, cy)]), PackedColorArray([clear, c]), 1.0, true)
+	var rx := box.end.x + 6.0
+	_draw_diamond(Vector2(rx, cy), 3.0, c)
+	draw_polyline_colors(PackedVector2Array([Vector2(rx + 6.0, cy), Vector2(rx + 96.0, cy)]), PackedColorArray([c, clear]), 1.0, true)
+	_draw_speaker_tracked()
 
 func _draw_blade() -> void:
 	var r := _panel_rect()
@@ -501,12 +520,10 @@ func _draw_plaque() -> void:
 		ssb.set_corner_radius_all(style.nameplate_radius)
 		draw_style_box(ssb, sr)
 	# 纵向渐变牌面：nameplate_bg 顶部提亮到底部暗化。
-	var steps := 16
 	var top := Color(style.nameplate_bg, style.nameplate_bg.a).lightened(0.18)
 	var bottom := style.nameplate_bg.darkened(0.22)
-	for i in steps:
-		var t := float(i) / float(steps - 1)
-		draw_rect(Rect2(r.position.x, r.position.y + r.size.y * t, r.size.x, r.size.y / float(steps) + 1.0), top.lerp(bottom, t), true)
+	draw_polygon(PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]),
+		PackedColorArray([top, top, bottom, bottom]))
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0, 0, 0, 0)
 	sb.border_color = style.nameplate_border
@@ -589,7 +606,6 @@ func _draw_phone() -> void:
 	# 左侧头像点与状态短线，模拟聊天应用顶栏。
 	var cy := r.size.y * 0.5
 	draw_circle(Vector2(r.position.x + 8.0, cy), 3.0, Color(style.nameplate_accent, 0.9))
-	draw_line(Vector2(r.end.x - 26.0, cy), Vector2(r.end.x - 14.0, cy), Color(style.nameplate_accent, 0.55), 2.0, true)
 	_draw_speaker_tracked()
 
 ## 字距开启时逐字绘制说话人（Label 已置空）；水平居中样式按其 Label 对齐。
