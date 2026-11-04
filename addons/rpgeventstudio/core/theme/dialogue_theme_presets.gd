@@ -21,7 +21,7 @@ const FONT_QINGKE := "res://addons/rpgeventstudio/fonts/ZCOOLQingKeHuangYou-Regu
 const FONT_XIAOWEI := "res://addons/rpgeventstudio/fonts/ZCOOLXiaoWei-Regular.ttf"
 const FONT_BRUSH := "res://addons/rpgeventstudio/fonts/MaShanZheng-Regular.ttf"
 const FONT_MONO := "res://addons/rpgeventstudio/fonts/JetBrainsMono-Regular.ttf"
-const FONT_PIXEL := "res://addons/rpgeventstudio/fonts/DotGothic16-Regular.ttf"
+const FONT_PIXEL := "res://addons/rpgeventstudio/fonts/FusionPixel12px-zh_hans.woff2"
 
 # ── 旧 id → v5 迁移表 ────────────────────────────────────
 ## 旧预设按视觉族谱归入最近的 v5 预设：视觉参数仍保留在旧 .tres 字段里，

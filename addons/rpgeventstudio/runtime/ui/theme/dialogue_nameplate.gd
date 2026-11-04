@@ -97,8 +97,11 @@ func fit_to_content() -> void:
 	# get_combined_minimum_size() 返回 0，导致铭牌被裁成一个小方块。
 	_text_width = _tracked_width(_speaker, font_size)
 	var text_height := maxf(_font.get_height(font_size), float(font_size + 4))
-	# 字距开启时文字由 _draw 逐字绘制，Label 退居空壳（保持布局尺寸）。
-	label.text = "" if _tracking_px() > 0.0 else _speaker
+	# 字距开启时文字由 _draw 逐字绘制：Label 保留文本（供测试/检查读取），
+	# 但字体色置为透明，避免与手动画的文字重影。
+	label.text = _speaker
+	if _tracking_px() > 0.0:
+		label.add_theme_color_override("font_color", Color(style.nameplate_text_color, 0.0))
 	var pad_x := float(style.nameplate_padding_x)
 	var pad_y := float(style.nameplate_padding_y)
 	match style.nameplate_style:
